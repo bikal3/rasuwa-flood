@@ -71,7 +71,7 @@ def indices(s2):
     }
 
 
-def despeckle(db, size=None):
+def despeckle(db):
     """Boxcar multilook of a sigma0 dB image, NaN-aware.
 
     Averaging has to happen in linear power -- averaging decibels is a log-domain
@@ -79,7 +79,7 @@ def despeckle(db, size=None):
     step a single-look pre/post difference is ~2 dB of noise and the dB threshold
     classifies roughly an eighth of the scene as damage.
     """
-    size = size or cfg.SPECKLE_WIN
+    size = cfg.SPECKLE_WIN
     lin = 10.0 ** (db / 10.0)
     valid = np.isfinite(lin)
     num = uniform_filter(np.where(valid, lin, 0.0), size, mode="nearest")
@@ -214,11 +214,11 @@ def _zones(ax, zones):
                     bbox=dict(boxstyle="round,pad=0.2", fc=cfg.SURFACE, ec="none", alpha=0.85))
 
 
-def stretch(a, lo=2, hi=98):
+def stretch(a):
     v = a[np.isfinite(a)]
     if v.size == 0:
         return np.zeros_like(a)
-    p1, p2 = np.percentile(v, [lo, hi])
+    p1, p2 = np.percentile(v, [2, 98])
     return np.clip((a - p1) / (p2 - p1 + 1e-9), 0, 1)
 
 

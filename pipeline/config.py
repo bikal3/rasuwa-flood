@@ -182,4 +182,4 @@ HOT_LAYERS = {
 # --- Static site (stage 5) --------------------------------------------------
 WEB = ROOT / "web"              # React source, built with esbuild
 SITE_DATA = WEB / "public" / "data"   # GeoJSON + summary.json the app fetches
-SITE = ROOT / "site"            # built, publishable output
+# The built site goes to site/, but web/build.mjs owns that path, not this file.

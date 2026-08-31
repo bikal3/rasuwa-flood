@@ -74,7 +74,6 @@ export const LAYERS = [
     on: true,
     colour: C.red,
     style: { color: C.red, weight: 0.6, fillColor: C.red, fillOpacity: 0.75 },
-    minZoom: 12,
     title: (p) => p.name || `${p.building || "Building"} — ${p.status}`,
   },
   {
