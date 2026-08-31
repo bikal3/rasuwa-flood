@@ -25,13 +25,47 @@ function markerFor(feature, latlng, layer) {
   // circleMarker, not rectangle: its radius is in pixels, so a hydropower dot
   // stays the same size at every zoom. L.rectangle takes a geographic box and
   // would vanish the moment you zoomed out to the whole corridor.
-  return L.circleMarker(latlng, {
+  const base = {
     radius: layer.radius || 5,
     color: "#fcfcfb",
     weight: 1.2,
     fillColor: colour,
     fillOpacity: 0.95,
+  };
+  const mk = L.circleMarker(latlng, base);
+  mk.options.__base = base;
+  return mk;
+}
+
+/**
+ * A feature's resting style: whatever its own design says, scaled by the group's
+ * current opacity. Both the fade slider and hover-restore go through here, so
+ * moving the mouse over a faded layer cannot quietly restore it to full.
+ *
+ * markerFor stashes __base on point markers because they are built by
+ * pointToLayer and never see the style callback that carries it for paths.
+ */
+function rest(lyr, o) {
+  if (!lyr.setStyle) return;
+  const base = lyr.options.__base || {};
+  lyr.setStyle({
+    ...base,
+    opacity: (base.opacity ?? 1) * o,
+    fillOpacity: (base.fillOpacity ?? 0) * o,
   });
+}
+
+/** Thicken and lift a feature. `hard` marks the clicked one, which stays lit. */
+function emphasise(lyr, o, hard) {
+  if (!lyr.setStyle) return;
+  const base = lyr.options.__base || {};
+  lyr.setStyle({
+    weight: (base.weight ?? 1) + (hard ? 2.5 : 1.5),
+    color: hard ? "#0b0b0b" : base.color,
+    opacity: 1,
+    fillOpacity: Math.min(1, (base.fillOpacity ?? 0) * o + 0.25),
+  });
+  lyr.bringToFront?.();
 }
 
 export default function MapView() {
@@ -39,6 +73,8 @@ export default function MapView() {
   const map = useRef(null);
   const groups = useRef({});
   const tiles = useRef(null);
+  const picked = useRef(null);
+  const fadeRef = useRef({});   // read inside Leaflet handlers, which do not re-bind
   const [visible, setVisible] = useState(
     () => new Set(LAYERS.filter((l) => l.on).map((l) => l.id))
   );
@@ -96,13 +132,28 @@ export default function MapView() {
           const g = L.geoJSON(gj, {
             renderer: renderers[layer.kind],
             pane: layer.kind,
-            style: () => layer.style || {},
+            style: () => ({ ...(layer.style || {}), __base: layer.style || {} }),
             pointToLayer: (f, ll) => markerFor(f, ll, layer),
-            onEachFeature: (f, lyr) =>
+            onEachFeature: (f, lyr) => {
+              const props = f.properties || {};
+              const op = () => fadeRef.current[layer.group] ?? 1;
               lyr.on("click", () => {
-                const props = f.properties || {};
+                if (picked.current && picked.current !== lyr) rest(picked.current, op());
+                picked.current = lyr;
+                emphasise(lyr, op(), true);
                 setSelected({ layer: layer.label, props, title: layer.title?.(props) });
-              }),
+              });
+              // Nothing else tells you a feature is clickable -- there is no
+              // cursor change on a canvas-rendered path by default.
+              lyr.on("mouseover", () => {
+                m.getContainer().style.cursor = "pointer";
+                if (lyr !== picked.current) emphasise(lyr, op(), false);
+              });
+              lyr.on("mouseout", () => {
+                m.getContainer().style.cursor = "";
+                if (lyr !== picked.current) rest(lyr, op());
+              });
+            },
           });
           loaded[layer.id] = g;
           groups.current[layer.id] = g;
@@ -159,18 +210,12 @@ export default function MapView() {
   // overlap is the finding. Fading one group against the other is the cheapest
   // way to read it, and it works on canvas layers where a CSS filter would not.
   useEffect(() => {
+    fadeRef.current = fade;
     for (const layer of LAYERS) {
       const g = groups.current[layer.id];
       if (!g) continue;
       const o = fade[layer.group] ?? 1;
-      g.eachLayer((l) => {
-        if (!l.setStyle) return;
-        const base = layer.kind === "point" ? { fillOpacity: 0.95, opacity: 1 } : layer.style || {};
-        l.setStyle({
-          opacity: (base.opacity ?? 1) * o,
-          fillOpacity: (base.fillOpacity ?? 0) * o,
-        });
-      });
+      g.eachLayer((l) => (l === picked.current ? emphasise(l, o, true) : rest(l, o)));
     }
   }, [fade, ready]);
 
