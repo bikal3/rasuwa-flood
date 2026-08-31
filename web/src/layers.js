@@ -74,6 +74,9 @@ export const LAYERS = [
     on: true,
     colour: C.red,
     style: { color: C.red, weight: 0.6, fillColor: C.red, fillOpacity: 0.75 },
+    // 1,626 footprints are a red smear at corridor zoom and tell you nothing;
+    // they only become readable once a settlement fills the screen.
+    minZoom: 12.5,
     title: (p) => p.name || `${p.building || "Building"} — ${p.status}`,
   },
   {
@@ -104,6 +107,7 @@ export const LAYERS = [
     on: false,
     colour: C.ink,
     radius: 3.5,
+    minZoom: 11,
     title: (p) => p.name || "Place",
   },
   {

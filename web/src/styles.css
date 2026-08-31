@@ -139,6 +139,10 @@ section { padding-block: clamp(3rem, 7vw, 5.5rem); border-bottom: var(--rule); }
   border: 1.5px solid var(--grid); position: relative; transition: .13s;
 }
 .layer[aria-pressed="true"] .box { border-color: currentColor; }
+/* Switched on, but the map is too far out for it to be legible yet. */
+.layer[data-dormant="true"] { color: var(--muted); }
+.layer[data-dormant="true"] .swatch { opacity: .4; }
+.layer[data-dormant="true"] .count { color: var(--blue); }
 .layer .swatch {
   width: 9px; height: 9px; border-radius: 2px; flex: none;
   outline: 1px solid rgba(0, 0, 0, .12); outline-offset: -1px;
