@@ -1,8 +1,17 @@
 # Rasuwa transboundary flood — staged build
 
-Implements `Rasuwa_Nepal_China_Flood_Project_Proposal.md`. Split into stages on
-purpose, so the data is usable without the analysis, the analysis is usable
-without the terrain conditioning, and the site is usable without any of it:
+Implements the project proposal for the 2026 Rasuwa transboundary flood. Comments
+throughout cite it by section ("proposal §3.2", "proposal section 4") for the
+thresholds, indices and impact zones; the document itself is no longer in the tree,
+but it is in git history:
+
+```bash
+git show 3f629c2:Rasuwa_Nepal_China_Flood_Project_Proposal.md
+```
+
+Split into stages on purpose, so the data is usable without the analysis, the
+analysis is usable without the terrain conditioning, and the site is usable
+without any of it:
 
 | Stage | Script | Produces | For |
 | :-- | :-- | :-- | :-- |
