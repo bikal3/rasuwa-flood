@@ -179,16 +179,9 @@ export const BASEMAPS = [
     maxZoom: 18,
   },
   {
-    id: "terrain",
-    label: "Terrain",
+    id: "map",
+    label: "Map",
     url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-    attribution: "© OpenStreetMap contributors, © CARTO",
-    maxZoom: 19,
-  },
-  {
-    id: "plain",
-    label: "Plain",
-    url: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
     attribution: "© OpenStreetMap contributors, © CARTO",
     maxZoom: 19,
   },
