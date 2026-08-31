@@ -1,0 +1,29 @@
+{
+ "bounds": [
+  [
+   28.04635184493848,
+   85.24510440802652
+  ],
+  [
+   28.35353264181058,
+   85.55422581190835
+  ]
+ ],
+ "event": "2026-08-26",
+ "source": "Sentinel-2 L2A, cloud-masked median composite",
+ "note": "Both dates share one contrast stretch, computed on the pre-event image, so a difference in brightness is a difference on the ground.",
+ "s2_pre": {
+  "window": [
+   "2026-08-01",
+   "2026-08-25"
+  ],
+  "valid_pct": 87.0
+ },
+ "s2_post": {
+  "window": [
+   "2026-08-26",
+   "2026-09-01"
+  ],
+  "valid_pct": 17.0
+ }
+}
