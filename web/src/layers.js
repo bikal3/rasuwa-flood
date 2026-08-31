@@ -47,6 +47,7 @@ export const LAYERS = [
   },
   {
     id: "bridges",
+    compare: true,   // clicking opens the before/after slider here
     label: "Bridges assessed",
     group: "Observed — HOT survey",
     kind: "point",
@@ -58,6 +59,7 @@ export const LAYERS = [
   },
   {
     id: "hydropowers",
+    compare: true,   // clicking opens the before/after slider here
     label: "Hydropower exposed",
     group: "Observed — HOT survey",
     kind: "point",
@@ -68,6 +70,7 @@ export const LAYERS = [
   },
   {
     id: "buildings_damaged",
+    compare: true,   // clicking opens the before/after slider here
     label: "Buildings destroyed/damaged",
     group: "Observed — HOT survey",
     kind: "polygon",
@@ -81,6 +84,7 @@ export const LAYERS = [
   },
   {
     id: "roads_damaged",
+    compare: true,   // clicking opens the before/after slider here
     label: "Roads destroyed",
     group: "Observed — HOT survey",
     kind: "line",
@@ -124,6 +128,7 @@ export const LAYERS = [
   // --- Derived: this pipeline ----------------------------------------------
   {
     id: "detected_damage",
+    compare: true,   // clicking opens the before/after slider here
     label: "Detected flood damage",
     group: "Derived — this pipeline",
     kind: "polygon",

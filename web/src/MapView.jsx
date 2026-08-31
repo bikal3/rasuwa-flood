@@ -112,6 +112,8 @@ export default function MapView() {
   // Keyed by group name; the two groups are what people compare.
   const [fade, setFade] = useState({});
   const swipe = useSwipe(map, ready);
+  const openSwipe = useRef(null);
+  openSwipe.current = swipe.open;
 
   // Build once.
   useEffect(() => {
@@ -168,6 +170,14 @@ export default function MapView() {
                 picked.current = lyr;
                 emphasise(lyr, op(), true);
                 setSelected({ layer: layer.label, props, title: layer.title?.(props) });
+                // Damage evidence is worth seeing before and after; context
+                // layers like waterways or places are not, and forcing a 5.7 MB
+                // load on someone who clicked a village name would be rude.
+                if (layer.compare) {
+                  openSwipe.current?.();
+                  const c = lyr.getBounds ? lyr.getBounds().getCenter() : lyr.getLatLng();
+                  m.flyTo(c, Math.max(m.getZoom(), 14), { duration: 0.7 });
+                }
               });
               // Nothing else tells you a feature is clickable -- there is no
               // cursor change on a canvas-rendered path by default.
@@ -290,7 +300,13 @@ export default function MapView() {
       });
       if (!target) return;
       m.flyToBounds(target.getBounds(), { padding: [60, 60], duration: 0.9 });
-      document.getElementById("themap")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      // The question anyone clicking a zone is asking is "what happened here",
+      // and the answer is the imagery, not the outline.
+      openSwipe.current?.();
+      // Optional call: the element is guarded, but the method is not universal
+      // either -- older Safari has no options form, and jsdom has no method.
+      document.getElementById("themap")
+        ?.scrollIntoView?.({ behavior: "smooth", block: "center" });
     };
     window.addEventListener("map:fly", onFly);
     return () => window.removeEventListener("map:fly", onFly);
