@@ -170,6 +170,26 @@ section { padding-block: clamp(3rem, 7vw, 5.5rem); border-bottom: var(--rule); }
 }
 .zoombar button:hover { border-color: var(--ink); color: var(--ink); }
 
+.mapctl {
+  position: absolute; top: 12px; right: 12px; z-index: 600;
+  display: flex; flex-direction: column; gap: 1px;
+  background: var(--grid); border: var(--rule); border-radius: 5px;
+  overflow: hidden; box-shadow: 0 2px 10px rgba(0, 0, 0, .09);
+}
+.mapctl button {
+  width: 32px; height: 30px; border: 0; cursor: pointer; font: inherit;
+  font-size: 15px; line-height: 1; background: var(--paper); color: var(--ink);
+  display: grid; place-items: center; transition: background .12s, color .12s;
+}
+.mapctl button:hover { background: var(--ink); color: var(--paper); }
+.mapctl .z {
+  font-family: var(--mono); font-size: .62rem; text-align: center;
+  background: var(--paper); color: var(--muted); padding: 2px 0;
+  font-variant-numeric: tabular-nums;
+}
+/* Fullscreen puts .mapcanvas itself into the viewport, so the map fills it. */
+.mapcanvas:fullscreen { background: var(--paper); }
+
 .maploading {
   position: absolute; inset: 0; display: grid; place-items: center;
   background: var(--paper-2); font-family: var(--mono); font-size: .78rem;

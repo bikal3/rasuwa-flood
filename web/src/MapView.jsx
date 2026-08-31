@@ -46,6 +46,8 @@ export default function MapView() {
   const [basemap, setBasemap] = useState("imagery");
   const [ready, setReady] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [zoom, setZoom] = useState(10);
+  const [full, setFull] = useState(false);
 
   // Build once.
   useEffect(() => {
@@ -53,11 +55,20 @@ export default function MapView() {
       center: [28.1, 85.2],
       zoom: 10,
       preferCanvas: true,
-      zoomControl: true,
+      // Own control below, styled with the rest of the page.
+      zoomControl: false,
       attributionControl: true,
+      // Quarter-step zoom. The corridor is 120 km long but the features that
+      // matter -- a washed-out bridge, a 40 m channel -- are metres wide, so
+      // whole-integer steps jump straight past the scale you want. The wheel is
+      // slowed to match, otherwise one notch still crosses a full level.
+      zoomSnap: 0.25,
+      zoomDelta: 0.5,
+      wheelPxPerZoomLevel: 140,
     });
     map.current = m;
     L.control.scale({ imperial: false, position: "bottomright" }).addTo(m);
+    m.on("zoomend", () => setZoom(m.getZoom()));
 
     let cancelled = false;
     // One pane per geometry kind. Without this, draw order is load order, and
@@ -145,16 +156,51 @@ export default function MapView() {
       return next;
     });
 
+  const fit = () => {
+    const m = map.current;
+    const g = groups.current.aoi || groups.current.flood_extent;
+    if (m && g) m.flyToBounds(g.getBounds(), { padding: [24, 24], duration: 0.8 });
+  };
+
   const goto = (place) => {
     const m = map.current;
     if (!m) return;
-    if (place.bounds) {
-      const g = groups.current.aoi || groups.current.flood_extent;
-      if (g) m.fitBounds(g.getBounds(), { padding: [24, 24] });
-    } else {
-      m.flyTo([place.view[0], place.view[1]], place.view[2], { duration: 0.9 });
-    }
+    if (place.bounds) fit();
+    else m.flyTo([place.view[0], place.view[1]], place.view[2], { duration: 0.9 });
   };
+
+  const toggleFull = () => {
+    const el = host.current?.parentElement;
+    if (!el) return;
+    if (document.fullscreenElement) document.exitFullscreen?.();
+    else el.requestFullscreen?.();
+  };
+
+  // Keyboard, but only when the map is the thing being used -- these must not
+  // fire while someone is typing or tabbing through the layer list.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.target.closest("input, textarea, button, a")) return;
+      if (!host.current?.parentElement.contains(e.target) && e.target !== document.body) return;
+      const m = map.current;
+      if (!m) return;
+      if (e.key === "+" || e.key === "=") m.zoomIn();
+      else if (e.key === "-" || e.key === "_") m.zoomOut();
+      else if (e.key === "f") fit();
+      else return;
+      e.preventDefault();
+    };
+    const onFull = () => {
+      setFull(Boolean(document.fullscreenElement));
+      setTimeout(() => map.current?.invalidateSize(), 120);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("fullscreenchange", onFull);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("fullscreenchange", onFull);
+    };
+  }, []);
 
   const grouped = LAYERS.reduce((acc, l) => {
     (acc[l.group] ||= []).push(l);
@@ -168,6 +214,16 @@ export default function MapView() {
         <div className="maploading" data-done={ready}>
           Loading layers…
         </div>
+        <div className="mapctl">
+          <button onClick={() => map.current?.zoomIn()} title="Zoom in  (+)" aria-label="Zoom in">+</button>
+          <span className="z" title="Zoom level">{zoom.toFixed(2).replace(/\.?0+$/, "")}</span>
+          <button onClick={() => map.current?.zoomOut()} title="Zoom out  (−)" aria-label="Zoom out">−</button>
+          <button onClick={fit} title="Fit the whole corridor  (F)" aria-label="Fit corridor">⤢</button>
+          <button onClick={toggleFull} title={full ? "Leave fullscreen" : "Fullscreen"} aria-label="Toggle fullscreen">
+            {full ? "⤡" : "⛶"}
+          </button>
+        </div>
+
         <div className="legend-float">
           <b>Bridge condition</b>
           {Object.entries(BRIDGE_COLOUR).map(([k, v]) => (
