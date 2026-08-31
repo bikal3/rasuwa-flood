@@ -258,9 +258,6 @@ footer p { margin: 0 0 .5rem; max-width: 48ch; }
   background: var(--paper); color: var(--ink); border-bottom-color: var(--grid);
 }
 .leaflet-bar a:hover { background: var(--paper-2); }
-.leaflet-popup-content-wrapper {
-  border-radius: 4px; font-family: var(--sans); box-shadow: 0 6px 22px rgba(0, 0, 0, .16);
-}
 
 .legend-float {
   position: absolute; left: 12px; bottom: 22px; z-index: 600;
