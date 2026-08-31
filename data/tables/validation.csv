@@ -1,0 +1,14 @@
+metric,km2,note
+ROI area,980.2436,stage 1 study rectangle
+"HOT observed flood extent, whole corridor",31.707928472905568,Rasuwagadhi to the Narayani confluence
+"HOT observed flood extent, inside ROI",5.7672,the comparison area
+"stage 2 change, inside ROI",29.458,thresholds only
+"stage 3 flood damage, inside ROI",4.0828,thresholds ∩ HAND corridor
+"stage 3 HAND corridor, inside ROI",43.7264,HAND ≤ 50 m
+observed_in_corridor_pct,,90.6
+observed_flagged_by_stage2_pct,,32.7
+observed_flagged_by_stage3_pct,,29.5
+detected_inside_observed_pct,,41.7
+observed_share_of_roi_pct,,0.59
+precision_vs_base_rate,,70.9
+iou_pct,,20.9

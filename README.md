@@ -1,14 +1,16 @@
-# Rasuwa transboundary flood — three-stage build
+# Rasuwa transboundary flood — staged build
 
-Implements `Rasuwa_Nepal_China_Flood_Project_Proposal.md`. Split into three stages
-on purpose, so the data is usable without the analysis and the analysis is usable
-without the terrain conditioning:
+Implements `Rasuwa_Nepal_China_Flood_Project_Proposal.md`. Split into stages on
+purpose, so the data is usable without the analysis, the analysis is usable
+without the terrain conditioning, and the site is usable without any of it:
 
 | Stage | Script | Produces | For |
 | :-- | :-- | :-- | :-- |
 | 1 | `stage1_export.py` | GeoTIFF + Shapefile/GeoJSON, nothing derived | **ArcGIS Pro** (or QGIS, or stage 2) |
 | 2 | `stage2_analysis.py` | change rasters, damage polygons, zonal stats, maps | **Python**, and the outputs go back into ArcGIS Pro |
 | 3 | `stage3_corridor.py` | terrain + HAND, the flood corridor, corridor-confined damage | **Python**, ditto — and the DEM stack HEC-RAS wants |
+| 4 | `stage4_hot.py` | HOT ground survey, validation scores, the site's data | **Python**, and `web/` |
+| 5 | `web/` (React + esbuild) | a static site: interactive map, findings, tables, downloads | **Anyone with a browser** |
 
 Each stage reads the previous one's files off disk and nothing else. No stage calls
 another, so you can do the whole analysis in ArcGIS Pro instead and ignore stages 2
@@ -204,11 +206,75 @@ the table after changing the ROI or the stage 2 thresholds.
   at Z1/Z2a/Z3/Z4. Verifying the widening *ratio* needs the 3 m PlanetScope imagery,
   which is on the not-built list below.
 
+## Way 4 — the ground survey, and does any of this hold up
+
+```bash
+python stage4_hot.py
+```
+
+Pulls the Humanitarian OpenStreetMap Team's response export for this exact event —
+[`hot_flood_npl`](https://data.humdata.org/dataset/hot_flood_npl), ODC-ODbL — and
+does the thing stages 1–3 could not: check the detection against ground truth.
+HOT's flood extent was mapped from drone, Landsat, PlanetScope and Sentinel
+imagery plus volunteer field reports, independently of anything here.
+
+Downloads are cached in `data/hot/`. Outputs go to `web/public/data/` (GeoJSON +
+`summary.json`) and `data/tables/{validation,exposure}.csv`.
+
+### The result
+
+The HAND corridor is derived from a 30 m elevation model and nothing else — no
+imagery, no flood report. Inside the study rectangle it covers **4.35% of the
+area**, and it contains:
+
+| Ground evidence (n in ROI) | In HAND corridor | In detected damage (0.41% of area) |
+| :-- | --: | --: |
+| Destroyed buildings (775) | **96.1%** | 55.5% — 135× base rate |
+| Bridges washed out (13) | **100%** | 38.5% — 94× |
+| Roads destroyed (172) | **94.2%** | 47.7% — 116× |
+| HOT observed flood extent | **90.6%** | 29.5% |
+
+Where a flood can reach turns out to be a terrain question long before it is an
+imaging one, which is the case for stage 3 existing at all.
+
+Two numbers that look bad and are not:
+
+- **Only 29.5% of the observed extent is flagged.** Most of that extent is the
+  river channel itself, which was already water on 25 August, so a *change*
+  detector correctly finds nothing there. Read concentration instead: 41.7% of
+  detections land inside observed water against a 0.59% base rate, **71×**.
+- **Hydropowers score 25% / 0%.** n = 4 inside the ROI, and the points are plant
+  locations rather than the headworks that actually flooded. Reported because
+  leaving it out would be cherry-picking.
+
+## Way 5 — the static site
+
+```bash
+cd web
+npm install                 # react, react-dom, leaflet; esbuild + jsdom as dev deps
+node build.mjs              # -> ../site/, ready to publish
+node build.mjs --serve      # watched, http://localhost:5173
+node smoke.mjs              # check the built site actually renders
+```
+
+`site/` is plain static files — drop it on GitHub Pages, Netlify, S3, anything.
+No Vite, no framework CLI: esbuild bundles `src/main.jsx` in about 20 ms.
+
+The page is an interactive Leaflet map over the whole corridor with 14 toggleable
+layers, split into what HOT *observed* and what this pipeline *derived*, plus the
+validation above, exposure tables, method, caveats and a GeoJSON download for
+every layer. `stage4_hot.py` writes `web/public/data/`, so the app fetches static
+files at runtime rather than inlining 2.6 MB into the bundle.
+
+`web/public/data/` is committed for the same reason `maps/` is: regenerating it
+needs the stage 1–3 rasters, which need Earth Engine credentials.
+
 ## Check it
 
 ```bash
-python test_analysis.py     # stage 2
-python test_corridor.py     # stage 3
+python test_analysis.py                 # stage 2
+python test_corridor.py                 # stage 3
+cd web && node build.mjs && node smoke.mjs   # the site
 ```
 
 `test_analysis.py` builds synthetic rasters with a known damage footprint —
@@ -224,7 +290,13 @@ assertion falls out of that one line: HAND to within 0.5 m, the corridor exactly
 as many columns wide as the threshold allows, accumulation collecting 100% of the
 domain at the outlet, a bowl filled to its rim and no further.
 
-No pytest, no fixtures.
+`web/smoke.mjs` loads the *built* bundle in jsdom with `fetch` served off disk,
+so it exercises the real data contract: if `stage4_hot.py` renames a field, drops
+a layer or emits a `NaN` that `JSON.parse` rejects, it fails there instead of
+rendering a blank page in someone's browser. It asserts the page quotes real
+figures, Leaflet initialises, all 14 layers parse, and the console stays clean.
+
+No pytest, no fixtures, no test framework.
 
 ## Things to fix before this is publishable
 
@@ -263,6 +335,10 @@ No pytest, no fixtures.
   snow/ice from `SCL_KEEP` is what stops fresh snowfall reading as damage, but it
   also means this pipeline cannot speak to the genesis zone in proposal §2. That
   needs a snow/ice-aware analysis with its own thresholds.
+- **The validation is one event, one corridor.** 96% of destroyed buildings
+  falling inside the corridor says the corridor is well drawn *here*. It is not a
+  cross-validated skill score, and HOT's mapping is itself densest along the
+  river, which inflates any containment statistic computed against it.
 - **Not built:** the HEC-RAS / Telemac-2D hydrodynamic model (§6.2) and
   PlanetScope ingestion (commercial, needs a Planet API key). Stage 3's
   `terrain.tif` is the conditioned surface HEC-RAS wants — hydrologically

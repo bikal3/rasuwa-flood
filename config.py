@@ -144,3 +144,35 @@ HAND_MAX_M = 50.0
 # SRTM voids and the reprojection collar come back as 0 m. Nothing in Rasuwa is
 # at sea level, so anything below this is not ground.
 DEM_MIN_M = 1.0
+
+
+# --- HOT / HDX response data (stage 4) --------------------------------------
+# https://data.humdata.org/dataset/hot_flood_npl -- OpenStreetMap + Overture
+# vector layers for the observed flood extent, published by the Humanitarian
+# OpenStreetMap Team under ODC-ODbL. Cached in data/hot/ and re-downloadable, so
+# it is gitignored like the imagery.
+HDX_DATASET = "hot_flood_npl"
+HOT_BASE = "https://production-raw-data-api.s3.amazonaws.com/ISO3/NPL"
+HOT = DATA / "hot"
+# Only the layers the site actually draws. Everything else in the dataset is
+# either a duplicate format or an Overture twin of an OSM layer -- the dataset
+# notes say to prefer OSM for damage work, because Overture follows its own
+# release cycle and misses mapping done during the response.
+HOT_LAYERS = {
+    "flood_extent": "combined/hot_flood_npl_flood_extent.geojson",
+    "aoi": "combined/hot_flood_npl_aoi.geojson",
+    "bridge_damage": "combined/hot_flood_npl_bridge_damage.geojson",
+    "hydropowers": "combined/hot_flood_npl_exposed_hydropowers.geojson",
+    "destroyed_features": "destroyed_features/hot_flood_npl_destroyed_features_osm_geojson.zip",
+    "health_facilities": "health_facilities/hot_flood_npl_health_facilities_osm_geojson.zip",
+    "education_facilities": "education_facilities/hot_flood_npl_education_facilities_osm_geojson.zip",
+    "populated_places": "populated_places/hot_flood_npl_populated_places_osm_geojson.zip",
+    "waterways": "waterways/hot_flood_npl_waterways_osm_geojson.zip",
+    "buildings": "buildings/hot_flood_npl_buildings_osm_gpkg.zip",
+    "roads": "roads/hot_flood_npl_roads_osm_gpkg.zip",
+}
+
+# --- Static site (stage 5) --------------------------------------------------
+WEB = ROOT / "web"              # React source, built with esbuild
+SITE_DATA = WEB / "public" / "data"   # GeoJSON + summary.json the app fetches
+SITE = ROOT / "site"            # built, publishable output
