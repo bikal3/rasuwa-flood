@@ -67,7 +67,6 @@ def indices(s2):
     return {
         "NDVI": nd(s2["B8"], s2["B4"]),
         "MNDWI": nd(s2["B3"], s2["B11"]),
-        "NDWI": nd(s2["B3"], s2["B8"]),
         "NBR": nd(s2["B8"], s2["B12"]),
     }
 
