@@ -44,7 +44,7 @@ import pandas as pd
 import rasterio
 import requests
 from rasterio import features
-from shapely.geometry import box, shape
+from shapely.geometry import box
 
 import config as cfg
 
@@ -138,7 +138,7 @@ def rasterize_to(gdf, transform, shape_):
     ).astype(bool)
 
 
-def validate(hot, roi_poly):
+def validate(hot):
     """Stage 2 and stage 3 against HOT's observed extent, on the stage 1 grid."""
     with rasterio.open(cfg.DERIVED / "damage_mask.tif") as src:
         change = src.read(1).astype(bool)
@@ -356,7 +356,7 @@ def main():
     roi_poly = box(*cfg.ROI)
     zones = gpd.read_file(cfg.VECTOR / "zones.shp")
 
-    table, scores = validate(hot, roi_poly)
+    table, scores = validate(hot)
     table.to_csv(cfg.TABLES / "validation.csv", index=False)
     exp, exp_zone = exposure(hot, zones)
     exp.to_csv(cfg.TABLES / "exposure.csv", index=False)

@@ -63,7 +63,7 @@ export function Table({ caption, cols, rows }) {
  * comparisons where the bar IS the data, and a 90 kB dependency to draw a div of
  * a given width is not a trade worth making.
  */
-export function Bars({ rows, max, unit = "%", colour = "#2a78d6" }) {
+export function Bars({ rows, max }) {
   const top = max ?? Math.max(...rows.map((r) => r.value));
   return (
     <div className="bars">
@@ -75,14 +75,14 @@ export function Bars({ rows, max, unit = "%", colour = "#2a78d6" }) {
               className="bar-fill"
               style={{
                 width: `${Math.max(0.6, (r.value / top) * 100)}%`,
-                background: r.colour || colour,
+                background: r.colour,
                 animationDelay: `${i * 55}ms`,
               }}
             />
           </span>
           <span className="val">
             {fmt(r.value, r.decimals ?? 1)}
-            {unit}
+            %
           </span>
         </div>
       ))}
