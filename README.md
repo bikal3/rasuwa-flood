@@ -41,7 +41,7 @@ repo root, not its own directory.
 ## Setup
 
 ```bash
-pip install earthengine-api rasterio geopandas rioxarray matplotlib pandas requests
+pip install earthengine-api rasterio geopandas matplotlib pandas scipy requests
 earthengine authenticate          # once
 export EE_PROJECT=your-gcloud-project-id
 ```
