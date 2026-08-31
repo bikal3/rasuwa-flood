@@ -19,7 +19,8 @@ without any of it:
 | 2 | `pipeline/stage2_analysis.py` | change rasters, damage polygons, zonal stats, maps | **Python**, and the outputs go back into ArcGIS Pro |
 | 3 | `pipeline/stage3_corridor.py` | terrain + HAND, the flood corridor, corridor-confined damage | **Python**, ditto — and the DEM stack HEC-RAS wants |
 | 4 | `pipeline/stage4_hot.py` | HOT ground survey, validation scores, the site's data | **Python**, and `web/` |
-| 5 | `web/` (React + esbuild) | a static site: interactive map, findings, tables, downloads | **Anyone with a browser** |
+| 5 | `pipeline/stage5_overlays.py` | pre/post true-colour PNGs in Web Mercator | the site's before/after slider |
+| — | `web/` (React + esbuild) | a static site: interactive map, findings, tables, downloads | **Anyone with a browser** |
 
 Each stage reads the previous one's files off disk and nothing else. No stage calls
 another, so you can do the whole analysis in ArcGIS Pro instead and ignore stages 2
@@ -269,7 +270,36 @@ Two numbers that look bad and are not:
   locations rather than the headworks that actually flooded. Reported because
   leaving it out would be cherry-picking.
 
-## Way 5 — the static site
+## Way 5 — before/after imagery
+
+```bash
+python pipeline/stage5_overlays.py
+```
+
+Reprojects the Sentinel-2 composites to Web Mercator and writes them as PNGs the
+map lays over the terrain, plus `overlays.json` with the bounds, windows and
+cloud cover. Two decisions worth knowing:
+
+- **One stretch for both dates.** Stage 2's plate percentile-stretches each image
+  independently, which is right for looking at one scene and wrong for comparing
+  two — a chunk of the apparent change would be the normalisation moving rather
+  than the ground. The stretch is computed on the pre-event image and applied
+  unchanged to the post.
+- **EPSG:3857, not UTM.** Leaflet stretches an `ImageOverlay` linearly between
+  two corners in Web Mercator. Hand it a UTM raster with lat/lon corners and the
+  pixels land in roughly the right place and precisely the wrong one, with the
+  error growing across the frame.
+
+The post-event composite is **17% cloud-free** against the pre's **87%**. Gaps
+are transparent rather than filled, and both figures are printed on the slider —
+dragging across a hole should tell you it is cloud, not clear ground. For the
+same reason the labels read `1–25 Aug 2026` and `26 Aug – 1 Sep 2026`: these are
+median composites over a window, not single acquisitions, and dating them exactly
+would be a lie.
+
+The PNGs are 5.7 MB and load only when the slider is opened.
+
+## Way 6 — the static site
 
 ```bash
 cd web
@@ -285,7 +315,16 @@ No Vite, no framework CLI: esbuild bundles `src/main.jsx` in about 20 ms.
 The page is an interactive Leaflet map over the whole corridor with 14 toggleable
 layers, split into what HOT *observed* and what this pipeline *derived*, plus the
 validation above, exposure tables, method, caveats and a GeoJSON download for
-every layer. `pipeline/stage4_hot.py` writes `web/public/data/`, so the app fetches static
+every layer. Interaction:
+
+| | |
+| :-- | :-- |
+| Zoom | Quarter-level steps — the corridor is 120 km but a washed-out bridge is metres. `+` / `−` / `f` to fit |
+| Before/after | `◐` opens a draggable divider over the pre/post imagery, each side dated |
+| Click | A bridge, building or zone id flies there **and** opens the comparison |
+| Opacity | A slider per group fades observed against derived, which is the whole argument |
+| Zoom-gated | 1,626 building footprints draw from z12.5; the panel says so rather than looking broken |
+| Share | The view lives in the URL hash, so any view can be linked | `pipeline/stage4_hot.py` writes `web/public/data/`, so the app fetches static
 files at runtime rather than inlining 2.6 MB into the bundle.
 
 `web/public/data/` is committed for the same reason `maps/` is: regenerating it
@@ -296,7 +335,7 @@ needs the stage 1–3 rasters, which need Earth Engine credentials.
 ```bash
 python pipeline/test_analysis.py                 # stage 2
 python pipeline/test_corridor.py                 # stage 3
-cd web && node build.mjs && node smoke.mjs   # the site
+cd web && node build.mjs && node smoke.mjs   # the site, incl. the slider
 ```
 
 `pipeline/test_analysis.py` builds synthetic rasters with a known damage footprint —
