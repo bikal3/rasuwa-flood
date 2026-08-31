@@ -136,6 +136,22 @@ if (swipeBtn) {
   want(sw?.getAttribute("style")?.includes("--x"), "divider position is not bound");
 }
 
+// Clicking a zone must open the comparison, not just move the camera.
+{
+  const before = Boolean(root.querySelector(".swipe"));
+  const link = root.querySelector(".zonelink");
+  want(link, "no zone link to test click-to-compare with");
+  root.querySelector('[aria-label="Toggle before and after imagery"]')
+      ?.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));  // close it
+  await new Promise((r) => setTimeout(r, 60));
+  want(!root.querySelector(".swipe"), "slider did not close before the click test");
+  link?.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
+  for (let i = 0; i < 40 && !root.querySelector(".swipe"); i++) {
+    await new Promise((r) => setTimeout(r, 25));
+  }
+  want(root.querySelector(".swipe"), "clicking a zone did not open the before/after slider");
+}
+
 // Zone ids in the tables must be clickable handles onto the map.
 want((html.match(/class="zonelink"/g) || []).length >= 10,
   `zone cross-links missing (found ${(html.match(/class="zonelink"/g) || []).length})`);
