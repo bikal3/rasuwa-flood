@@ -26,6 +26,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
 from rasterio import features
 from rasterio.plot import plotting_extent
+from scipy.ndimage import uniform_filter
 from shapely.geometry import shape
 
 import config as cfg
@@ -71,16 +72,55 @@ def indices(s2):
     }
 
 
+def despeckle(db, size=None):
+    """Boxcar multilook of a sigma0 dB image, NaN-aware.
+
+    Averaging has to happen in linear power -- averaging decibels is a log-domain
+    mean, which biases low and does not reduce speckle correctly. Without this
+    step a single-look pre/post difference is ~2 dB of noise and the dB threshold
+    classifies roughly an eighth of the scene as damage.
+    """
+    size = size or cfg.SPECKLE_WIN
+    lin = 10.0 ** (db / 10.0)
+    valid = np.isfinite(lin)
+    num = uniform_filter(np.where(valid, lin, 0.0), size, mode="nearest")
+    den = uniform_filter(valid.astype("float32"), size, mode="nearest")
+    with np.errstate(invalid="ignore", divide="ignore"):
+        mean = num / den
+    return np.where(den > 0, 10.0 * np.log10(np.maximum(mean, 1e-12)), np.nan)
+
+
+def debias(a):
+    """Remove the scene-wide offset from a difference image. -> (centred, offset)
+
+    Unchanged ground has to sit at zero for the proposal's fixed thresholds to
+    mean what they say. Residual haze and viewing-geometry differences between
+    two composites shift the whole scene instead -- on the real pair dNDVI sat
+    at +0.099, so a fifth of the catchment cleared 0.25 on nothing.
+
+    Safe here because the flood corridor is a small fraction of the ROI, so the
+    median is set by unchanged ground. That stops being true if the ROI is ever
+    tightened to just the affected valley -- then this would subtract signal.
+    """
+    med = float(np.nanmedian(a))
+    return a - med, med
+
+
 def change(s2_pre, s2_post, s1_pre, s1_post):
+    """-> ({change band: array}, {band: offset removed})"""
     pre, post = indices(s2_pre), indices(s2_post)
     # S1_GRD is already sigma0 in dB, so post - pre IS 10*log10(post/pre).
-    return {
+    raw = {
         "dNDVI": pre["NDVI"] - post["NDVI"],      # + = vegetation loss / burial
         "dMNDWI": post["MNDWI"] - pre["MNDWI"],   # + = new water
         "dNBR": pre["NBR"] - post["NBR"],         # + = surface scouring
-        "dVV": s1_post["VV"] - s1_pre["VV"],
-        "dVH": s1_post["VH"] - s1_pre["VH"],
+        "dVV": despeckle(s1_post["VV"]) - despeckle(s1_pre["VV"]),
+        "dVH": despeckle(s1_post["VH"]) - despeckle(s1_pre["VH"]),
     }
+    ch, offsets = {}, {}
+    for k, v in raw.items():
+        ch[k], offsets[k] = debias(v)
+    return ch, offsets
 
 
 def damage_mask(ch):
@@ -283,7 +323,9 @@ def main():
     zones = gpd.read_file(cfg.VECTOR / "zones.shp").to_crs(profile["crs"])
 
     print("Change detection")
-    ch = change(s2_pre, s2_post, s1_pre, s1_post)
+    ch, offsets = change(s2_pre, s2_post, s1_pre, s1_post)
+    print("  scene offsets removed: "
+          + ", ".join(f"{k} {v:+.3f}" for k, v in offsets.items()))
     mask = damage_mask(ch)
     write_stack(ch, profile, cfg.DERIVED / "change_stack.tif")
 

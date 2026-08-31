@@ -100,6 +100,33 @@ pixels fall through to the SAR rather than silently reading as "no change". Both
 the console output and every diverging map report the usable-optical percentage,
 so you can see how much of the result is carried by SAR alone.
 
+### Three corrections the first real run forced
+
+Applying the proposal's thresholds to the raw imagery reported **172.8 km²** of
+change — 17% of the catchment, spread evenly across every zone. That was wrong,
+and each cause needed a different fix:
+
+1. **Speckle.** Only one Sentinel-1 scene exists per window on orbit 85, so
+   `median()` did no temporal averaging and the dB difference was ~2 dB of pure
+   speckle — symmetric about zero, 13% of it past the 3 dB threshold. Fixed by
+   `despeckle()`, a 5×5 boxcar multilook in **linear power** (averaging decibels
+   is a log-domain mean and biases low). Residual noise is now 0.98 dB and 0.9%
+   of pixels cross the threshold. `test_despeckle_suppresses_speckle` guards it.
+2. **Shadow and snow in the cloud mask.** The scene-classification keep-list
+   originally included dark/shadow, unclassified and snow. In these gorges NDVI
+   in shadow is unstable between dates, and fresh snowfall between composites is
+   an enormous index change unrelated to the flood. Tightening `SCL_KEEP` to
+   vegetation/bare/water dropped the scene-wide dNDVI bias from **+0.099 to
+   +0.007** — the bias *was* those pixels.
+3. **Residual scene offset.** `debias()` subtracts the median from each
+   difference image so unchanged ground sits at zero and the proposal's fixed
+   thresholds mean what they say. The offsets removed are printed every run.
+   This is only safe because the flood corridor is a small fraction of the ROI;
+   tighten the ROI to just the affected valley and it would subtract signal.
+
+After all three: **29.5 km²** in 1,966 polygons, and the zones separate
+(Timure 11.3%, Rasuwagadhi 9.4%, Syabrubesi 6.6%) instead of sitting flat.
+
 ## Check it
 
 ```bash
@@ -125,6 +152,13 @@ pytest, no fixtures.
 - **Thresholds are the proposal's, not calibrated.** They are the right starting
   point, not a validated classifier. Digitise a handful of known-damaged and
   known-intact polygons from the PlanetScope imagery and tune against those.
+- **Z2b Ghattekhola has only 7.1% usable optical pixels.** Its 1.6% figure rests
+  almost entirely on SAR and should not be quoted without that caveat. Check
+  `optical_valid_pct` in `zonal_damage.csv` before citing any zone.
+- **The high-altitude collapse source is out of scope of the mask.** Excluding
+  snow/ice from `SCL_KEEP` is what stops fresh snowfall reading as damage, but it
+  also means this pipeline cannot speak to the genesis zone in proposal §2. That
+  needs a snow/ice-aware analysis with its own thresholds.
 - **Not built:** the HEC-RAS / Telemac-2D hydrodynamic model (§6.2) and
   PlanetScope ingestion (commercial, needs a Planet API key). The DEM export is
   the input HEC-RAS needs.

@@ -24,7 +24,13 @@ CRS = "EPSG:32645"
 DEBRIS = (np.s_[60:100], np.s_[60:100])   # 40x40, visible to optical + SAR
 CLOUD = (np.s_[20:60], np.s_[20:60])      # optical is NaN here
 SAR_ONLY = (np.s_[30:50], np.s_[30:50])   # 20x20 inside the cloud, SAR-only
-EXPECTED_PX = 40 * 40 + 20 * 20
+
+# The speckle filter blurs patch edges by SPECKLE_WIN//2, so assert on eroded
+# interiors and on background well clear of the patches rather than on an exact
+# pixel count.
+PAD = cfg.SPECKLE_WIN // 2 + 1
+DEBRIS_IN = (np.s_[60 + PAD:100 - PAD], np.s_[60 + PAD:100 - PAD])
+SAR_ONLY_IN = (np.s_[30 + PAD:50 - PAD], np.s_[30 + PAD:50 - PAD])
 
 
 def _write(path, bands):
@@ -89,18 +95,39 @@ def test_nan_never_counts_as_damage():
     assert not mask.any(), "all-NaN input must produce no damage"
 
 
+def test_despeckle_suppresses_speckle():
+    """Regression guard: unfiltered single-look SAR trips the dB threshold on
+    noise alone. This is the defect that made the first real run report 17% of
+    the catchment as damaged."""
+    rng = np.random.default_rng(0)
+    # Single-look intensity speckle is exponential in linear power.
+    pre = 10 * np.log10(rng.exponential(1.0, (300, 300)))
+    post = 10 * np.log10(rng.exponential(1.0, (300, 300)))
+
+    raw = (np.abs(post - pre) > cfg.T_DSAR_DB).mean()
+    filtered = (np.abs(s2.despeckle(post) - s2.despeckle(pre)) > cfg.T_DSAR_DB).mean()
+    assert raw > 0.30, f"fixture is not noisy enough to be a real test ({raw:.2%})"
+    assert filtered < 0.02, f"despeckle left {filtered:.2%} of pure noise above threshold"
+
+
 def test_pipeline(root):
     for name in ("RASTER", "VECTOR", "DERIVED", "TABLES", "MAPS"):
         setattr(cfg, name, root / name.lower())
     s2.main()
 
     with rasterio.open(cfg.DERIVED / "damage_mask.tif") as src:
-        got = int(src.read(1).sum())
-    assert got == EXPECTED_PX, f"damaged pixels {got} != {EXPECTED_PX}"
+        mask = src.read(1).astype(bool)
+
+    assert mask[DEBRIS_IN].all(), "debris patch interior must be flagged"
+    assert mask[SAR_ONLY_IN].all(), "SAR-only patch under cloud must be flagged"
+
+    # Everything clear of both patches: SAR_ONLY spans 30:50, DEBRIS 60:100,
+    # plus the filter's edge bleed either side.
+    quiet = np.ones((N, N), bool)
+    quiet[26:104, 26:104] = False
+    assert not mask[quiet].any(), f"{int(mask[quiet].sum())} false positives in quiet ground"
 
     polys = gpd.read_file(cfg.DERIVED / "damage_polygons.shp")
-    area_km2 = polys["area_m2"].sum() / 1e6
-    assert abs(area_km2 - EXPECTED_PX * PIXEL**2 / 1e6) < 1e-9, area_km2
     assert len(polys) == 2, f"expected 2 patches, got {len(polys)}"
 
     import pandas as pd
@@ -118,6 +145,7 @@ def test_pipeline(root):
 if __name__ == "__main__":
     test_nd_is_nan_safe()
     test_nan_never_counts_as_damage()
+    test_despeckle_suppresses_speckle()
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         build_fixture(root)
