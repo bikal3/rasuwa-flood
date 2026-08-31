@@ -1,0 +1,386 @@
+{
+ "event": {
+  "title": "2026 Bhote Koshi & Trishuli transboundary flood",
+  "date": "2026-08-26",
+  "roi": [
+   85.25,
+   28.05,
+   85.55,
+   28.35
+  ],
+  "hand_max_m": 50.0,
+  "min_drainage_km2": 8.0,
+  "thresholds": {
+   "dNDVI": 0.25,
+   "dMNDWI": 0.3,
+   "dSAR_dB": 3.0
+  }
+ },
+ "validation": {
+  "observed_in_corridor_pct": 90.6,
+  "observed_flagged_by_stage2_pct": 32.7,
+  "observed_flagged_by_stage3_pct": 29.5,
+  "detected_inside_observed_pct": 41.7,
+  "observed_share_of_roi_pct": 0.59,
+  "precision_vs_base_rate": 70.9,
+  "iou_pct": 20.9,
+  "hits": [
+   {
+    "target": "Destroyed buildings",
+    "n_in_roi": 775,
+    "in_corridor_pct": 96.1,
+    "corridor_base_pct": 4.35,
+    "in_detected_pct": 55.5,
+    "detected_base_pct": 0.41,
+    "in_change_pct": 57.7,
+    "change_base_pct": 2.93
+   },
+   {
+    "target": "Bridges washed out",
+    "n_in_roi": 13,
+    "in_corridor_pct": 100.0,
+    "corridor_base_pct": 4.35,
+    "in_detected_pct": 38.5,
+    "detected_base_pct": 0.41,
+    "in_change_pct": 38.5,
+    "change_base_pct": 2.93
+   },
+   {
+    "target": "Roads destroyed",
+    "n_in_roi": 172,
+    "in_corridor_pct": 94.2,
+    "corridor_base_pct": 4.35,
+    "in_detected_pct": 47.7,
+    "detected_base_pct": 0.41,
+    "in_change_pct": 49.4,
+    "change_base_pct": 2.93
+   },
+   {
+    "target": "Hydropowers exposed",
+    "n_in_roi": 4,
+    "in_corridor_pct": 25.0,
+    "corridor_base_pct": 4.35,
+    "in_detected_pct": 0.0,
+    "detected_base_pct": 0.41,
+    "in_change_pct": 0.0,
+    "change_base_pct": 2.93
+   }
+  ]
+ },
+ "areas": {
+  "ROI area": 980.2436,
+  "HOT observed flood extent, whole corridor": 31.707928472905568,
+  "HOT observed flood extent, inside ROI": 5.7672,
+  "stage 2 change, inside ROI": 29.458,
+  "stage 3 flood damage, inside ROI": 4.0828,
+  "stage 3 HAND corridor, inside ROI": 43.7264
+ },
+ "exposure": [
+  {
+   "layer": "Bridges assessed",
+   "total": 58,
+   "in_flood_extent": 48
+  },
+  {
+   "layer": "Bridges washed out",
+   "total": 39,
+   "in_flood_extent": 39
+  },
+  {
+   "layer": "Hydropower projects exposed",
+   "total": 10,
+   "in_flood_extent": 4
+  },
+  {
+   "layer": "Buildings mapped",
+   "total": 17510,
+   "in_flood_extent": 5516
+  },
+  {
+   "layer": "Buildings destroyed",
+   "total": 1611,
+   "in_flood_extent": 1575
+  },
+  {
+   "layer": "Road segments mapped",
+   "total": 2098,
+   "in_flood_extent": 934
+  },
+  {
+   "layer": "Road segments destroyed",
+   "total": 264,
+   "in_flood_extent": 256
+  },
+  {
+   "layer": "Health facilities",
+   "total": 5,
+   "in_flood_extent": 3
+  },
+  {
+   "layer": "Education facilities",
+   "total": 57,
+   "in_flood_extent": 17
+  },
+  {
+   "layer": "Populated places",
+   "total": 257,
+   "in_flood_extent": 63
+  }
+ ],
+ "exposure_by_zone": [
+  {
+   "zone_id": "Z1",
+   "label": "Rasuwagadhi / Gyirong border",
+   "bridges": 2,
+   "bridges_washed_out": 2,
+   "hydropowers": 0,
+   "buildings_destroyed": 177,
+   "roads_destroyed": 80
+  },
+  {
+   "zone_id": "Z2a",
+   "label": "Timure dry port",
+   "bridges": 0,
+   "bridges_washed_out": 0,
+   "hydropowers": 1,
+   "buildings_destroyed": 281,
+   "roads_destroyed": 27
+  },
+  {
+   "zone_id": "Z2b",
+   "label": "Ghattekhola",
+   "bridges": 1,
+   "bridges_washed_out": 1,
+   "hydropowers": 0,
+   "buildings_destroyed": 8,
+   "roads_destroyed": 2
+  },
+  {
+   "zone_id": "Z3",
+   "label": "Rasuwagadhi HPP 111 MW",
+   "bridges": 2,
+   "bridges_washed_out": 2,
+   "hydropowers": 0,
+   "buildings_destroyed": 179,
+   "roads_destroyed": 85
+  },
+  {
+   "zone_id": "Z4",
+   "label": "Syabrubesi",
+   "bridges": 2,
+   "bridges_washed_out": 2,
+   "hydropowers": 1,
+   "buildings_destroyed": 215,
+   "roads_destroyed": 24
+  },
+  {
+   "zone_id": "Z5",
+   "label": "Betrawati",
+   "bridges": 3,
+   "bridges_washed_out": 3,
+   "hydropowers": 0,
+   "buildings_destroyed": 398,
+   "roads_destroyed": 37
+  }
+ ],
+ "bridges_by_status": {
+  "Washed out": 39,
+  "Intact": 15,
+  "Damaged": 4
+ },
+ "buildings_by_status": {
+  "Standing": 15884,
+  "Destroyed": 1611,
+  "Damaged": 15
+ },
+ "roads_by_status": {
+  "Standing": 1834,
+  "Destroyed": 264
+ },
+ "damaged_features_by_type": {
+  "building": 1626,
+  "road": 226,
+  "natural": 49,
+  "bridge": 42,
+  "amenity": 22,
+  "tourism": 21,
+  "land use": 18,
+  "barrier": 13,
+  "power": 9,
+  "building part": 9,
+  "man made": 8,
+  "waterway": 6
+ },
+ "zonal_flood": [
+  {
+   "zone_id": "Z1",
+   "label": "Rasuwagadhi / Gyirong border",
+   "zone_km2": 6.432,
+   "corridor_km2": 0.936,
+   "change_km2": 0.605,
+   "flood_km2": 0.184,
+   "off_corridor_pct": 69.6,
+   "channel_len_m": 3687.0,
+   "scour_width_m": 49.9,
+   "note": null
+  },
+  {
+   "zone_id": "Z2a",
+   "label": "Timure dry port",
+   "zone_km2": 8.564,
+   "corridor_km2": 0.574,
+   "change_km2": 0.964,
+   "flood_km2": 0.236,
+   "off_corridor_pct": 75.5,
+   "channel_len_m": 2811.0,
+   "scour_width_m": 84.0,
+   "note": null
+  },
+  {
+   "zone_id": "Z2b",
+   "label": "Ghattekhola",
+   "zone_km2": 7.052,
+   "corridor_km2": 0.584,
+   "change_km2": 0.112,
+   "flood_km2": 0.036,
+   "off_corridor_pct": 68.0,
+   "channel_len_m": 4667.0,
+   "scour_width_m": 7.7,
+   "note": null
+  },
+  {
+   "zone_id": "Z3",
+   "label": "Rasuwagadhi HPP 111 MW",
+   "zone_km2": 7.058,
+   "corridor_km2": 1.009,
+   "change_km2": 0.651,
+   "flood_km2": 0.361,
+   "off_corridor_pct": 44.5,
+   "channel_len_m": 6147.0,
+   "scour_width_m": 58.8,
+   "note": null
+  },
+  {
+   "zone_id": "Z4",
+   "label": "Syabrubesi",
+   "zone_km2": 12.543,
+   "corridor_km2": 1.386,
+   "change_km2": 0.827,
+   "flood_km2": 0.444,
+   "off_corridor_pct": 46.3,
+   "channel_len_m": 7198.0,
+   "scour_width_m": 61.7,
+   "note": null
+  },
+  {
+   "zone_id": "Z5",
+   "label": "Betrawati",
+   "zone_km2": null,
+   "corridor_km2": null,
+   "change_km2": null,
+   "flood_km2": null,
+   "off_corridor_pct": null,
+   "channel_len_m": null,
+   "scour_width_m": null,
+   "note": "outside raster"
+  }
+ ],
+ "change_vs_hand": [
+  {
+   "hand_lo_m": 0,
+   "hand_hi_m": 5.0,
+   "roi_pct": 1.49,
+   "change_pct": 9.59,
+   "vs_far_field": 4.55
+  },
+  {
+   "hand_lo_m": 5,
+   "hand_hi_m": 10.0,
+   "roi_pct": 0.36,
+   "change_pct": 8.71,
+   "vs_far_field": 4.14
+  },
+  {
+   "hand_lo_m": 10,
+   "hand_hi_m": 20.0,
+   "roi_pct": 0.71,
+   "change_pct": 9.21,
+   "vs_far_field": 4.37
+  },
+  {
+   "hand_lo_m": 20,
+   "hand_hi_m": 30.0,
+   "roi_pct": 0.66,
+   "change_pct": 9.75,
+   "vs_far_field": 4.63
+  },
+  {
+   "hand_lo_m": 30,
+   "hand_hi_m": 50.0,
+   "roi_pct": 1.23,
+   "change_pct": 9.11,
+   "vs_far_field": 4.33
+  },
+  {
+   "hand_lo_m": 50,
+   "hand_hi_m": 100.0,
+   "roi_pct": 2.86,
+   "change_pct": 6.7,
+   "vs_far_field": 3.18
+  },
+  {
+   "hand_lo_m": 100,
+   "hand_hi_m": 200.0,
+   "roi_pct": 5.77,
+   "change_pct": 4.93,
+   "vs_far_field": 2.34
+  },
+  {
+   "hand_lo_m": 200,
+   "hand_hi_m": 500.0,
+   "roi_pct": 19.86,
+   "change_pct": 3.53,
+   "vs_far_field": 1.68
+  },
+  {
+   "hand_lo_m": 500,
+   "hand_hi_m": null,
+   "roi_pct": 67.07,
+   "change_pct": 2.11,
+   "vs_far_field": 1.0
+  }
+ ],
+ "dropped_bridges": [
+  "Thulo bharkhu"
+ ],
+ "layer_bytes": {
+  "flood_extent": 52036,
+  "aoi": 38893,
+  "bridges": 15784,
+  "hydropowers": 2867,
+  "buildings_damaged": 515024,
+  "roads_damaged": 129876,
+  "facilities": 19141,
+  "places": 175176,
+  "waterways": 350122,
+  "detected_damage": 177682,
+  "corridor": 407376,
+  "channel": 211616,
+  "zones": 11213,
+  "roi": 394
+ },
+ "sources": [
+  {
+   "name": "Nepal Flood 2026 Flood Affected Area, Bhote Koshi and Trishuli",
+   "org": "Humanitarian OpenStreetMap Team (HOT)",
+   "licence": "ODC-ODbL",
+   "url": "https://data.humdata.org/dataset/hot_flood_npl"
+  },
+  {
+   "name": "Sentinel-2 L2A, Sentinel-1 GRD, SRTM GL1",
+   "org": "Copernicus / NASA via Google Earth Engine",
+   "licence": "Copernicus open data / public domain",
+   "url": "https://developers.google.com/earth-engine/datasets"
+  }
+ ]
+}

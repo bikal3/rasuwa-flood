@@ -1,0 +1,288 @@
+/* Survey-report aesthetic: warm paper, ink hairlines, monospaced figures.
+   The palette is config.py's, so the site and the matplotlib plates in maps/
+   read as one publication. */
+
+:root {
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --paper: #fcfcfb;
+  --paper-2: #f4f3ee;
+  --blue: #2a78d6;
+  --red: #d03b3b;
+  --amber: #b8860b;
+  --rule: 1px solid var(--grid);
+
+  --sans: "IBM Plex Sans", ui-sans-serif, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+  --display: "Fraunces", Georgia, serif;
+
+  --pad: clamp(1.25rem, 4vw, 4rem);
+  --max: 1280px;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+  /* Faint paper tooth so the background is not a flat fill. */
+  background-image:
+    radial-gradient(circle at 15% 10%, rgba(42, 120, 214, .05), transparent 45%),
+    radial-gradient(circle at 85% 0%, rgba(208, 59, 59, .045), transparent 40%);
+  background-attachment: fixed;
+}
+
+h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -.015em; margin: 0; }
+a { color: var(--blue); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:hover { color: var(--red); }
+
+.wrap { max-width: var(--max); margin: 0 auto; padding-inline: var(--pad); }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* ---------- masthead ---------- */
+
+.masthead { border-bottom: var(--rule); padding-block: clamp(2.5rem, 6vw, 5rem) 0; }
+.kicker {
+  font-family: var(--mono); font-size: .7rem; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--red); margin-bottom: 1.25rem;
+  display: flex; gap: .75rem; align-items: center; flex-wrap: wrap;
+}
+.kicker::before {
+  content: ""; width: 2.5rem; height: 1px; background: var(--red); display: block;
+}
+.masthead h1 {
+  font-size: clamp(2.4rem, 6.5vw, 5rem); line-height: .98;
+  font-weight: 600; max-width: 18ch;
+}
+.masthead h1 em {
+  font-style: italic; font-weight: 300; color: var(--ink-2);
+  font-variation-settings: "SOFT" 40;
+}
+.standfirst {
+  max-width: 62ch; margin-top: 1.75rem; font-size: 1.06rem; color: var(--ink-2);
+}
+
+.statbar {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  margin-top: clamp(2rem, 5vw, 3.5rem); border-top: var(--rule);
+}
+.stat {
+  padding: 1.4rem 1.25rem 1.6rem; border-right: var(--rule);
+  animation: rise .7s cubic-bezier(.2, .7, .3, 1) backwards;
+}
+.stat:last-child { border-right: 0; }
+.stat b {
+  display: block; font-family: var(--mono); font-weight: 500;
+  font-size: clamp(1.5rem, 3.2vw, 2.1rem); line-height: 1.1; letter-spacing: -.03em;
+}
+.stat span { display: block; font-size: .78rem; color: var(--muted); margin-top: .45rem; }
+.stat.is-red b { color: var(--red); }
+.stat.is-blue b { color: var(--blue); }
+
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+
+/* ---------- sections ---------- */
+
+section { padding-block: clamp(3rem, 7vw, 5.5rem); border-bottom: var(--rule); }
+.sec-head { display: flex; gap: 1.5rem; align-items: baseline; margin-bottom: 2rem; flex-wrap: wrap; }
+.sec-no {
+  font-family: var(--mono); font-size: .72rem; color: var(--red);
+  letter-spacing: .16em; padding-top: .4rem;
+}
+.sec-head h2 { font-size: clamp(1.6rem, 3.4vw, 2.4rem); }
+.sec-head p { margin: .35rem 0 0; color: var(--ink-2); max-width: 66ch; }
+
+.lede { max-width: 68ch; color: var(--ink-2); margin: 0 0 2rem; font-size: 1rem; }
+.lede strong { color: var(--ink); font-weight: 600; }
+
+/* ---------- map ---------- */
+
+.mapsec { padding: 0; border-bottom: var(--rule); }
+.maprow {
+  display: grid; grid-template-columns: minmax(0, 1fr) 310px;
+  height: min(82vh, 880px); min-height: 520px;
+}
+.mapcanvas { position: relative; background: var(--paper-2); }
+/* The host div must fill the cell before Leaflet initialises, or the map is
+   built against a zero-height container and fitBounds picks the wrong zoom. */
+.mapfill { position: absolute; inset: 0; }
+.mapcanvas .leaflet-container { background: #dcdad2; font-family: var(--sans); }
+
+.panel {
+  border-left: var(--rule); overflow-y: auto; background: var(--paper);
+  display: flex; flex-direction: column;
+}
+.panel h3 {
+  font-family: var(--mono); font-size: .68rem; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--muted); font-weight: 500;
+  padding: 1rem 1.15rem .55rem;
+}
+.panel-group { border-bottom: var(--rule); padding-bottom: .7rem; }
+
+.layer {
+  display: flex; align-items: center; gap: .65rem; width: 100%;
+  padding: .34rem 1.15rem; border: 0; background: none; cursor: pointer;
+  font: inherit; font-size: .83rem; color: var(--ink-2); text-align: left;
+  transition: background .13s, color .13s;
+}
+.layer:hover { background: var(--paper-2); color: var(--ink); }
+.layer[aria-pressed="true"] { color: var(--ink); font-weight: 500; }
+.layer .box {
+  width: 15px; height: 15px; flex: none; border-radius: 3px;
+  border: 1.5px solid var(--grid); position: relative; transition: .13s;
+}
+.layer[aria-pressed="true"] .box { border-color: currentColor; }
+.layer .swatch {
+  width: 9px; height: 9px; border-radius: 2px; flex: none;
+  outline: 1px solid rgba(0, 0, 0, .12); outline-offset: -1px;
+}
+.layer .count {
+  margin-left: auto; font-family: var(--mono); font-size: .7rem; color: var(--muted);
+}
+
+.basemaps { display: flex; gap: .3rem; padding: .3rem 1.15rem 1rem; flex-wrap: wrap; }
+.basemaps button {
+  font: inherit; font-size: .74rem; font-family: var(--mono);
+  padding: .28rem .6rem; border: var(--rule); border-radius: 3px;
+  background: var(--paper); color: var(--ink-2); cursor: pointer; transition: .13s;
+}
+.basemaps button[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.basemaps button:hover { border-color: var(--ink); }
+
+.inspector { padding: 1rem 1.15rem 1.4rem; border-top: var(--rule); margin-top: auto; }
+.inspector .empty { color: var(--muted); font-size: .8rem; font-style: italic; }
+.inspector h4 { margin: 0 0 .5rem; font-size: .95rem; font-family: var(--display); }
+.inspector dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: .18rem .8rem; font-size: .8rem; }
+.inspector dt { color: var(--muted); }
+.inspector dd { margin: 0; font-family: var(--mono); font-size: .76rem; word-break: break-word; }
+.tag {
+  display: inline-block; font-family: var(--mono); font-size: .66rem;
+  letter-spacing: .06em; text-transform: uppercase; padding: .1rem .4rem;
+  border-radius: 3px; background: var(--paper-2); color: var(--ink-2);
+}
+.tag.bad { background: rgba(208, 59, 59, .12); color: var(--red); }
+.tag.warn { background: rgba(184, 134, 11, .14); color: var(--amber); }
+.tag.ok { background: rgba(42, 120, 214, .12); color: var(--blue); }
+
+.zoombar { display: flex; flex-wrap: wrap; gap: .3rem; padding: .3rem 1.15rem 1rem; }
+.zoombar button {
+  font: inherit; font-family: var(--mono); font-size: .72rem;
+  padding: .24rem .5rem; border: var(--rule); border-radius: 3px;
+  background: var(--paper); color: var(--ink-2); cursor: pointer;
+}
+.zoombar button:hover { border-color: var(--ink); color: var(--ink); }
+
+.maploading {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  background: var(--paper-2); font-family: var(--mono); font-size: .78rem;
+  color: var(--muted); z-index: 500; pointer-events: none;
+  transition: opacity .4s; letter-spacing: .1em; text-transform: uppercase;
+}
+.maploading[data-done="true"] { opacity: 0; }
+
+/* ---------- tables ---------- */
+
+.tbl-scroll { overflow-x: auto; border: var(--rule); border-radius: 4px; background: var(--paper); }
+table { border-collapse: collapse; width: 100%; font-size: .84rem; }
+caption {
+  caption-side: top; text-align: left; padding: .85rem 1rem .7rem;
+  font-family: var(--mono); font-size: .68rem; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--muted); border-bottom: var(--rule);
+}
+th, td { padding: .5rem 1rem; text-align: left; border-bottom: var(--rule); }
+th {
+  font-weight: 500; font-size: .7rem; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--muted); white-space: nowrap;
+}
+td.n, th.n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: var(--paper-2); }
+
+/* ---------- bar chart ---------- */
+
+.bars { display: grid; gap: .35rem; }
+.bar-row { display: grid; grid-template-columns: 5.5rem 1fr 4.2rem; gap: .7rem; align-items: center; font-size: .8rem; }
+.bar-row .lbl { font-family: var(--mono); font-size: .73rem; color: var(--ink-2); text-align: right; }
+.bar-track { background: var(--paper-2); border-radius: 2px; height: 20px; overflow: hidden; }
+.bar-fill {
+  height: 100%; border-radius: 2px; transform-origin: left;
+  animation: grow .9s cubic-bezier(.2, .8, .3, 1) backwards;
+}
+@keyframes grow { from { transform: scaleX(0); } }
+.bar-row .val { font-family: var(--mono); font-size: .76rem; color: var(--ink-2); }
+
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: clamp(1.5rem, 4vw, 3rem); }
+
+.callout {
+  border-left: 3px solid var(--red); background: var(--paper-2);
+  padding: 1.1rem 1.3rem; margin: 2rem 0 0; border-radius: 0 4px 4px 0;
+}
+.callout p { margin: 0; max-width: 70ch; font-size: .92rem; color: var(--ink-2); }
+.callout p + p { margin-top: .7rem; }
+.callout strong { color: var(--ink); }
+
+.note { font-size: .8rem; color: var(--muted); margin-top: .9rem; max-width: 74ch; }
+
+/* ---------- downloads ---------- */
+
+.files { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: .5rem; }
+.file {
+  display: flex; justify-content: space-between; align-items: baseline; gap: .6rem;
+  padding: .6rem .8rem; border: var(--rule); border-radius: 4px;
+  background: var(--paper); text-decoration: none; color: var(--ink);
+  font-size: .82rem; transition: .14s;
+}
+.file:hover { border-color: var(--ink); transform: translateY(-1px); color: var(--ink); }
+.file span { font-family: var(--mono); font-size: .7rem; color: var(--muted); }
+
+footer { padding-block: 3rem 4rem; color: var(--muted); font-size: .8rem; }
+footer .cols { gap: 2rem; }
+footer h3 { font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); margin-bottom: .6rem; }
+footer p { margin: 0 0 .5rem; max-width: 48ch; }
+
+/* ---------- leaflet chrome, restyled ---------- */
+
+.leaflet-control-attribution {
+  font-family: var(--mono); font-size: 9.5px; background: rgba(252, 252, 251, .88) !important;
+}
+.leaflet-bar a {
+  background: var(--paper); color: var(--ink); border-bottom-color: var(--grid);
+}
+.leaflet-bar a:hover { background: var(--paper-2); }
+.leaflet-popup-content-wrapper {
+  border-radius: 4px; font-family: var(--sans); box-shadow: 0 6px 22px rgba(0, 0, 0, .16);
+}
+
+.legend-float {
+  position: absolute; left: 12px; bottom: 22px; z-index: 600;
+  background: rgba(252, 252, 251, .93); border: var(--rule); border-radius: 4px;
+  padding: .6rem .75rem; font-size: .72rem; backdrop-filter: blur(6px);
+  max-width: 210px; pointer-events: none;
+}
+.legend-float b {
+  display: block; font-family: var(--mono); font-size: .62rem; letter-spacing: .13em;
+  text-transform: uppercase; color: var(--muted); font-weight: 500; margin-bottom: .4rem;
+}
+.legend-float div { display: flex; align-items: center; gap: .45rem; margin-top: .18rem; color: var(--ink-2); }
+.legend-float i { width: 11px; height: 11px; border-radius: 2px; flex: none; }
+
+@media (max-width: 900px) {
+  .maprow { grid-template-columns: 1fr; height: auto; }
+  .mapcanvas { height: 62vh; }
+  .panel { border-left: 0; border-top: var(--rule); max-height: 420px; }
+  .stat { border-right: 0; border-bottom: var(--rule); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  html { scroll-behavior: auto; }
+}
