@@ -34,24 +34,6 @@ function markerFor(feature, latlng, layer) {
   });
 }
 
-function popupHtml(layer, props) {
-  const title = layer.title ? layer.title(props) : layer.label;
-  const rows = Object.entries(props)
-    .filter(([, v]) => v !== null && v !== "" && v !== undefined)
-    .slice(0, 8)
-    .map(
-      ([k, v]) =>
-        `<tr><td style="color:#898781;padding-right:.6rem">${k.replace(/_/g, " ")}</td>` +
-        `<td style="font-family:'IBM Plex Mono',monospace">${v}</td></tr>`
-    )
-    .join("");
-  return (
-    `<b style="font-family:Fraunces,Georgia,serif;font-size:.95rem">${title}</b>` +
-    `<div style="color:#898781;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;margin:.25rem 0 .4rem">${layer.label}</div>` +
-    `<table style="font-size:.75rem;border-collapse:collapse">${rows}</table>`
-  );
-}
-
 export default function MapView() {
   const host = useRef(null);
   const map = useRef(null);
@@ -103,16 +85,11 @@ export default function MapView() {
             pane: layer.kind,
             style: () => layer.style || {},
             pointToLayer: (f, ll) => markerFor(f, ll, layer),
-            onEachFeature: (f, lyr) => {
-              const props = f.properties || {};
-              lyr.bindPopup(() => popupHtml(layer, props), {
-                closeButton: true,
-                maxWidth: 320,
-              });
+            onEachFeature: (f, lyr) =>
               lyr.on("click", () => {
+                const props = f.properties || {};
                 setSelected({ layer: layer.label, props, title: layer.title?.(props) });
-              });
-            },
+              }),
           });
           loaded[layer.id] = g;
           groups.current[layer.id] = g;
