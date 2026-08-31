@@ -118,3 +118,29 @@ def gtiff_profile(ref, count, dtype, nodata):
         count=count, dtype=dtype, nodata=nodata,
         compress="deflate", tiled=True, blockxsize=256, blockysize=256,
     )
+
+
+# --- Flood corridor (stage 3) ----------------------------------------------
+# Stage 2 thresholds fire anywhere in the ROI. A debris flood is confined to the
+# valley floor, so stage 3 keeps only the change that is hydrologically part of
+# the river corridor. Two knobs define that corridor:
+#
+# Upstream area a cell must drain before it counts as a river rather than a
+# hillslope rill. Lower = denser network = wider corridor. Note the ROI clips
+# the Bhote Koshi's Tibetan headwaters, so accumulation on the first few km
+# below the north edge is an undercount -- see README.
+MIN_DRAINAGE_KM2 = 8.0
+# Height Above Nearest Drainage ceiling, metres. The proposal puts the surge at
+# +7 to +9 m; the rest of the budget is channel-bank relief, superelevation of a
+# fast flow through bends, and SRTM's vertical error on a 30 m posting resampled
+# to 20 m in terrain that is anything but flat.
+#
+# 50, not the 30 the surge figure alone would argue for, because the run says so:
+# data/tables/change_vs_hand.csv puts the stage 2 change rate at a flat 9.1-9.8%
+# from 0 m to 50 m and then falling away (6.7% by 100 m, 2.1% beyond 500 m). The
+# affected plateau ends at ~50 m, so a 30 m cut was slicing through the middle of
+# the signal. Re-read that table after changing the ROI or the thresholds.
+HAND_MAX_M = 50.0
+# SRTM voids and the reprojection collar come back as 0 m. Nothing in Rasuwa is
+# at sea level, so anything below this is not ground.
+DEM_MIN_M = 1.0
