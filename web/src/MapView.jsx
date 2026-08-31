@@ -138,16 +138,20 @@ export default function MapView() {
     tiles.current.bringToBack();
   }, [basemap]);
 
-  // Toggles.
+  // A layer draws when it is switched on AND the map is close enough for it to
+  // mean anything. Re-runs on zoom, so crossing a threshold adds or drops the
+  // layer without the toggle changing.
   useEffect(() => {
     const m = map.current;
     if (!m) return;
-    for (const [id, g] of Object.entries(groups.current)) {
-      const want = visible.has(id);
+    for (const layer of LAYERS) {
+      const g = groups.current[layer.id];
+      if (!g) continue;
+      const want = visible.has(layer.id) && zoom >= (layer.minZoom ?? 0);
       if (want && !m.hasLayer(g)) g.addTo(m);
       if (!want && m.hasLayer(g)) m.removeLayer(g);
     }
-  }, [visible, ready]);
+  }, [visible, ready, zoom]);
 
   const toggle = (id) =>
     setVisible((prev) => {
@@ -266,7 +270,13 @@ export default function MapView() {
                 key={l.id}
                 className="layer"
                 aria-pressed={visible.has(l.id)}
+                data-dormant={visible.has(l.id) && zoom < (l.minZoom ?? 0)}
                 onClick={() => toggle(l.id)}
+                title={
+                  l.minZoom
+                    ? `Draws from zoom ${l.minZoom} — click the value to jump there`
+                    : undefined
+                }
               >
                 <span className="box">
                   <span
@@ -279,7 +289,11 @@ export default function MapView() {
                   />
                 </span>
                 {l.label}
-                <span className="count">{counts[l.id] ?? "—"}</span>
+                <span className="count">
+                  {visible.has(l.id) && zoom < (l.minZoom ?? 0)
+                    ? `z${l.minZoom}+`
+                    : (counts[l.id] ?? "—")}
+                </span>
               </button>
             ))}
           </div>
