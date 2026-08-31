@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.DS_Store
+
+# Imagery and derived rasters: ~160 MB of GeoTIFF, all regenerable.
+# stage1_export.py rebuilds data/raster + data/vector from Earth Engine;
+# stage2_analysis.py rebuilds data/derived from those.
+data/*
+!data/tables/
+data/tables/*
+!data/tables/*.csv
+
+# maps/ IS committed -- the PNGs are the readable result, and a reviewer without
+# Earth Engine credentials cannot regenerate them.
