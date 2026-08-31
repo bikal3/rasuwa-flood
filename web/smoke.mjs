@@ -118,6 +118,24 @@ for (const name of Object.keys(summary.layer_bytes)) {
   want(r.ok, `layer file missing: ${name}.geojson`);
 }
 
+// Drive the before/after slider: it is lazy, so nothing exists until clicked.
+const swipeBtn = root.querySelector('[aria-label="Toggle before and after imagery"]');
+want(swipeBtn, "before/after toggle is missing");
+if (swipeBtn) {
+  swipeBtn.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
+  for (let i = 0; i < 60 && !root.querySelector(".swipe-tag span"); i++) {
+    await new Promise((r) => setTimeout(r, 25));
+  }
+  const sw = root.querySelector(".swipe");
+  want(sw, "swipe divider did not appear after activation");
+  const tags = root.textContent;
+  want(tags.includes("1–25 Aug 2026"), "before label is missing its date window");
+  want(tags.includes("26 Aug – 1 Sep 2026"), "after label is missing its date window");
+  want(tags.includes("87% cloud-free") && tags.includes("17% cloud-free"),
+    "cloud-free cover is not stated on the slider");
+  want(sw?.getAttribute("style")?.includes("--x"), "divider position is not bound");
+}
+
 // Zone ids in the tables must be clickable handles onto the map.
 want((html.match(/class="zonelink"/g) || []).length >= 10,
   `zone cross-links missing (found ${(html.match(/class="zonelink"/g) || []).length})`);

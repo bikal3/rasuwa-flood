@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { LAYERS, BASEMAPS, PLACES, BRIDGE_COLOUR } from "./layers.js";
+import useSwipe, { formatWindow } from "./useSwipe.js";
 
 /**
  * Leaflet driven directly from an effect rather than through react-leaflet.
@@ -110,6 +111,7 @@ export default function MapView() {
   const [full, setFull] = useState(false);
   // Keyed by group name; the two groups are what people compare.
   const [fade, setFade] = useState({});
+  const swipe = useSwipe(map, ready);
 
   // Build once.
   useEffect(() => {
@@ -294,6 +296,23 @@ export default function MapView() {
     return () => window.removeEventListener("map:fly", onFly);
   }, []);
 
+  const dragDivider = (e) => {
+    const box = host.current?.getBoundingClientRect();
+    if (!box) return;
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    const move = (ev) =>
+      swipe.setPos(
+        Math.min(97, Math.max(3, ((ev.clientX - box.left) / box.width) * 100))
+      );
+    move(e);
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
   const toggleFull = () => {
     const el = host.current?.parentElement;
     if (!el) return;
@@ -347,7 +366,44 @@ export default function MapView() {
           <button onClick={toggleFull} title={full ? "Leave fullscreen" : "Fullscreen"} aria-label="Toggle fullscreen">
             {full ? "⤡" : "⛶"}
           </button>
+          <button
+            onClick={swipe.toggle}
+            aria-pressed={swipe.on}
+            className={swipe.on ? "act" : ""}
+            title="Before / after satellite imagery"
+            aria-label="Toggle before and after imagery"
+          >
+            ◐
+          </button>
         </div>
+
+        {swipe.on && (
+          <div className="swipe" style={{ "--x": `${swipe.pos}%` }}>
+            <div className="swipe-bar" onPointerDown={dragDivider} role="separator"
+                 aria-label="Drag to compare before and after">
+              <span className="grip">↔</span>
+            </div>
+            <div className="swipe-tag before">
+              <b>Before</b>
+              {swipe.meta && (
+                <>
+                  <span>{formatWindow(swipe.meta.s2_pre.window)}</span>
+                  <span className="cover">{swipe.meta.s2_pre.valid_pct}% cloud-free</span>
+                </>
+              )}
+            </div>
+            <div className="swipe-tag after">
+              <b>After</b>
+              {swipe.meta && (
+                <>
+                  <span>{formatWindow(swipe.meta.s2_post.window)}</span>
+                  <span className="cover">{swipe.meta.s2_post.valid_pct}% cloud-free</span>
+                </>
+              )}
+            </div>
+            {swipe.loading && <div className="swipe-load">Loading imagery…</div>}
+          </div>
+        )}
 
         <div className="legend-float">
           <b>Bridge condition</b>
