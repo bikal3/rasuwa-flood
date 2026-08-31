@@ -118,6 +118,10 @@ for (const name of Object.keys(summary.layer_bytes)) {
   want(r.ok, `layer file missing: ${name}.geojson`);
 }
 
+// The view must round-trip through the URL, or shared links are dead links.
+want(/^#[\d.]+\/-?[\d.]+\/-?[\d.]+\//.test(window.location.hash),
+  `map view was not mirrored into the URL hash (got ${JSON.stringify(window.location.hash)})`);
+
 want(errors.length === 0, `uncaught errors:\n      ${errors.slice(0, 4).join("\n      ")}`);
 
 if (process.env.DUMP) {
