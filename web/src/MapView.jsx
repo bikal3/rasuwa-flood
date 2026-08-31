@@ -276,6 +276,24 @@ export default function MapView() {
     else m.flyTo([place.view[0], place.view[1]], place.view[2], { duration: 0.9 });
   };
 
+  // Zone ids in the tables below are clickable; the geometry is already loaded.
+  useEffect(() => {
+    const onFly = (e) => {
+      const m = map.current;
+      const g = groups.current.zones;
+      if (!m || !g) return;
+      let target = null;
+      g.eachLayer((l) => {
+        if (l.feature?.properties?.zone_id === e.detail) target = l;
+      });
+      if (!target) return;
+      m.flyToBounds(target.getBounds(), { padding: [60, 60], duration: 0.9 });
+      document.getElementById("themap")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    };
+    window.addEventListener("map:fly", onFly);
+    return () => window.removeEventListener("map:fly", onFly);
+  }, []);
+
   const toggleFull = () => {
     const el = host.current?.parentElement;
     if (!el) return;

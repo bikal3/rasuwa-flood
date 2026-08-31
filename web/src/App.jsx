@@ -81,7 +81,7 @@ export default function App() {
         </div>
       </header>
 
-      <div className="mapsec">
+      <div className="mapsec" id="themap">
         <MapView />
       </div>
 

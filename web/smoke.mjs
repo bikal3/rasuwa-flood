@@ -118,6 +118,10 @@ for (const name of Object.keys(summary.layer_bytes)) {
   want(r.ok, `layer file missing: ${name}.geojson`);
 }
 
+// Zone ids in the tables must be clickable handles onto the map.
+want((html.match(/class="zonelink"/g) || []).length >= 10,
+  `zone cross-links missing (found ${(html.match(/class="zonelink"/g) || []).length})`);
+
 // The view must round-trip through the URL, or shared links are dead links.
 want(/^#[\d.]+\/-?[\d.]+\/-?[\d.]+\//.test(window.location.hash),
   `map view was not mirrored into the URL hash (got ${JSON.stringify(window.location.hash)})`);
