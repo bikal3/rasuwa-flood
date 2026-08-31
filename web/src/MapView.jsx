@@ -18,6 +18,30 @@ import { LAYERS, BASEMAPS, PLACES, BRIDGE_COLOUR } from "./layers.js";
 
 const DATA = "data";
 
+/**
+ * The view lives in the URL hash: #zoom/lat/lon/layer,layer
+ *
+ * This is a published page whose whole argument is "look at this bit of river",
+ * so a view you cannot link to is a view you cannot cite. Reading it back also
+ * makes reload non-destructive, which matters while panning around a 120 km
+ * corridor at quarter-zoom steps.
+ */
+function readHash() {
+  const m = location.hash.match(/^#([\d.]+)\/(-?[\d.]+)\/(-?[\d.]+)(?:\/(.*))?$/);
+  if (!m) return null;
+  const [, z, lat, lon, ids] = m;
+  const view = [Number(lat), Number(lon), Number(z)];
+  if (view.some((n) => !Number.isFinite(n))) return null;
+  return { view, ids: ids ? new Set(ids.split(",").filter(Boolean)) : null };
+}
+
+function writeHash(map, visible) {
+  const c = map.getCenter();
+  const hash = `#${map.getZoom()}/${c.lat.toFixed(4)}/${c.lng.toFixed(4)}` +
+    `/${[...visible].join(",")}`;
+  history.replaceState(null, "", hash);   // replace, so panning does not fill the back button
+}
+
 function markerFor(feature, latlng, layer) {
   const colour = layer.colourBy
     ? layer.colourBy(feature.properties || {})
@@ -76,7 +100,7 @@ export default function MapView() {
   const picked = useRef(null);
   const fadeRef = useRef({});   // read inside Leaflet handlers, which do not re-bind
   const [visible, setVisible] = useState(
-    () => new Set(LAYERS.filter((l) => l.on).map((l) => l.id))
+    () => readHash()?.ids ?? new Set(LAYERS.filter((l) => l.on).map((l) => l.id))
   );
   const [counts, setCounts] = useState({});
   const [basemap, setBasemap] = useState("imagery");
@@ -167,8 +191,10 @@ export default function MapView() {
       // The container is sized by CSS, which may not have settled when L.map
       // ran; fitBounds against a zero-height map picks a nonsense zoom.
       m.invalidateSize();
+      const saved = readHash();
       const extent = loaded.aoi || loaded.flood_extent;
-      if (extent) m.fitBounds(extent.getBounds(), { padding: [24, 24] });
+      if (saved) m.setView([saved.view[0], saved.view[1]], saved.view[2]);
+      else if (extent) m.fitBounds(extent.getBounds(), { padding: [24, 24] });
       setReady(true);
     })();
 
@@ -205,6 +231,17 @@ export default function MapView() {
       if (!want && m.hasLayer(g)) m.removeLayer(g);
     }
   }, [visible, ready, zoom]);
+
+  // Mirror the view into the URL. Bound after load so the initial fitBounds
+  // does not overwrite the hash we were asked to restore.
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    const sync = () => writeHash(m, visible);
+    sync();
+    m.on("moveend", sync);
+    return () => m.off("moveend", sync);
+  }, [visible, ready]);
 
   // Observed and derived damage sit on top of each other by design -- that
   // overlap is the finding. Fading one group against the other is the cheapest
