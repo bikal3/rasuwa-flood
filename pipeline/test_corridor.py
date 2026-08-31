@@ -1,6 +1,6 @@
 """Checks for stage 3's flow routing, on a valley whose answer is known on paper.
 
-    python test_corridor.py
+    python pipeline/test_corridor.py
 
 A synthetic V-valley: the floor runs down column 40, the sides rise 5 m per cell
 and the floor drops 2 m per row. D8 sends a hillslope cell straight across the
