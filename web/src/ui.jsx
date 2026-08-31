@@ -1,5 +1,13 @@
 /** Small shared presentation pieces. */
 
+/**
+ * Ask the map to fly somewhere. A DOM CustomEvent rather than context or a ref
+ * threaded through five components: there is exactly one map, one sender shape,
+ * and no state to share -- only a message.
+ */
+export const flyTo = (zoneId) =>
+  window.dispatchEvent(new CustomEvent("map:fly", { detail: zoneId }));
+
 export const fmt = (v, d = 1) =>
   v === null || v === undefined || Number.isNaN(v)
     ? "—"
@@ -47,7 +55,12 @@ export function Table({ caption, cols, rows }) {
             <tr key={i}>
               {cols.map((c) => (
                 <td key={c.key} className={c.n ? "n" : ""}>
-                  {c.render ? c.render(r) : (r[c.key] ?? "—")}
+                  {c.key === "zone_id" && r.zone_id ? (
+                    <button className="zonelink" onClick={() => flyTo(r.zone_id)}
+                            title={`Show ${r.zone_id} on the map`}>
+                      {r.zone_id}
+                    </button>
+                  ) : c.render ? c.render(r) : (r[c.key] ?? "—")}
                 </td>
               ))}
             </tr>
