@@ -1,6 +1,6 @@
 """Stage 4 -- HOT response data, validated against the pipeline's own detection.
 
-    python stage4_hot.py
+    python pipeline/stage4_hot.py
 
 Pulls the Humanitarian OpenStreetMap Team's response export for this exact event
 (https://data.humdata.org/dataset/hot_flood_npl, ODC-ODbL) and does the thing the

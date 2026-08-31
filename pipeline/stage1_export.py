@@ -5,7 +5,7 @@ Shapefile/GeoJSON. Nothing here analyses anything: the point is that the outputs
 drop straight into ArcGIS Pro (or QGIS, or stage 2).
 
     export EE_PROJECT=your-gcloud-project
-    python stage1_export.py
+    python pipeline/stage1_export.py
 
 Outputs (all EPSG:32645, NODATA -9999):
     data/raster/s2_pre.tif     B2 B3 B4 B8 B11 B12, surface reflectance 0-1
@@ -219,7 +219,7 @@ def main():
     print("Vectors")
     write_vectors()
     write_manifest(rows)
-    print(f"\nDone. Add {cfg.DATA} to ArcGIS Pro, or run: python stage2_analysis.py")
+    print(f"\nDone. Add {cfg.DATA} to ArcGIS Pro, or run: python pipeline/stage2_analysis.py")
 
 
 if __name__ == "__main__":

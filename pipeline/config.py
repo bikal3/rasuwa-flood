@@ -2,6 +2,11 @@
 
 Stage 1 (stage1_export.py) writes data/  -> open in ArcGIS Pro.
 Stage 2 (stage2_analysis.py) reads data/ -> writes data/derived, data/tables, maps/.
+Stage 3 (stage3_corridor.py) adds the terrain stack and the flood corridor.
+Stage 4 (stage4_hot.py)      adds the HOT survey and writes web/public/data/.
+
+Paths below resolve against the repo root, one level above this file, so the
+stages write to data/ and maps/ whichever directory you run them from.
 """
 
 import os
@@ -13,7 +18,9 @@ from pathlib import Path
 EE_PROJECT = os.environ.get("EE_PROJECT", "bshresthaclark")
 
 # --- Paths ------------------------------------------------------------------
-ROOT = Path(__file__).parent
+# This file lives in pipeline/; every output path below is relative to the repo
+# root, one level up, so the stages write to data/ and maps/ next to web/.
+ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
 RASTER = DATA / "raster"        # stage 1 output: raw imagery, ArcGIS-Pro ready
 VECTOR = DATA / "vector"        # stage 1 output: AOI + zones

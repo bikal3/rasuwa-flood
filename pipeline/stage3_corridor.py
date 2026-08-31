@@ -1,6 +1,6 @@
 """Stage 3 -- confine the change to the flood corridor.
 
-    python stage3_corridor.py
+    python pipeline/stage3_corridor.py
 
 Stage 2 applies the proposal's thresholds everywhere in the ROI, so a hillslope
 landslide, a harvested terrace and a shifted cloud edge all score the same as the

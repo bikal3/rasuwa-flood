@@ -4,7 +4,7 @@
  *   node build.mjs && node smoke.mjs
  *
  * Loads the real bundle in jsdom with fetch served off disk, so it exercises the
- * actual data contract: if stage4_hot.py renames a field, drops a layer, or emits
+ * actual data contract: if pipeline/stage4_hot.py renames a field, drops a layer, or emits
  * a NaN that JSON.parse rejects, this fails here instead of rendering a blank
  * page in someone's browser.
  *

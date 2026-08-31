@@ -1,7 +1,7 @@
 """One runnable check: synthetic rasters with a known damage footprint, run the
 whole of stage 2 over them, assert the numbers come back exactly.
 
-    python test_analysis.py
+    python pipeline/test_analysis.py
 """
 
 import tempfile

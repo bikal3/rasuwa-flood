@@ -24,7 +24,7 @@ export default function App() {
       <div className="wrap" style={{ padding: "4rem 0" }}>
         <h1>Data not loaded</h1>
         <p className="lede">
-          {err}. Run <code>python stage4_hot.py</code>, then{" "}
+          {err}. Run <code>python pipeline/stage4_hot.py</code>, then{" "}
           <code>node web/build.mjs</code>.
         </p>
       </div>

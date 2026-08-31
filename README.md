@@ -6,15 +6,28 @@ without the terrain conditioning, and the site is usable without any of it:
 
 | Stage | Script | Produces | For |
 | :-- | :-- | :-- | :-- |
-| 1 | `stage1_export.py` | GeoTIFF + Shapefile/GeoJSON, nothing derived | **ArcGIS Pro** (or QGIS, or stage 2) |
-| 2 | `stage2_analysis.py` | change rasters, damage polygons, zonal stats, maps | **Python**, and the outputs go back into ArcGIS Pro |
-| 3 | `stage3_corridor.py` | terrain + HAND, the flood corridor, corridor-confined damage | **Python**, ditto — and the DEM stack HEC-RAS wants |
-| 4 | `stage4_hot.py` | HOT ground survey, validation scores, the site's data | **Python**, and `web/` |
+| 1 | `pipeline/stage1_export.py` | GeoTIFF + Shapefile/GeoJSON, nothing derived | **ArcGIS Pro** (or QGIS, or stage 2) |
+| 2 | `pipeline/stage2_analysis.py` | change rasters, damage polygons, zonal stats, maps | **Python**, and the outputs go back into ArcGIS Pro |
+| 3 | `pipeline/stage3_corridor.py` | terrain + HAND, the flood corridor, corridor-confined damage | **Python**, ditto — and the DEM stack HEC-RAS wants |
+| 4 | `pipeline/stage4_hot.py` | HOT ground survey, validation scores, the site's data | **Python**, and `web/` |
 | 5 | `web/` (React + esbuild) | a static site: interactive map, findings, tables, downloads | **Anyone with a browser** |
 
 Each stage reads the previous one's files off disk and nothing else. No stage calls
 another, so you can do the whole analysis in ArcGIS Pro instead and ignore stages 2
 and 3, or run them and pull the outputs in as extra layers.
+
+## Layout
+
+```
+pipeline/   the Python stages and their checks; everything tunable is config.py
+web/        React source for the site, bundled by esbuild
+data/       stage outputs (gitignored except tables/*.csv)
+maps/       matplotlib plates, committed
+site/       built site, gitignored -- rebuild with: cd web && node build.mjs
+```
+
+Run the stages from anywhere; `pipeline/config.py` resolves every path against the
+repo root, not its own directory.
 
 ## Setup
 
@@ -25,12 +38,12 @@ export EE_PROJECT=your-gcloud-project-id
 ```
 
 Everything tunable — study area, dates, pixel size, thresholds, impact zones —
-lives in `config.py`. All three stages read it; edit nothing else.
+lives in `pipeline/config.py`. All three stages read it; edit nothing else.
 
 ## Way 1 — data only (ArcGIS Pro)
 
 ```bash
-python stage1_export.py
+python pipeline/stage1_export.py
 ```
 
 Writes to `data/`, all **EPSG:32645** (UTM 45N, metres), **NODATA −9999**:
@@ -60,13 +73,13 @@ Two choices worth knowing about:
   angle shifts, layover and radar shadow move, and the ratio lights up on
   geometry rather than damage. Rasuwa is exactly the terrain where that bites.
 - **Per-band download.** Each band is a separate request, which keeps every one
-  under Earth Engine's ~48 MB response cap. So `SCALE = 10` in `config.py` works
+  under Earth Engine's ~48 MB response cap. So `SCALE = 10` in `pipeline/config.py` works
   with no chunking logic; it just costs ~640 MB instead of ~160 MB.
 
 ## Way 2 — analysis in Python
 
 ```bash
-python stage2_analysis.py
+python pipeline/stage2_analysis.py
 ```
 
 Reads `data/raster` and `data/vector`, writes:
@@ -134,7 +147,7 @@ After all three: **29.5 km²** in 1,966 polygons, and the zones separate
 ## Way 3 — confine it to the corridor
 
 ```bash
-python stage3_corridor.py
+python pipeline/stage3_corridor.py
 ```
 
 Stage 2 applies the proposal's thresholds everywhere in the ROI. A debris flood
@@ -209,7 +222,7 @@ the table after changing the ROI or the stage 2 thresholds.
 ## Way 4 — the ground survey, and does any of this hold up
 
 ```bash
-python stage4_hot.py
+python pipeline/stage4_hot.py
 ```
 
 Pulls the Humanitarian OpenStreetMap Team's response export for this exact event —
@@ -263,7 +276,7 @@ No Vite, no framework CLI: esbuild bundles `src/main.jsx` in about 20 ms.
 The page is an interactive Leaflet map over the whole corridor with 14 toggleable
 layers, split into what HOT *observed* and what this pipeline *derived*, plus the
 validation above, exposure tables, method, caveats and a GeoJSON download for
-every layer. `stage4_hot.py` writes `web/public/data/`, so the app fetches static
+every layer. `pipeline/stage4_hot.py` writes `web/public/data/`, so the app fetches static
 files at runtime rather than inlining 2.6 MB into the bundle.
 
 `web/public/data/` is committed for the same reason `maps/` is: regenerating it
@@ -272,17 +285,17 @@ needs the stage 1–3 rasters, which need Earth Engine credentials.
 ## Check it
 
 ```bash
-python test_analysis.py                 # stage 2
-python test_corridor.py                 # stage 3
+python pipeline/test_analysis.py                 # stage 2
+python pipeline/test_corridor.py                 # stage 3
 cd web && node build.mjs && node smoke.mjs   # the site
 ```
 
-`test_analysis.py` builds synthetic rasters with a known damage footprint —
+`pipeline/test_analysis.py` builds synthetic rasters with a known damage footprint —
 including a patch that is only visible to SAR because it sits under simulated
 cloud — runs all of stage 2 over them, and asserts the reported area comes back
 exactly (0.80 km²).
 
-`test_corridor.py` builds a V-shaped valley whose answer is known on paper. The
+`pipeline/test_corridor.py` builds a V-shaped valley whose answer is known on paper. The
 floor drops 2 m per row and the sides rise 5 m per cell, so D8 sends a hillslope
 cell straight across the contour rather than diagonally downstream (5 m over one
 cell beats 7 m over √2 cells) and `HAND(row, col) = 5·|col − 40|` exactly. Every
@@ -291,7 +304,7 @@ as many columns wide as the threshold allows, accumulation collecting 100% of th
 domain at the outlet, a bowl filled to its rim and no further.
 
 `web/smoke.mjs` loads the *built* bundle in jsdom with `fetch` served off disk,
-so it exercises the real data contract: if `stage4_hot.py` renames a field, drops
+so it exercises the real data contract: if `pipeline/stage4_hot.py` renames a field, drops
 a layer or emits a `NaN` that `JSON.parse` rejects, it fails there instead of
 rendering a blank page in someone's browser. It asserts the page quotes real
 figures, Leaflet initialises, all 14 layers parse, and the console stays clean.
@@ -304,7 +317,7 @@ No pytest, no fixtures, no test framework.
   is stated in the proposal. Z2a–Z5 are approximate — refine them against the
   stage 1 imagery, then re-run stage 2.
 - **Z5 (Betrawati) falls outside the default ROI.** Stage 1 warns about this.
-  Drop `ROI`'s south edge to ~27.90 in `config.py` if you want it covered.
+  Drop `ROI`'s south edge to ~27.90 in `pipeline/config.py` if you want it covered.
 - **Flow accumulation is truncated at the ROI edge.** The Bhote Koshi enters from
   the north already a major river, but its Tibetan headwaters are outside the DEM,
   so accumulation restarts from zero at the boundary and the first few kilometres

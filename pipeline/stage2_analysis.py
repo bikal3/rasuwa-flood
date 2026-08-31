@@ -1,6 +1,6 @@
 """Stage 2 -- analysis in Python on stage 1's files.
 
-    python stage2_analysis.py
+    python pipeline/stage2_analysis.py
 
 Reads data/raster/*.tif and data/vector/zones.shp, writes:
     data/derived/change_stack.tif     dNDVI dMNDWI dNBR dVV dVH

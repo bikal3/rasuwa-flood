@@ -4,7 +4,7 @@
  *   node build.mjs           bundle web/ into ../site/, ready to publish
  *   node build.mjs --serve   same, but watched and served on :5173
  *
- * public/ is copied verbatim, so public/data/*.geojson written by stage4_hot.py
+ * public/ is copied verbatim, so public/data/*.geojson written by pipeline/stage4_hot.py
  * ships as static files the app fetches at runtime rather than being inlined
  * into the bundle. That keeps the JS small and lets a browser cache the layers
  * independently of the code.
