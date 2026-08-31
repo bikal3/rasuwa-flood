@@ -1,0 +1,7 @@
+zone_id,label,zone_km2,corridor_km2,change_km2,flood_km2,off_corridor_pct,channel_len_m,scour_width_m,note
+Z1,Rasuwagadhi / Gyirong border,6.432,0.936,0.605,0.184,69.6,3687.0,49.9,
+Z2a,Timure dry port,8.564,0.574,0.964,0.236,75.5,2811.0,84.0,
+Z2b,Ghattekhola,7.052,0.584,0.112,0.036,68.0,4667.0,7.7,
+Z3,Rasuwagadhi HPP 111 MW,7.058,1.009,0.651,0.361,44.5,6147.0,58.8,
+Z4,Syabrubesi,12.543,1.386,0.827,0.444,46.3,7198.0,61.7,
+Z5,Betrawati,,,,,,,,outside raster

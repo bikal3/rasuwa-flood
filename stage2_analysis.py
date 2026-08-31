@@ -149,11 +149,16 @@ def vectorize(mask, transform, crs, pixel_area, min_pixels=cfg.MIN_POLY_PIXELS):
     return gdf[gdf["area_m2"] >= min_pixels * pixel_area].reset_index(drop=True)
 
 
-def zonal(mask, ch, zones, transform, shape_, pixel_area):
-    ids = features.rasterize(
+def zone_ids(zones, transform, shape_):
+    """Zone index raster, 1..n in `zones` order, 0 = outside every zone."""
+    return features.rasterize(
         ((g, i) for i, g in enumerate(zones.geometry, start=1)),
         out_shape=shape_, transform=transform, fill=0, dtype="int32",
     )
+
+
+def zonal(mask, ch, zones, transform, shape_, pixel_area):
+    ids = zone_ids(zones, transform, shape_)
     rows = []
     for i, z in enumerate(zones.itertuples(), start=1):
         sel = ids == i

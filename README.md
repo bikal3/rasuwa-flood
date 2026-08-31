@@ -1,16 +1,18 @@
-# Rasuwa transboundary flood — two-stage build
+# Rasuwa transboundary flood — three-stage build
 
-Implements `Rasuwa_Nepal_China_Flood_Project_Proposal.md`. Split into two stages
-on purpose, so the data is usable without the analysis:
+Implements `Rasuwa_Nepal_China_Flood_Project_Proposal.md`. Split into three stages
+on purpose, so the data is usable without the analysis and the analysis is usable
+without the terrain conditioning:
 
 | Stage | Script | Produces | For |
 | :-- | :-- | :-- | :-- |
 | 1 | `stage1_export.py` | GeoTIFF + Shapefile/GeoJSON, nothing derived | **ArcGIS Pro** (or QGIS, or stage 2) |
 | 2 | `stage2_analysis.py` | change rasters, damage polygons, zonal stats, maps | **Python**, and the outputs go back into ArcGIS Pro |
+| 3 | `stage3_corridor.py` | terrain + HAND, the flood corridor, corridor-confined damage | **Python**, ditto — and the DEM stack HEC-RAS wants |
 
-Stage 2 reads only stage 1's files off disk. Neither stage calls the other, so you
-can do the whole analysis in ArcGIS Pro instead and ignore stage 2, or run stage 2
-and pull its outputs into ArcGIS Pro as extra layers.
+Each stage reads the previous one's files off disk and nothing else. No stage calls
+another, so you can do the whole analysis in ArcGIS Pro instead and ignore stages 2
+and 3, or run them and pull the outputs in as extra layers.
 
 ## Setup
 
@@ -21,7 +23,7 @@ export EE_PROJECT=your-gcloud-project-id
 ```
 
 Everything tunable — study area, dates, pixel size, thresholds, impact zones —
-lives in `config.py`. Both stages read it; edit nothing else.
+lives in `config.py`. All three stages read it; edit nothing else.
 
 ## Way 1 — data only (ArcGIS Pro)
 
@@ -127,16 +129,102 @@ and each cause needed a different fix:
 After all three: **29.5 km²** in 1,966 polygons, and the zones separate
 (Timure 11.3%, Rasuwagadhi 9.4%, Syabrubesi 6.6%) instead of sitting flat.
 
+## Way 3 — confine it to the corridor
+
+```bash
+python stage3_corridor.py
+```
+
+Stage 2 applies the proposal's thresholds everywhere in the ROI. A debris flood
+cannot be everywhere: it is confined to ground the river can reach. Stage 3
+derives that ground from the DEM and intersects it with stage 2's mask.
+
+```
+data/derived/terrain.tif           filled_dem, fill_m, drainage_km2, hand_m
+data/derived/channel.shp|.geojson  the drainage network
+data/derived/corridor.shp|.geojson the valley floor
+data/derived/flood_damage.tif      uint8, stage 2 mask AND corridor
+data/derived/flood_damage_polygons.shp|.geojson
+data/tables/zonal_flood.csv        per zone: corridor, flood area, scour width
+data/tables/change_vs_hand.csv     change rate against height above the river
+maps/07_corridor.png               HAND + drainage network over hillshade
+maps/08_flood_damage.png           kept vs rejected detections
+maps/09_change_vs_hand.png         the profile that justifies the whole stage
+```
+
+The pipeline is plain numpy and scipy — no hydrology dependency:
+
+1. **Priority-flood depression fill.** SRTM in a gorge is full of noise pits;
+   unfilled, D8 flow stops at every one and the network shatters. ~3 s over 2.5M
+   cells, because the hot loop runs on Python lists rather than numpy scalars.
+2. **D8 steepest descent**, then flow accumulation in descending-elevation order.
+3. **Channel** = cells draining ≥ `MIN_DRAINAGE_KM2` (8 km²) → 224 km of network.
+4. **HAND** — each cell's height above the first drainage cell its own flow path
+   reaches — computed in ascending-elevation order, so a cell's receiver is
+   always already resolved.
+5. **Corridor** = HAND ≤ `HAND_MAX_M`, **flood damage** = corridor ∩ stage 2.
+
+**29.5 km² of change becomes 4.1 km² of flood damage** in 279 polygons, tracing a
+continuous ribbon down the Bhote Koshi instead of a scatter over the hillslopes.
+
+### The corridor is not an assumption, it is measurable
+
+`change_vs_hand.csv` bins stage 2's change rate by height above the river. If the
+detections were noise the profile would be flat:
+
+| HAND | 0–5 | 5–10 | 10–20 | 20–30 | 30–50 | 50–100 | 100–200 | 200–500 | 500+ |
+| :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: |
+| change rate | 9.6% | 8.7% | 9.2% | 9.8% | 9.1% | 6.7% | 4.9% | 3.5% | 2.1% |
+
+Flat to 50 m, then falling away to a 2.1% far-field floor. **`HAND_MAX_M` is 50,
+not the 30 the proposal's +7–9 m surge figure alone would argue for, because the
+plateau ends at 50** — a 30 m cut sliced through the middle of the signal. Charging
+the corridor that 2.1% floor leaves **3.2 km² attributable to the flood**. Re-read
+the table after changing the ROI or the stage 2 thresholds.
+
+### Two things the first run got wrong
+
+- **Do not filter out the depression fill.** The tempting move is to drop cells the
+  fill had to raise, on the grounds that a filled basin is a flat fake valley floor.
+  It cuts 39% of the trunk river out of this ROI, and the cells it cuts run at 7.4×
+  the far-field change rate against 4.2× for unfilled ground. They are the deep
+  narrow reaches where SRTM's C-band bridged across the gorge instead of reaching
+  the bottom, so the fill is reconstructing the valley floor rather than inventing
+  one. `fill_m` is carried as a band so the reconstruction stays visible — which
+  matters if `terrain.tif` is used as a HEC-RAS surface. 19% of the corridor is
+  reconstructed ground.
+- **Sentinel-1 cannot measure this river's width, so stage 3 does not claim to.**
+  The plan was wetted-area-before / wetted-area-after for §4.1's 200–300% channel
+  widening. On trunk-channel cells VV never goes specular: 1st percentile −14.9 dB,
+  median −7.5 dB, against a −16 dB water threshold. A 20–60 m whitewater gorge
+  river is rough, mixed-pixel and foreshortened against bright banks — it has no
+  dark-water signature to find. The first version duly reported a 5 m wide river,
+  which 20 m pixels cannot resolve. What replaced it is `scour_width_m`: flood-damage
+  area per metre of channel, i.e. the mean width of the disturbed swath — 50–84 m
+  at Z1/Z2a/Z3/Z4. Verifying the widening *ratio* needs the 3 m PlanetScope imagery,
+  which is on the not-built list below.
+
 ## Check it
 
 ```bash
-python test_analysis.py
+python test_analysis.py     # stage 2
+python test_corridor.py     # stage 3
 ```
 
-Builds synthetic rasters with a known damage footprint — including a patch that
-is only visible to SAR because it sits under simulated cloud — runs all of stage
-2 over them, and asserts the reported area comes back exactly (0.80 km²). No
-pytest, no fixtures.
+`test_analysis.py` builds synthetic rasters with a known damage footprint —
+including a patch that is only visible to SAR because it sits under simulated
+cloud — runs all of stage 2 over them, and asserts the reported area comes back
+exactly (0.80 km²).
+
+`test_corridor.py` builds a V-shaped valley whose answer is known on paper. The
+floor drops 2 m per row and the sides rise 5 m per cell, so D8 sends a hillslope
+cell straight across the contour rather than diagonally downstream (5 m over one
+cell beats 7 m over √2 cells) and `HAND(row, col) = 5·|col − 40|` exactly. Every
+assertion falls out of that one line: HAND to within 0.5 m, the corridor exactly
+as many columns wide as the threshold allows, accumulation collecting 100% of the
+domain at the outlet, a bowl filled to its rim and no further.
+
+No pytest, no fixtures.
 
 ## Things to fix before this is publishable
 
@@ -145,6 +233,17 @@ pytest, no fixtures.
   stage 1 imagery, then re-run stage 2.
 - **Z5 (Betrawati) falls outside the default ROI.** Stage 1 warns about this.
   Drop `ROI`'s south edge to ~27.90 in `config.py` if you want it covered.
+- **Flow accumulation is truncated at the ROI edge.** The Bhote Koshi enters from
+  the north already a major river, but its Tibetan headwaters are outside the DEM,
+  so accumulation restarts from zero at the boundary and the first few kilometres
+  below it are undercounted. `MIN_DRAINAGE_KM2` is low enough (8 km²) that the
+  trunk re-forms quickly; a padded DEM export would fix it properly, and the DEM
+  is a single band, so re-downloading just that one is cheap.
+- **`scour_width_m` is a swath width, not a channel width.** It is flood-damage
+  area per metre of channel — the width of the disturbed valley floor, which is
+  the widened channel plus its deposition aprons. Do not quote it as the wetted
+  channel width, and do not derive §4.1's widening ratio from it without a
+  pre-event waterline.
 - **No radiometric terrain flattening on the SAR.** Same-orbit differencing
   cancels most of the topographic bias, which is why the orbit matching above
   matters, but the residual is real on the steepest slopes. Use SNAP/`gamma0` if
@@ -155,10 +254,17 @@ pytest, no fixtures.
 - **Z2b Ghattekhola has only 7.1% usable optical pixels.** Its 1.6% figure rests
   almost entirely on SAR and should not be quoted without that caveat. Check
   `optical_valid_pct` in `zonal_damage.csv` before citing any zone.
+- **Stage 3 says nothing about how the corridor was reached.** HAND asks only
+  whether a cell is low enough above the drainage network. It has no notion of
+  flow volume, velocity or timing, so it cannot distinguish the 26 August surge
+  from ordinary high-monsoon inundation on the same valley floor. That separation
+  needs the hydrodynamic model in §6.2, for which `terrain.tif` is the input.
 - **The high-altitude collapse source is out of scope of the mask.** Excluding
   snow/ice from `SCL_KEEP` is what stops fresh snowfall reading as damage, but it
   also means this pipeline cannot speak to the genesis zone in proposal §2. That
   needs a snow/ice-aware analysis with its own thresholds.
 - **Not built:** the HEC-RAS / Telemac-2D hydrodynamic model (§6.2) and
-  PlanetScope ingestion (commercial, needs a Planet API key). The DEM export is
-  the input HEC-RAS needs.
+  PlanetScope ingestion (commercial, needs a Planet API key). Stage 3's
+  `terrain.tif` is the conditioned surface HEC-RAS wants — hydrologically
+  enforced, metric, with `fill_m` marking which parts of it are reconstructed
+  rather than measured — and `corridor.shp` bounds the 2D mesh.
