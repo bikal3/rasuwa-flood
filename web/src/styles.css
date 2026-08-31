@@ -125,6 +125,18 @@ section { padding-block: clamp(3rem, 7vw, 5.5rem); border-bottom: var(--rule); }
   padding: 1rem 1.15rem .55rem;
 }
 .panel-group { border-bottom: var(--rule); padding-bottom: .7rem; }
+.panel h3 { display: flex; align-items: center; gap: .6rem; }
+.fade {
+  -webkit-appearance: none; appearance: none; flex: 1; min-width: 54px;
+  height: 3px; border-radius: 2px; background: var(--grid); cursor: pointer;
+}
+.fade::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 11px; height: 11px; border-radius: 50%;
+  background: var(--ink); border: 2px solid var(--paper);
+}
+.fade::-moz-range-thumb {
+  width: 9px; height: 9px; border-radius: 50%; background: var(--ink); border: 0;
+}
 
 .layer {
   display: flex; align-items: center; gap: .65rem; width: 100%;

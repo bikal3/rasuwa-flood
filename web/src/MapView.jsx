@@ -48,6 +48,8 @@ export default function MapView() {
   const [selected, setSelected] = useState(null);
   const [zoom, setZoom] = useState(10);
   const [full, setFull] = useState(false);
+  // Keyed by group name; the two groups are what people compare.
+  const [fade, setFade] = useState({});
 
   // Build once.
   useEffect(() => {
@@ -152,6 +154,25 @@ export default function MapView() {
       if (!want && m.hasLayer(g)) m.removeLayer(g);
     }
   }, [visible, ready, zoom]);
+
+  // Observed and derived damage sit on top of each other by design -- that
+  // overlap is the finding. Fading one group against the other is the cheapest
+  // way to read it, and it works on canvas layers where a CSS filter would not.
+  useEffect(() => {
+    for (const layer of LAYERS) {
+      const g = groups.current[layer.id];
+      if (!g) continue;
+      const o = fade[layer.group] ?? 1;
+      g.eachLayer((l) => {
+        if (!l.setStyle) return;
+        const base = layer.kind === "point" ? { fillOpacity: 0.95, opacity: 1 } : layer.style || {};
+        l.setStyle({
+          opacity: (base.opacity ?? 1) * o,
+          fillOpacity: (base.fillOpacity ?? 0) * o,
+        });
+      });
+    }
+  }, [fade, ready]);
 
   const toggle = (id) =>
     setVisible((prev) => {
@@ -264,7 +285,22 @@ export default function MapView() {
 
         {Object.entries(grouped).map(([group, items]) => (
           <div className="panel-group" key={group}>
-            <h3>{group}</h3>
+            <h3>
+              {group}
+              <input
+                className="fade"
+                type="range"
+                min="0.15"
+                max="1"
+                step="0.05"
+                value={fade[group] ?? 1}
+                aria-label={`Opacity of ${group}`}
+                title={`Opacity — fade this group against the other`}
+                onChange={(e) =>
+                  setFade((f) => ({ ...f, [group]: Number(e.target.value) }))
+                }
+              />
+            </h3>
             {items.map((l) => (
               <button
                 key={l.id}
