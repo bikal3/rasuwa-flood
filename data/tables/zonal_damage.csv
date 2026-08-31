@@ -1,0 +1,7 @@
+zone_id,label,zone_km2,damaged_km2,damaged_pct,optical_valid_pct,mean_dNDVI,mean_dVV_dB,note
+Z1,Rasuwagadhi / Gyirong border,6.432,0.605,9.4,64.5,0.077,0.22,
+Z2a,Timure dry port,8.564,0.964,11.3,73.5,0.044,0.05,
+Z2b,Ghattekhola,7.052,0.112,1.6,7.1,0.004,0.18,
+Z3,Rasuwagadhi HPP 111 MW,7.058,0.651,9.2,88.5,0.041,0.13,
+Z4,Syabrubesi,12.543,0.827,6.6,70.8,-0.016,-0.16,
+Z5,Betrawati,,,,,,,outside raster

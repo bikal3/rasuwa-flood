@@ -44,10 +44,22 @@ S1_POST = ("2026-08-26", "2026-09-01")
 S2_BANDS = ["B2", "B3", "B4", "B8", "B11", "B12"]
 S1_BANDS = ["VV", "VH"]
 
-# Sentinel-2 scene classification values kept as valid ground.
-# 2=dark/topographic shadow (very common in these gorges), 4=veg, 5=bare,
-# 6=water, 7=unclassified, 11=snow/ice.
-SCL_KEEP = [2, 4, 5, 6, 7, 11]
+# Sentinel-2 scene classification values kept as valid ground: 4=vegetation,
+# 5=bare soil, 6=water. These are the classes where differencing a reflectance
+# index between two dates is physically interpretable.
+#
+# Deliberately excluded, after the first run put false positives all over the
+# shaded slopes:
+#   2  dark / topographic shadow -- reflectance is low and noisy in these
+#      gorges, so NDVI is unstable between dates and the difference blows up
+#   7  unclassified -- in practice mostly thin cloud edges here
+#   11 snow / ice -- fresh snowfall between the two composites is a huge index
+#      change that has nothing to do with the flood
+#
+# Excluding 11 means the high-altitude collapse source (proposal section 2) is
+# outside what this mask can speak to; that zone needs a snow/ice-aware analysis,
+# which this pipeline does not attempt.
+SCL_KEEP = [4, 5, 6]
 # Scene-level filter only; per-pixel SCL masking does the real work. Kept loose
 # because the whole post-event window is 78-83% cloud -- a tighter scene filter
 # throws away the only two post scenes there are.
@@ -58,7 +70,13 @@ NODATA = -9999.0
 # --- Change-detection thresholds (proposal sections 3.2 and 5) --------------
 T_DNDVI = 0.25      # vegetation loss / debris burial
 T_DMNDWI = 0.30     # new standing or turbid water
-T_DSAR_DB = 3.0     # |post - pre| sigma0 in dB
+T_DSAR_DB = 3.0     # |post - pre| sigma0 in dB, AFTER despeckling
+# Boxcar multilook window for the SAR pair. Sentinel-1 GRD is single-look: with
+# one scene per window there is no temporal averaging, so an unfiltered dB
+# difference carries ~2 dB of pure speckle and a 3 dB threshold fires on noise
+# across ~13% of the scene. 5x5 gives ENL ~25 and drops that to ~0.4 dB.
+# Raise for cleaner masks, lower to keep fine detail on narrow channels.
+SPECKLE_WIN = 5
 MIN_POLY_PIXELS = 5  # drop specks when vectorising the damage mask
 
 # --- Impact zones (proposal section 4) --------------------------------------
