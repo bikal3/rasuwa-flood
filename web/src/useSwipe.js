@@ -5,12 +5,12 @@ import L from "leaflet";
  * Before/after imagery swipe.
  *
  * Two georeferenced overlays stacked in their own panes, each clipped to its own
- * side of a draggable divider. Clipping the panes rather than redrawing anything
- * means the divider costs one CSS property per frame, and both images stay
- * perfectly registered while you pan and zoom -- they are the same map layer, so
- * Leaflet moves them together.
+ * side of a draggable divider. Clipping rather than redrawing means the divider
+ * costs one CSS property per frame, and both images stay perfectly registered
+ * while you pan and zoom -- they are ordinary map layers, so Leaflet moves them
+ * together.
  *
- * **Both** panes are clipped, not just the "after" one. Clipping only the after
+ * **Both** images are clipped, not just the "after" one. Clipping only the after
  * leaves the before drawing full-width underneath it, so wherever the after has
  * no pixels the before shows through and the slider looks like it does nothing.
  * That is not a cosmetic difference here: the post-event optical composite is
@@ -21,9 +21,9 @@ import L from "leaflet";
  * sees through cloud and covers both dates. The slider opens on whichever pair
  * actually has post-event pixels, so it opens showing something.
  *
- * Each pair is 1-4 MB and is fetched on first use, not on page load -- most
- * visitors read the findings and never open the slider. Once built the overlays
- * are cached, so toggling back is instant.
+ * Nothing loads until open() is called -- SwipeMap calls it when its section
+ * nears the viewport, so a visitor who never scrolls that far never pays the
+ * 1.6 MB. Each pair is built once and kept, so switching back is instant.
  */
 
 const DATA = "data";
@@ -83,8 +83,9 @@ export default function useSwipe(mapRef, ready) {
     const m = mapRef.current;
     if (!m || !ready || !on || !meta || !sensor) return;
 
-    // Below the vector panes (410+) so damage polygons stay on top, above the
-    // basemap tiles so the imagery is what you are comparing.
+    // Above the basemap tiles (200) so the imagery is what you are comparing,
+    // below the vector panes (410+) in case this hook is ever hung on a map that
+    // has them.
     for (const [pane, z] of [["imgPre", 350], ["imgPost", 360]]) {
       if (!m.getPane(pane)) {
         m.createPane(pane);
@@ -143,8 +144,7 @@ export default function useSwipe(mapRef, ready) {
     return () => m.off("move zoom viewreset resize", clip);
   }, [mapRef, pos, on, meta, sensor]);
 
-  const toggle = useCallback(() => setOn((v) => !v), []);
   const open = useCallback(() => setOn(true), []);
 
-  return { on, toggle, open, pos, setPos, meta, sensor, setSensor, loading };
+  return { open, pos, setPos, meta, sensor, setSensor, loading };
 }
