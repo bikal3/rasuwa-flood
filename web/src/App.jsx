@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import MapView from "./MapView.jsx";
+import SwipeMap from "./SwipeMap.jsx";
 import { Section, Table, Bars, fmt, int } from "./ui.jsx";
 import { C } from "./layers.js";
 
@@ -84,6 +85,8 @@ export default function App() {
       <div className="mapsec" id="themap">
         <MapView />
       </div>
+
+      <SwipeMap />
 
       {/* ---------------------------------------------------------------- */}
       <Section

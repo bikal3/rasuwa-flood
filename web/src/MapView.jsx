@@ -2,11 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { LAYERS, BASEMAPS, PLACES, BRIDGE_COLOUR } from "./layers.js";
-import useSwipe, { formatWindow } from "./useSwipe.js";
-
-/** Manifest entry for the pair currently on the slider (labels, provenance). */
-const sensorOf = (swipe) =>
-  swipe.meta?.sensors.find((s) => s.id === swipe.sensor) ?? {};
 
 /**
  * Leaflet driven directly from an effect rather than through react-leaflet.
@@ -115,9 +110,6 @@ export default function MapView() {
   const [full, setFull] = useState(false);
   // Keyed by group name; the two groups are what people compare.
   const [fade, setFade] = useState({});
-  const swipe = useSwipe(map, ready);
-  const openSwipe = useRef(null);
-  openSwipe.current = swipe.open;
 
   // Build once.
   useEffect(() => {
@@ -174,14 +166,6 @@ export default function MapView() {
                 picked.current = lyr;
                 emphasise(lyr, op(), true);
                 setSelected({ layer: layer.label, props, title: layer.title?.(props) });
-                // Damage evidence is worth seeing before and after; context
-                // layers like waterways or places are not, and forcing a 5.7 MB
-                // load on someone who clicked a village name would be rude.
-                if (layer.compare) {
-                  openSwipe.current?.();
-                  const c = lyr.getBounds ? lyr.getBounds().getCenter() : lyr.getLatLng();
-                  m.flyTo(c, Math.max(m.getZoom(), 14), { duration: 0.7 });
-                }
               });
               // Nothing else tells you a feature is clickable -- there is no
               // cursor change on a canvas-rendered path by default.
@@ -304,9 +288,6 @@ export default function MapView() {
       });
       if (!target) return;
       m.flyToBounds(target.getBounds(), { padding: [60, 60], duration: 0.9 });
-      // The question anyone clicking a zone is asking is "what happened here",
-      // and the answer is the imagery, not the outline.
-      openSwipe.current?.();
       // Optional call: the element is guarded, but the method is not universal
       // either -- older Safari has no options form, and jsdom has no method.
       document.getElementById("themap")
@@ -315,23 +296,6 @@ export default function MapView() {
     window.addEventListener("map:fly", onFly);
     return () => window.removeEventListener("map:fly", onFly);
   }, []);
-
-  const dragDivider = (e) => {
-    const box = host.current?.getBoundingClientRect();
-    if (!box) return;
-    e.currentTarget.setPointerCapture?.(e.pointerId);
-    const move = (ev) =>
-      swipe.setPos(
-        Math.min(97, Math.max(3, ((ev.clientX - box.left) / box.width) * 100))
-      );
-    move(e);
-    const up = () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-  };
 
   const toggleFull = () => {
     const el = host.current?.parentElement;
@@ -386,62 +350,7 @@ export default function MapView() {
           <button onClick={toggleFull} title={full ? "Leave fullscreen" : "Fullscreen"} aria-label="Toggle fullscreen">
             {full ? "⤡" : "⛶"}
           </button>
-          <button
-            onClick={swipe.toggle}
-            aria-pressed={swipe.on}
-            className={swipe.on ? "act" : ""}
-            title="Before / after satellite imagery"
-            aria-label="Toggle before and after imagery"
-          >
-            ◐
-          </button>
         </div>
-
-        {swipe.on && (
-          <div className="swipe" style={{ "--x": `${swipe.pos}%` }}>
-            <div className="swipe-bar" onPointerDown={dragDivider} role="separator"
-                 aria-label="Drag to compare before and after">
-              <span className="grip">↔</span>
-            </div>
-            {[["before", "pre", "Before"], ["after", "post", "After"]].map(
-              ([side, half, title]) => {
-                const d = swipe.meta?.[`${swipe.sensor}_${half}`];
-                return (
-                  <div key={side} className={`swipe-tag ${side}`}>
-                    <b>{title}</b>
-                    {d && (
-                      <>
-                        <span>{formatWindow(d.window)}</span>
-                        <span className="cover">
-                          {d.valid_pct}% {sensorOf(swipe).cover}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                );
-              }
-            )}
-            {/* The optical pair is six days of monsoon and mostly cloud; the
-                radar pair covers both dates but is false colour. Neither is the
-                right default for everyone, so both are one click away. */}
-            {swipe.meta && (
-              <div className="swipe-sensor" role="group" aria-label="Imagery source">
-                {swipe.meta.sensors.map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => swipe.setSensor(s.id)}
-                    className={s.id === swipe.sensor ? "act" : ""}
-                    aria-pressed={s.id === swipe.sensor}
-                    title={s.source}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-            )}
-            {swipe.loading && <div className="swipe-load">Loading imagery…</div>}
-          </div>
-        )}
 
         <div className="legend-float">
           <b>Bridge condition</b>

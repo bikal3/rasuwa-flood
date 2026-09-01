@@ -98,7 +98,7 @@ const evaluate = async (expression) => {
 
 /** Read each overlay's on-screen strip: its box, intersected with its own clip. */
 const GEOM = String.raw`(() => {
-  const map = document.querySelector(".mapfill").getBoundingClientRect();
+  const map = document.querySelector(".comparecanvas .mapfill").getBoundingClientRect();
   const read = (pane) => {
     const img = document.querySelector(".leaflet-" + pane + "-pane img");
     if (!img) return null;
@@ -126,14 +126,14 @@ await send("Runtime.enable");
 await send("Page.navigate", { url: origin });
 await sleep(4000);
 
-// Open the slider, then fly somewhere the imagery footprint fills the map --
-// at the whole-corridor view the ROI is a patch in one corner and "half the map
-// is the before image" is not the right expectation.
+// Scroll the comparison section in -- that is what triggers the overlay fetch --
+// then fly somewhere the imagery footprint fills the map. At the whole-scene view
+// the frame has basemap around its edges, and "half the map is the before image"
+// is not the right expectation there.
 await evaluate(String.raw`(async () => {
-  document.getElementById("themap").scrollIntoView({ block: "center" });
-  document.querySelector('[aria-label="Toggle before and after imagery"]').click();
-  await new Promise((r) => setTimeout(r, 1500));
-  [...document.querySelectorAll("button")]
+  document.querySelector(".comparesec").scrollIntoView({ block: "center" });
+  await new Promise((r) => setTimeout(r, 2000));
+  [...document.querySelectorAll(".compareplaces button")]
     .find((b) => b.textContent.trim() === "Rasuwagadhi").click();
   await new Promise((r) => setTimeout(r, 2500));
 })()`);

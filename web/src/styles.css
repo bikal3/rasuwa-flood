@@ -256,7 +256,29 @@ section { padding-block: clamp(3rem, 7vw, 5.5rem); border-bottom: var(--rule); }
   border-radius: 4px; font-family: var(--mono); font-size: .7rem;
   letter-spacing: .08em; text-transform: uppercase;
 }
-.mapctl button.act { background: var(--ink); color: var(--paper); }
+
+/* The comparison map: its own band under the main map, no layer panel. */
+.comparesec { border-bottom: var(--rule); }
+.comparehead {
+  display: flex; flex-wrap: wrap; gap: 1rem 2rem; align-items: end;
+  justify-content: space-between; padding: 1.6rem 1.15rem 1rem;
+}
+.comparehead h2 {
+  margin: 0 0 .3rem; font-size: 1.35rem; font-weight: 500; letter-spacing: -.01em;
+}
+.comparehead p { margin: 0; max-width: 62ch; color: var(--ink-2); font-size: .84rem; }
+.comparesrc {
+  margin-top: .4rem !important; font-family: var(--mono); font-size: .68rem;
+  color: var(--muted) !important;
+}
+.compareplaces { display: flex; flex-wrap: wrap; gap: .3rem; }
+.compareplaces button {
+  font: inherit; font-family: var(--mono); font-size: .72rem;
+  padding: .24rem .5rem; border: var(--rule); border-radius: 3px;
+  background: var(--paper); color: var(--ink-2); cursor: pointer;
+}
+.compareplaces button:hover { border-color: var(--ink); color: var(--ink); }
+.comparecanvas { height: min(68vh, 720px); min-height: 420px; }
 
 .maploading {
   position: absolute; inset: 0; display: grid; place-items: center;
