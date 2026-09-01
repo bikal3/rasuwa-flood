@@ -4,6 +4,10 @@ import "leaflet/dist/leaflet.css";
 import { LAYERS, BASEMAPS, PLACES, BRIDGE_COLOUR } from "./layers.js";
 import useSwipe, { formatWindow } from "./useSwipe.js";
 
+/** Manifest entry for the pair currently on the slider (labels, provenance). */
+const sensorOf = (swipe) =>
+  swipe.meta?.sensors.find((s) => s.id === swipe.sensor) ?? {};
+
 /**
  * Leaflet driven directly from an effect rather than through react-leaflet.
  *
@@ -399,24 +403,42 @@ export default function MapView() {
                  aria-label="Drag to compare before and after">
               <span className="grip">↔</span>
             </div>
-            <div className="swipe-tag before">
-              <b>Before</b>
-              {swipe.meta && (
-                <>
-                  <span>{formatWindow(swipe.meta.s2_pre.window)}</span>
-                  <span className="cover">{swipe.meta.s2_pre.valid_pct}% cloud-free</span>
-                </>
-              )}
-            </div>
-            <div className="swipe-tag after">
-              <b>After</b>
-              {swipe.meta && (
-                <>
-                  <span>{formatWindow(swipe.meta.s2_post.window)}</span>
-                  <span className="cover">{swipe.meta.s2_post.valid_pct}% cloud-free</span>
-                </>
-              )}
-            </div>
+            {[["before", "pre", "Before"], ["after", "post", "After"]].map(
+              ([side, half, title]) => {
+                const d = swipe.meta?.[`${swipe.sensor}_${half}`];
+                return (
+                  <div key={side} className={`swipe-tag ${side}`}>
+                    <b>{title}</b>
+                    {d && (
+                      <>
+                        <span>{formatWindow(d.window)}</span>
+                        <span className="cover">
+                          {d.valid_pct}% {sensorOf(swipe).cover}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                );
+              }
+            )}
+            {/* The optical pair is six days of monsoon and mostly cloud; the
+                radar pair covers both dates but is false colour. Neither is the
+                right default for everyone, so both are one click away. */}
+            {swipe.meta && (
+              <div className="swipe-sensor" role="group" aria-label="Imagery source">
+                {swipe.meta.sensors.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => swipe.setSensor(s.id)}
+                    className={s.id === swipe.sensor ? "act" : ""}
+                    aria-pressed={s.id === swipe.sensor}
+                    title={s.source}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            )}
             {swipe.loading && <div className="swipe-load">Loading imagery…</div>}
           </div>
         )}
