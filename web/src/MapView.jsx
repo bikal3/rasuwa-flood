@@ -338,7 +338,14 @@ export default function MapView() {
   return (
     <div className="maprow">
       <div className="mapcanvas">
-        <div ref={host} className="mapfill" />
+        {/* Leaflet gives the container tabindex=0, so a screen reader stops here.
+            Without a name it announces a group whose only readable content is the
+            Esri attribution. */}
+        <div
+          ref={host}
+          className="mapfill"
+          aria-label="Map of the Rasuwa corridor: HOT survey damage over the flood corridor derived from terrain. Arrow keys pan, plus and minus zoom."
+        />
         <div className="maploading" data-done={ready}>
           Loading layers…
         </div>

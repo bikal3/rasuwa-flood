@@ -49,6 +49,8 @@ export default function SwipeMap() {
   const [zoom, setZoom] = useState(12);
   const swipe = useSwipe(map, ready);
   const sensor = swipe.meta?.sensors.find((s) => s.id === swipe.sensor) ?? {};
+  const pre = swipe.meta?.[`${swipe.sensor}_pre`];
+  const post = swipe.meta?.[`${swipe.sensor}_post`];
 
   // Build once.
   useEffect(() => {
@@ -177,7 +179,33 @@ export default function SwipeMap() {
       </div>
 
       <div className="mapcanvas comparecanvas">
-        <div ref={host} className="mapfill" />
+        {/* Leaflet writes alt="" on every image overlay and gives the container
+            tabindex=0 with no name, so without these two the entire argument of
+            this map -- that the channel widens between the dates -- exists only
+            as pixels. The description is built from the same manifest as the
+            labels, so it cannot drift from what is on screen. */}
+        <div
+          ref={host}
+          className="mapfill"
+          aria-label={
+            "Before and after satellite imagery of the Rasuwa corridor, " +
+            `${sensor.label ? sensor.label.toLowerCase() : "satellite"} pair. ` +
+            "Arrow keys pan, plus and minus zoom."
+          }
+        />
+        {pre && post && (
+          <p className="sr-only">
+            {sensor.source}. Before: {formatWindow(pre.window)}, {pre.valid_pct}%
+            of the frame {sensor.cover}. After: {formatWindow(post.window)},{" "}
+            {post.valid_pct}% {sensor.cover}. Both dates share one contrast
+            stretch computed on the pre-event image. The change the comparison
+            shows is the Bhote Koshi channel between Rasuwagadhi and Syabrubesi:
+            after the flood it is wider and, in radar, darker, because smooth
+            standing water and fresh wet sediment reflect the radar pulse away
+            from the sensor. Drag the divider, or focus it and use the arrow
+            keys, to move between the two dates.
+          </p>
+        )}
 
         <div className="mapctl">
           <button onClick={() => map.current?.zoomIn()} title="Zoom in" aria-label="Zoom in comparison">+</button>
