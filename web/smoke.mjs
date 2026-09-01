@@ -144,6 +144,15 @@ if (swipeBtn) {
   await new Promise((r) => setTimeout(r, 60));
   want(root.textContent.includes("87% cloud-free") && root.textContent.includes("17% cloud-free"),
     "switching to optical did not relabel the slider with its cloud cover");
+
+  // Whether the slider actually *renders* two images is not checkable here:
+  // jsdom has no layout, and this file stubs every element's box to the same
+  // 1200x800 rectangle, so a clip that resolves to nothing looks fine. That is
+  // swipe-check.mjs, which drives real Chrome.
+  want(window.document.querySelector(".leaflet-imgPre-pane img"),
+    "before overlay image was never added to the map");
+  want(window.document.querySelector(".leaflet-imgPost-pane img"),
+    "after overlay image was never added to the map");
 }
 
 // Clicking a zone must open the comparison, not just move the camera.
