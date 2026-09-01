@@ -184,6 +184,45 @@ if (g.pre && g.post) {
   want(wide.pre.visible > g.pre.visible + 100,
     `dragging the divider right did not widen the before image `
     + `(${g.pre.visible}px -> ${wide.pre.visible}px)`);
+
+  // The divider must also work without a pointer. It shipped pointer-only --
+  // role="separator" with an onPointerDown and nothing else -- which put the
+  // whole comparison out of reach of a keyboard. Tab to it for real, then drive
+  // it, and check the pixels moved rather than only the ARIA value.
+  const key = async (k, shift = false) => {
+    const vk = { ArrowRight: 39, ArrowLeft: 37, Home: 36, End: 35, Tab: 9 }[k];
+    for (const type of ["rawKeyDown", "keyUp"]) {
+      await send("Input.dispatchKeyEvent", { type, key: k, code: k,
+        modifiers: shift ? 8 : 0, windowsVirtualKeyCode: vk, nativeVirtualKeyCode: vk });
+    }
+    await sleep(110);
+  };
+  const bar = () => evaluate(String.raw`(() => {
+    const b = document.querySelector(".swipe-bar");
+    return { focused: document.activeElement === b,
+             now: b.getAttribute("aria-valuenow"),
+             text: b.getAttribute("aria-valuetext") };
+  })()`);
+
+  await evaluate(`document.querySelector(".comparesec").scrollIntoView({block:"center"})`);
+  let hops = 0;
+  while (hops < 14 && !(await bar()).focused) { await key("Tab"); hops++; }
+  const focused = await bar();
+  want(focused.focused, `the divider is not reachable by Tab (gave up after ${hops})`);
+
+  if (focused.focused) {
+    want(/%\s*before/.test(focused.text || ""),
+      `the divider reports no position to assistive tech (aria-valuetext ${JSON.stringify(focused.text)})`);
+    const before = await evaluate(GEOM);
+    await key("End");
+    const after = await evaluate(GEOM);
+    const moved = await bar();
+    want(moved.now !== focused.now,
+      `End did not change aria-valuenow (${focused.now} -> ${moved.now})`);
+    want(Math.abs(after.pre.visible - before.pre.visible) > 100,
+      `End changed the value but not the image `
+      + `(before ${before.pre.visible}px -> ${after.pre.visible}px)`);
+  }
 }
 
 ws.close();
