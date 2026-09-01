@@ -359,40 +359,48 @@ export default function MapView() {
           </button>
         </div>
 
+        {/* This decodes the map's only categorical encoding, so it is a heading
+            and a list rather than a bold line over three divs. */}
         <div className="legend-float">
-          <b>Bridge condition</b>
-          {Object.entries(BRIDGE_COLOUR).map(([k, v]) => (
-            <div key={k}>
-              <i style={{ background: v }} />
-              {k}
-            </div>
-          ))}
+          <h4>Bridge condition</h4>
+          <ul>
+            {Object.entries(BRIDGE_COLOUR).map(([k, v]) => (
+              <li key={k}>
+                <i style={{ background: v }} aria-hidden="true" />
+                {k}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
 
       <aside className="panel">
-        <h3>Basemap</h3>
-        <div className="basemaps">
-          {BASEMAPS.map((b) => (
-            <button
-              key={b.id}
-              aria-pressed={basemap === b.id}
-              onClick={() => setBasemap(b.id)}
-            >
-              {b.label}
-            </button>
-          ))}
+        {/* Order is importance, top to bottom. The inspector answers the map's
+            primary action -- clicking a feature -- so it comes first and sticks;
+            it used to sit 814px down a 667px panel, which put the reply to every
+            click off screen. Navigation and the basemap switch are utilities and
+            go last. */}
+        <div className="inspector">
+          <h3 style={{ padding: 0, marginBottom: ".5rem" }}>Selected feature</h3>
+          {selected ? (
+            <>
+              <h4>{selected.title || selected.layer}</h4>
+              <dl>
+                {Object.entries(selected.props)
+                  .filter(([, v]) => v !== null && v !== "" && v !== undefined)
+                  .slice(0, 10)
+                  .map(([k, v]) => (
+                    <div key={k} style={{ display: "contents" }}>
+                      <dt>{k.replace(/_/g, " ")}</dt>
+                      <dd>{String(v)}</dd>
+                    </div>
+                  ))}
+              </dl>
+            </>
+          ) : (
+            <p className="empty">Click any feature on the map.</p>
+          )}
         </div>
-
-        <h3>Fly to</h3>
-        <div className="zoombar">
-          {PLACES.map((p) => (
-            <button key={p.label} onClick={() => goto(p)}>
-              {p.label}
-            </button>
-          ))}
-        </div>
-
         {Object.entries(grouped).map(([group, items]) => (
           <div className="panel-group" key={group}>
             <h3>
@@ -445,27 +453,28 @@ export default function MapView() {
           </div>
         ))}
 
-        <div className="inspector">
-          <h3 style={{ padding: 0, marginBottom: ".5rem" }}>Selected feature</h3>
-          {selected ? (
-            <>
-              <h4>{selected.title || selected.layer}</h4>
-              <dl>
-                {Object.entries(selected.props)
-                  .filter(([, v]) => v !== null && v !== "" && v !== undefined)
-                  .slice(0, 10)
-                  .map(([k, v]) => (
-                    <div key={k} style={{ display: "contents" }}>
-                      <dt>{k.replace(/_/g, " ")}</dt>
-                      <dd>{String(v)}</dd>
-                    </div>
-                  ))}
-              </dl>
-            </>
-          ) : (
-            <p className="empty">Click any feature on the map.</p>
-          )}
+        <h3>Fly to</h3>
+        <div className="zoombar">
+          {PLACES.map((p) => (
+            <button key={p.label} onClick={() => goto(p)}>
+              {p.label}
+            </button>
+          ))}
         </div>
+
+        <h3>Basemap</h3>
+        <div className="basemaps">
+          {BASEMAPS.map((b) => (
+            <button
+              key={b.id}
+              aria-pressed={basemap === b.id}
+              onClick={() => setBasemap(b.id)}
+            >
+              {b.label}
+            </button>
+          ))}
+        </div>
+
       </aside>
     </div>
   );
