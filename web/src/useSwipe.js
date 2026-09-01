@@ -4,15 +4,19 @@ import L from "leaflet";
 /**
  * Before/after imagery swipe.
  *
- * Two georeferenced Sentinel-2 overlays stacked in their own panes, with the
- * "after" pane clipped to the right of a draggable divider. Clipping the pane
- * rather than redrawing anything means the divider costs one CSS property per
- * frame, and both images stay perfectly registered while you pan and zoom --
- * they are the same map layer, so Leaflet moves them together.
+ * Two georeferenced overlays stacked in their own panes, each clipped to its own
+ * side of a draggable divider. Clipping the panes rather than redrawing anything
+ * means the divider costs one CSS property per frame, and both images stay
+ * perfectly registered while you pan and zoom -- they are the same map layer, so
+ * Leaflet moves them together.
  *
- * The PNGs are 5.7 MB together and are fetched on first activation, not on page
- * load. Most visitors read the findings and never open the slider; they should
- * not pay for it. Once built the overlays are cached, so toggling is instant.
+ * Two pairs are offered. Optical is the readable one and mostly cloud; radar
+ * sees through cloud and covers both dates. The slider opens on whichever pair
+ * actually has post-event pixels, so it opens showing something.
+ *
+ * Each pair is 1-4 MB and is fetched on first use, not on page load -- most
+ * visitors read the findings and never open the slider. Once built the overlays
+ * are cached, so toggling back is instant.
  */
 
 const DATA = "data";
@@ -31,74 +35,85 @@ export function formatWindow(win) {
   return `${ad} ${MONTH[am - 1]} ${ay} – ${end}`;
 }
 
+/** The pair with the most valid post-event pixels -- the one worth opening on. */
+const clearest = (info) =>
+  info.sensors.reduce((a, b) =>
+    info[`${b.id}_post`].valid_pct > info[`${a.id}_post`].valid_pct ? b : a).id;
+
 export default function useSwipe(mapRef, ready) {
-  const overlays = useRef(null);
+  const overlays = useRef({});   // sensor id -> { pre, post }
   const [on, setOn] = useState(false);
   const [pos, setPos] = useState(50);
   const [meta, setMeta] = useState(null);
+  const [sensor, setSensor] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Build on first activation, then reuse.
+  // The manifest, once, on first activation.
   useEffect(() => {
-    const m = mapRef.current;
-    if (!m || !ready || !on) return;
+    if (!on || meta) return;
     let cancelled = false;
+    setLoading(true);
+    fetch(`${DATA}/overlays.json`)
+      .then((r) => {
+        if (!r.ok) throw new Error(`overlays.json ${r.status}`);
+        return r.json();
+      })
+      .then((info) => {
+        if (cancelled) return;
+        setMeta(info);
+        setSensor(clearest(info));
+      })
+      .catch((e) => {
+        console.warn("swipe overlays failed", e);
+        if (!cancelled) setOn(false);
+      })
+      .finally(() => !cancelled && setLoading(false));
+    return () => { cancelled = true; };
+  }, [on, meta]);
 
-    (async () => {
-      if (!overlays.current) {
-        setLoading(true);
-        try {
-          const res = await fetch(`${DATA}/overlays.json`);
-          if (!res.ok) throw new Error(`overlays.json ${res.status}`);
-          const info = await res.json();
-          if (cancelled) return;
-
-          // Below the vector panes (410+) so damage polygons stay on top, above
-          // the basemap tiles so the imagery is what you are comparing.
-          for (const [pane, z] of [["imgPre", 350], ["imgPost", 360]]) {
-            if (!m.getPane(pane)) {
-              m.createPane(pane);
-              m.getPane(pane).style.zIndex = String(z);
-            }
-          }
-          const mk = (file, pane) =>
-            L.imageOverlay(`${DATA}/${file}`, info.bounds, { pane, opacity: 1 });
-          overlays.current = {
-            pre: mk("s2_pre.png", "imgPre"),
-            post: mk("s2_post.png", "imgPost"),
-          };
-          setMeta(info);
-        } catch (e) {
-          console.warn("swipe overlays failed", e);
-          setOn(false);
-          return;
-        } finally {
-          if (!cancelled) setLoading(false);
-        }
-      }
-      if (cancelled) return;
-      overlays.current.pre.addTo(m);
-      overlays.current.post.addTo(m);
-    })();
-
-    return () => {
-      cancelled = true;
-      if (overlays.current) {
-        m.removeLayer(overlays.current.pre);
-        m.removeLayer(overlays.current.post);
-      }
-    };
-  }, [mapRef, ready, on]);
-
-  // The divider. One property, set straight on the pane.
+  // Put the chosen pair on the map. Built once per sensor, then reused.
   useEffect(() => {
     const m = mapRef.current;
-    const pane = m?.getPane("imgPost");
-    if (pane) pane.style.clipPath = `inset(0 0 0 ${pos}%)`;
-  }, [mapRef, pos, on, meta]);
+    if (!m || !ready || !on || !meta || !sensor) return;
+
+    // Below the vector panes (410+) so damage polygons stay on top, above the
+    // basemap tiles so the imagery is what you are comparing.
+    for (const [pane, z] of [["imgPre", 350], ["imgPost", 360]]) {
+      if (!m.getPane(pane)) {
+        m.createPane(pane);
+        m.getPane(pane).style.zIndex = String(z);
+      }
+    }
+    if (!overlays.current[sensor]) {
+      const mk = (half, pane) =>
+        L.imageOverlay(`${DATA}/${sensor}_${half}.png`, meta.bounds,
+                       { pane, opacity: 1 });
+      overlays.current[sensor] = {
+        pre: mk("pre", "imgPre"),
+        post: mk("post", "imgPost"),
+      };
+    }
+    const { pre, post } = overlays.current[sensor];
+    pre.addTo(m);
+    post.addTo(m);
+    return () => {
+      m.removeLayer(pre);
+      m.removeLayer(post);
+    };
+  }, [mapRef, ready, on, meta, sensor]);
+
+  // The divider. One property per pane, set straight on the panes.
+  useEffect(() => {
+    const m = mapRef.current;
+    if (!m) return;
+    const pre = m.getPane("imgPre");
+    const post = m.getPane("imgPost");
+    if (pre) pre.style.clipPath = `inset(0 ${100 - pos}% 0 0)`;
+    if (post) post.style.clipPath = `inset(0 0 0 ${pos}%)`;
+  }, [mapRef, pos, on, meta, sensor]);
 
   const toggle = useCallback(() => setOn((v) => !v), []);
   const open = useCallback(() => setOn(true), []);
 
-  return { on, toggle, open, pos, setPos, meta, loading };
+  return { on, toggle, open, pos, setPos, meta, sensor, setSensor, loading };
 }

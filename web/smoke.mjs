@@ -128,12 +128,22 @@ if (swipeBtn) {
   }
   const sw = root.querySelector(".swipe");
   want(sw, "swipe divider did not appear after activation");
-  const tags = root.textContent;
-  want(tags.includes("1–25 Aug 2026"), "before label is missing its date window");
-  want(tags.includes("26 Aug – 1 Sep 2026"), "after label is missing its date window");
-  want(tags.includes("87% cloud-free") && tags.includes("17% cloud-free"),
-    "cloud-free cover is not stated on the slider");
+  // It opens on the pair with post-event pixels, which is radar: the optical
+  // "after" is 17% cloud-free and would open on a mostly empty frame.
+  want(root.textContent.includes("8–25 Aug 2026"), "before label is missing its date window");
+  want(root.textContent.includes("26 Aug – 1 Sep 2026"), "after label is missing its date window");
+  want(root.textContent.includes("97.4% in frame"),
+    "radar cover is not stated on the slider");
   want(sw?.getAttribute("style")?.includes("--x"), "divider position is not bound");
+
+  // Switching to optical must relabel both tags from the same manifest.
+  const optical = [...root.querySelectorAll(".swipe-sensor button")]
+    .find((b) => b.textContent === "Optical");
+  want(optical, "no optical/radar switch on the slider");
+  optical?.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
+  await new Promise((r) => setTimeout(r, 60));
+  want(root.textContent.includes("87% cloud-free") && root.textContent.includes("17% cloud-free"),
+    "switching to optical did not relabel the slider with its cloud cover");
 }
 
 // Clicking a zone must open the comparison, not just move the camera.
