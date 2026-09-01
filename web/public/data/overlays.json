@@ -20,7 +20,7 @@
   {
    "id": "s1",
    "label": "Radar",
-   "source": "Sentinel-1 GRD median, VV backscatter in dB -- sees through cloud",
+   "source": "Sentinel-1 GRD median, VV backscatter in dB \u2014 sees through cloud",
    "cover": "in frame"
   }
  ],

@@ -35,7 +35,7 @@ Two things this does that stage 2's plate does not:
   error grows across the frame. Reprojecting first makes the linear stretch exact.
 
 Where a composite has no valid pixel the PNG is transparent rather than filled.
-The slider clips both panes to the divider, so a gap in the "after" shows as a
+The slider clips both images to the divider, so a gap in the "after" shows as a
 gap instead of quietly revealing the "before" underneath it.
 """
 
@@ -89,7 +89,7 @@ SENSORS = (
     ("s2", "Optical", s2_rgb, (cfg.S2_PRE, cfg.S2_POST),
      "Sentinel-2 L2A true colour, cloud-masked median composite", "cloud-free"),
     ("s1", "Radar", s1_grey, (cfg.S1_PRE, cfg.S1_POST),
-     "Sentinel-1 GRD median, VV backscatter in dB -- sees through cloud",
+     "Sentinel-1 GRD median, VV backscatter in dB \u2014 sees through cloud",
      "in frame"),
 )
 
