@@ -168,6 +168,17 @@ for (const name of Object.keys(summary.layer_bytes)) {
     "Betrawati is outside the imagery footprint and should not be offered");
 }
 
+// Both maps must be named; without it a screen reader meets two identical
+// unlabelled groups whose only readable content is the Esri attribution.
+{
+  const labels = [...root.querySelectorAll(".mapfill")].map((m) => m.getAttribute("aria-label"));
+  want(labels.length === 2, `expected two maps, found ${labels.length}`);
+  want(labels.every(Boolean), "a map container has no accessible name");
+  want(new Set(labels).size === labels.length, "both maps carry the same name");
+  want(root.querySelector(".comparesec .sr-only")?.textContent.length > 200,
+    "the comparison imagery has no text alternative");
+}
+
 // Zone ids still fly the main map, and must not throw doing it.
 root.querySelector(".zonelink")
     ?.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
