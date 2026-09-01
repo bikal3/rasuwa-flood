@@ -19,7 +19,7 @@ without any of it:
 | 2 | `pipeline/stage2_analysis.py` | change rasters, damage polygons, zonal stats, maps | **Python**, and the outputs go back into ArcGIS Pro |
 | 3 | `pipeline/stage3_corridor.py` | terrain + HAND, the flood corridor, corridor-confined damage | **Python**, ditto — and the DEM stack HEC-RAS wants |
 | 4 | `pipeline/stage4_hot.py` | HOT ground survey, validation scores, the site's data | **Python**, and `web/` |
-| 5 | `pipeline/stage5_overlays.py` | pre/post true-colour PNGs in Web Mercator | the site's before/after slider |
+| 5 | `pipeline/stage5_overlays.py` | pre/post optical + radar PNGs in Web Mercator | the site's before/after slider |
 | — | `web/` (React + esbuild) | a static site: interactive map, findings, tables, downloads | **Anyone with a browser** |
 
 Each stage reads the previous one's files off disk and nothing else. No stage calls
@@ -276,9 +276,9 @@ Two numbers that look bad and are not:
 python pipeline/stage5_overlays.py
 ```
 
-Reprojects the Sentinel-2 composites to Web Mercator and writes them as PNGs the
-map lays over the terrain, plus `overlays.json` with the bounds, windows and
-cloud cover. Two decisions worth knowing:
+Reprojects the Sentinel-2 and Sentinel-1 composites to Web Mercator and writes
+them as PNGs the map lays over the terrain, plus `overlays.json` with the bounds,
+windows and valid cover. Three decisions worth knowing:
 
 - **One stretch for both dates.** Stage 2's plate percentile-stretches each image
   independently, which is right for looking at one scene and wrong for comparing
@@ -290,14 +290,49 @@ cloud cover. Two decisions worth knowing:
   pixels land in roughly the right place and precisely the wrong one, with the
   error growing across the frame.
 
-The post-event composite is **17% cloud-free** against the pre's **87%**. Gaps
-are transparent rather than filled, and both figures are printed on the slider —
-dragging across a hole should tell you it is cloud, not clear ground. For the
-same reason the labels read `1–25 Aug 2026` and `26 Aug – 1 Sep 2026`: these are
-median composites over a window, not single acquisitions, and dating them exactly
-would be a lie.
+- **Two pairs, because optical alone cannot answer it.** The post-event Sentinel-2
+  composite is **17% cloud-free** against the pre's **87%** — six days of monsoon
+  over a Himalayan gorge, and no later imagery exists yet to widen the window
+  with. So the slider also carries a Sentinel-1 pair: radar sees through cloud,
+  both dates are complete, and VV backscatter in dB puts smooth water near black,
+  which is exactly the change worth looking at. It is rendered grey rather than a
+  VV/VH false colour — in terrain this steep the colour version is dominated by
+  layover and shadow striping that is identical in both dates and reads as change
+  when it is not. The slider opens on whichever pair has post-event pixels, and
+  the switch is on the map.
 
-The PNGs are 5.7 MB and load only when the slider is opened.
+Gaps are transparent rather than filled, and the valid figure is printed on the
+slider for whichever pair is showing — dragging across a hole should tell you it
+is cloud, not clear ground. For the same reason the labels read `1–25 Aug 2026`
+and `26 Aug – 1 Sep 2026`: these are median composites over a window, not single
+acquisitions, and dating them exactly would be a lie.
+
+**The divider clips the two `<img>` elements, not their Leaflet panes.** This is
+the bug the slider shipped with, and it is worth writing down because nothing
+about it looks wrong. A Leaflet pane is a `position: absolute` div with no width
+or height — its children are placed by transform and never size it — and
+`clip-path` percentages resolve against the element's own border box. So
+`inset(0 50% 0 0)` on a pane is fifty percent of zero: the whole image is clipped
+away. In the DOM everything reads correctly (style set, image loaded, position
+right); on screen there is only basemap, and the slider looks like it does
+nothing because it does nothing. The clip is measured in pixels from each image's
+own box instead, recomputed on `move`, `zoom`, `viewreset` and `resize`.
+
+Both halves are clipped, not just the "after" one. Clipping only the after leaves
+the before drawing full-width underneath it, so wherever the after has no pixels
+the before shows through — on a 17%-cloud-free post-event frame that would be
+five sixths of the "after" half showing the "before" image under the after label.
+
+`web/smoke.mjs` cannot catch either of these: jsdom has no layout and stubs every
+element's box to the same rectangle, so a clip that resolves to nothing passes.
+`web/swipe-check.mjs` drives real Chrome over CDP — no dependencies — opens the
+slider, drags the divider and measures the strip of each image that survives its
+clip.
+
+The four PNGs are 3.1 MB total and load a pair at a time, only when the slider is
+opened. They are 8-bit palette PNGs: quantising to 255 colours costs about three
+levels of mean error, invisible against the noise already in the composites, and
+roughly a third of the bytes of full RGBA.
 
 ## Way 6 — the static site
 
@@ -335,7 +370,8 @@ needs the stage 1–3 rasters, which need Earth Engine credentials.
 ```bash
 python pipeline/test_analysis.py                 # stage 2
 python pipeline/test_corridor.py                 # stage 3
-cd web && node build.mjs && node smoke.mjs   # the site, incl. the slider
+cd web && node build.mjs && node smoke.mjs   # the site: data contract, layers, chrome
+cd web && node swipe-check.mjs               # the slider, in real Chrome
 ```
 
 `pipeline/test_analysis.py` builds synthetic rasters with a known damage footprint —
