@@ -3,6 +3,9 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { LAYERS, BASEMAPS, PLACES, BRIDGE_COLOUR } from "./layers.js";
 
+/** "Observed — HOT survey" -> "observed-hot-survey", for label/input pairing. */
+const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
 /**
  * Leaflet driven directly from an effect rather than through react-leaflet.
  *
@@ -403,22 +406,30 @@ export default function MapView() {
         </div>
         {Object.entries(grouped).map(([group, items]) => (
           <div className="panel-group" key={group}>
-            <h3>
-              {group}
+            <h3>{group}</h3>
+            {/* Fading one group against the other is the page's central argument,
+                and it used to render as a 3px hairline slotted into the heading
+                above, with no visible label and no name but an aria-label. It now
+                looks like the control it is. */}
+            <div className="fade-row">
+              <label htmlFor={`fade-${slug(group)}`}>Opacity</label>
               <input
+                id={`fade-${slug(group)}`}
                 className="fade"
                 type="range"
                 min="0.15"
                 max="1"
                 step="0.05"
                 value={fade[group] ?? 1}
-                aria-label={`Opacity of ${group}`}
-                title={`Opacity — fade this group against the other`}
+                title="Fade this group against the other"
                 onChange={(e) =>
                   setFade((f) => ({ ...f, [group]: Number(e.target.value) }))
                 }
               />
-            </h3>
+              <output htmlFor={`fade-${slug(group)}`}>
+                {Math.round((fade[group] ?? 1) * 100)}%
+              </output>
+            </div>
             {items.map((l) => (
               <button
                 key={l.id}
