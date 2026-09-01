@@ -23,6 +23,25 @@ import useSwipe, { formatWindow } from "./useSwipe.js";
 // and letting someone zoom to 18 only teaches them the overlay is broken.
 const MAX_ZOOM = 16;
 
+/**
+ * The zoom at which the imagery covers the frame rather than fitting inside it.
+ *
+ * The scene is roughly square and this map is a wide band, so fitBounds -- which
+ * contains -- strands a square of imagery in a field of basemap with nothing to
+ * look at down either side. Cover instead: fill the frame and let the ends of
+ * the scene run off the top and bottom. Centred, that is the Timure-Syabrubesi
+ * stretch, which is the part anyone came here to see.
+ */
+const coverZoom = (m, bounds) => {
+  const nw = m.project(bounds.getNorthWest(), 0);
+  const se = m.project(bounds.getSouthEast(), 0);
+  const size = m.getSize();
+  return Math.min(MAX_ZOOM, Math.max(
+    Math.log2(size.x / (se.x - nw.x)),
+    Math.log2(size.y / (se.y - nw.y)),
+  ));
+};
+
 export default function SwipeMap() {
   const host = useRef(null);
   const map = useRef(null);
@@ -78,10 +97,10 @@ export default function SwipeMap() {
     return () => io.disconnect();
   }, [swipe.open]);
 
-  // Open on the imagery footprint. It is a fraction of the corridor the map
-  // above covers, and any other starting view is mostly basemap.
+  // Open on the imagery. It is a fraction of the corridor the map above covers,
+  // and any other starting view is mostly basemap.
   useEffect(() => {
-    if (swipe.meta) map.current?.fitBounds(swipe.meta.bounds, { padding: [10, 10] });
+    if (swipe.meta) show(false);
   }, [swipe.meta]);
 
   // Only the named views the imagery actually covers -- Betrawati is 30 km south
@@ -91,9 +110,14 @@ export default function SwipeMap() {
         L.latLngBounds(swipe.meta.bounds).contains([p.view[0], p.view[1]]))
     : [];
 
-  const show = () =>
-    swipe.meta &&
-    map.current?.flyToBounds(swipe.meta.bounds, { padding: [10, 10], duration: 0.8 });
+  function show(animate = true) {
+    const m = map.current;
+    if (!m || !swipe.meta) return;
+    const b = L.latLngBounds(swipe.meta.bounds);
+    const z = coverZoom(m, b);
+    if (animate) m.flyTo(b.getCenter(), z, { duration: 0.8 });
+    else m.setView(b.getCenter(), z, { animate: false });
+  }
 
   const dragDivider = (e) => {
     const box = host.current?.getBoundingClientRect();
@@ -125,7 +149,7 @@ export default function SwipeMap() {
           {sensor.source && <p className="comparesrc">{sensor.source}</p>}
         </div>
         <div className="compareplaces">
-          <button onClick={show}>Whole scene</button>
+          <button onClick={() => show()}>Fit imagery</button>
           {places.map((p) => (
             <button
               key={p.label}
@@ -146,7 +170,7 @@ export default function SwipeMap() {
           <button onClick={() => map.current?.zoomIn()} title="Zoom in" aria-label="Zoom in comparison">+</button>
           <span className="z" title="Zoom level">{zoom.toFixed(2).replace(/\.?0+$/, "")}</span>
           <button onClick={() => map.current?.zoomOut()} title="Zoom out" aria-label="Zoom out comparison">−</button>
-          <button onClick={show} title="Fit the imagery" aria-label="Fit imagery">⤢</button>
+          <button onClick={() => show()} title="Fit the imagery" aria-label="Fit imagery">⤢</button>
         </div>
 
         <div className="swipe" style={{ "--x": `${swipe.pos}%` }}>
