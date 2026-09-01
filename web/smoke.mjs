@@ -168,6 +168,20 @@ for (const name of Object.keys(summary.layer_bytes)) {
     "Betrawati is outside the imagery footprint and should not be offered");
 }
 
+// Panel order is importance order. The inspector answers the map's primary
+// action, so it leads; the basemap switch changes no data, so it trails. This
+// shipped the other way round, with the inspector 814px down a 667px panel.
+{
+  const blocks = [...root.querySelector("aside.panel").children];
+  const first = blocks.findIndex((b) => b.className.includes("inspector"));
+  const layers = blocks.findIndex((b) => b.className.includes("panel-group"));
+  const basemaps = blocks.findIndex((b) => b.className.includes("basemaps"));
+  want(first === 0, `the selected-feature inspector is not first in the panel (index ${first})`);
+  want(layers > first && layers < basemaps,
+    `layer toggles should sit between the inspector and the utilities `
+    + `(inspector ${first}, layers ${layers}, basemap ${basemaps})`);
+}
+
 // Both maps must be named; without it a screen reader meets two identical
 // unlabelled groups whose only readable content is the Esri attribution.
 {
