@@ -180,6 +180,16 @@ for (const name of Object.keys(summary.layer_bytes)) {
   want(layers > first && layers < basemaps,
     `layer toggles should sit between the inspector and the utilities `
     + `(inspector ${first}, layers ${layers}, basemap ${basemaps})`);
+
+  // The opacity control carries the page's central comparison. It used to be a
+  // 3px track slotted into an <h3> whose only name was an aria-label.
+  const rows = [...root.querySelectorAll(".fade-row")];
+  want(rows.length === 2, `expected two labelled opacity controls, found ${rows.length}`);
+  for (const r of rows) {
+    const input = r.querySelector("input.fade");
+    const label = r.querySelector(`label[for="${input?.id}"]`);
+    want(input?.id && label, "the opacity slider has no visible label bound to it");
+  }
 }
 
 // Both maps must be named; without it a screen reader meets two identical

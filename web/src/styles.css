@@ -7,6 +7,9 @@
   --ink-2: #52514e;
   --muted: #898781;
   --grid: #e1e0d9;
+  /* --grid is 1.29:1 on paper: fine for a decorative rule, invisible as the
+     boundary of a control. Controls use this instead, at 3.1:1. */
+  --track: #a9a7a0;
   --paper: #fcfcfb;
   --paper-2: #f4f3ee;
   --blue: #2a78d6;
@@ -133,16 +136,38 @@ section { padding-block: clamp(3rem, 7vw, 5.5rem); border-bottom: var(--rule); }
 }
 .panel-group { border-bottom: var(--rule); padding-bottom: .7rem; }
 .panel h3 { display: flex; align-items: center; gap: .6rem; }
+/* Fading one group against the other is the argument of the page, so it gets a
+   visible label and a target you can hit. The 3px band is still the visual, but
+   it is painted inside a 24px input rather than being the input: a 3px control
+   fails WCAG 2.5.8 and reads as a rule between two headings. */
+.fade-row {
+  display: flex; align-items: center; gap: .55rem;
+  padding: 0 1.15rem .35rem; color: var(--muted);
+}
+.fade-row label {
+  font-family: var(--mono); font-size: .62rem; letter-spacing: .12em;
+  text-transform: uppercase; cursor: pointer;
+}
+.fade-row output {
+  font-family: var(--mono); font-size: .68rem; font-variant-numeric: tabular-nums;
+  min-width: 3ch; text-align: right; color: var(--ink-2);
+}
 .fade {
   -webkit-appearance: none; appearance: none; flex: 1; min-width: 54px;
-  height: 3px; border-radius: 2px; background: var(--grid); cursor: pointer;
+  height: 24px; background: none; cursor: pointer; margin: 0;
 }
+.fade::-webkit-slider-runnable-track {
+  height: 3px; border-radius: 2px; background: var(--track);
+}
+.fade::-moz-range-track { height: 3px; border-radius: 2px; background: var(--track); }
 .fade::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 11px; height: 11px; border-radius: 50%;
-  background: var(--ink); border: 2px solid var(--paper);
+  -webkit-appearance: none; width: 15px; height: 15px; margin-top: -6px;
+  border-radius: 50%; background: var(--ink); border: 2px solid var(--paper);
+  box-shadow: 0 0 0 1px var(--track);
 }
 .fade::-moz-range-thumb {
-  width: 9px; height: 9px; border-radius: 50%; background: var(--ink); border: 0;
+  width: 13px; height: 13px; border-radius: 50%; background: var(--ink);
+  border: 2px solid var(--paper); box-shadow: 0 0 0 1px var(--track);
 }
 
 .layer {
