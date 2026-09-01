@@ -119,14 +119,27 @@ export default function SwipeMap() {
     else m.setView(b.getCenter(), z, { animate: false });
   }
 
+  const clampPos = (v) => Math.min(97, Math.max(3, v));
+
+  // The divider was pointer-only: role="separator" with an onPointerDown and
+  // nothing else, so a keyboard walk of the page never reached it and the whole
+  // comparison was unavailable without a mouse. A focusable separator is a
+  // window splitter, which is exactly what this is, so it takes the splitter
+  // keys and reports its position as a value.
+  const onDividerKey = (e) => {
+    const step = e.shiftKey ? 10 : 2;
+    const by = { ArrowLeft: -step, ArrowRight: step, Home: -100, End: 100 }[e.key];
+    if (by === undefined) return;
+    e.preventDefault();
+    swipe.setPos((p) => clampPos(p + by));
+  };
+
   const dragDivider = (e) => {
     const box = host.current?.getBoundingClientRect();
     if (!box) return;
     e.currentTarget.setPointerCapture?.(e.pointerId);
     const move = (ev) =>
-      swipe.setPos(
-        Math.min(97, Math.max(3, ((ev.clientX - box.left) / box.width) * 100))
-      );
+      swipe.setPos(clampPos(((ev.clientX - box.left) / box.width) * 100));
     move(e);
     const up = () => {
       window.removeEventListener("pointermove", move);
@@ -174,9 +187,22 @@ export default function SwipeMap() {
         </div>
 
         <div className="swipe" style={{ "--x": `${swipe.pos}%` }}>
-          <div className="swipe-bar" onPointerDown={dragDivider} role="separator"
-               aria-label="Drag to compare before and after">
-            <span className="grip">↔</span>
+          <div
+            className="swipe-bar"
+            onPointerDown={dragDivider}
+            onKeyDown={onDividerKey}
+            role="separator"
+            tabIndex={0}
+            aria-orientation="vertical"
+            aria-label="Comparison divider"
+            aria-valuemin={3}
+            aria-valuemax={97}
+            aria-valuenow={Math.round(swipe.pos)}
+            aria-valuetext={`${Math.round(swipe.pos)}% before, ${
+              100 - Math.round(swipe.pos)
+            }% after`}
+          >
+            <span className="grip" aria-hidden="true">↔</span>
           </div>
           {[["before", "pre", "Before"], ["after", "post", "After"]].map(
             ([side, half, title]) => {
