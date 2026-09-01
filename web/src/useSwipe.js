@@ -10,6 +10,13 @@ import L from "leaflet";
  * perfectly registered while you pan and zoom -- they are the same map layer, so
  * Leaflet moves them together.
  *
+ * **Both** panes are clipped, not just the "after" one. Clipping only the after
+ * leaves the before drawing full-width underneath it, so wherever the after has
+ * no pixels the before shows through and the slider looks like it does nothing.
+ * That is not a cosmetic difference here: the post-event optical composite is
+ * 17% cloud-free, so five sixths of the "after" half would have been the "before"
+ * image wearing the after label.
+ *
  * Two pairs are offered. Optical is the readable one and mostly cloud; radar
  * sees through cloud and covers both dates. The slider opens on whichever pair
  * actually has post-event pixels, so it opens showing something.
@@ -102,14 +109,38 @@ export default function useSwipe(mapRef, ready) {
     };
   }, [mapRef, ready, on, meta, sensor]);
 
-  // The divider. One property per pane, set straight on the panes.
+  // The divider.
+  //
+  // The clip goes on the two <img> elements, not on their panes. A Leaflet pane
+  // is a 0x0 positioned div -- its children are placed by transform and never
+  // size it -- and clip-path percentages resolve against the element's own
+  // border box, so `inset(0 50% 0 0)` on a pane is 50% of nothing and clips the
+  // image away entirely. That is invisible in the DOM (the style is set, the
+  // image is loaded and positioned) and total on screen. Leaflet does give each
+  // overlay <img> a real box, so the split is measured in pixels from that box's
+  // left edge instead, and recomputed whenever the map moves it.
   useEffect(() => {
     const m = mapRef.current;
-    if (!m) return;
-    const pre = m.getPane("imgPre");
-    const post = m.getPane("imgPost");
-    if (pre) pre.style.clipPath = `inset(0 ${100 - pos}% 0 0)`;
-    if (post) post.style.clipPath = `inset(0 0 0 ${pos}%)`;
+    const pair = overlays.current[sensor];
+    if (!m || !on || !pair) return;
+
+    const clip = () => {
+      const pre = pair.pre.getElement();
+      const post = pair.post.getElement();
+      if (!pre || !post) return;
+      // Both halves share one set of bounds, so one box does for both.
+      const nw = m.latLngToLayerPoint(pair.pre.getBounds().getNorthWest());
+      const se = m.latLngToLayerPoint(pair.pre.getBounds().getSouthEast());
+      const w = se.x - nw.x;
+      const x = m.containerPointToLayerPoint([(m.getSize().x * pos) / 100, 0]).x;
+      const cut = Math.min(Math.max(x - nw.x, 0), w);
+      pre.style.clipPath = `inset(0 ${w - cut}px 0 0)`;
+      post.style.clipPath = `inset(0 0 0 ${cut}px)`;
+    };
+
+    clip();
+    m.on("move zoom viewreset resize", clip);
+    return () => m.off("move zoom viewreset resize", clip);
   }, [mapRef, pos, on, meta, sensor]);
 
   const toggle = useCallback(() => setOn((v) => !v), []);
