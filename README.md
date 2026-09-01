@@ -329,8 +329,8 @@ element's box to the same rectangle, so a clip that resolves to nothing passes.
 slider, drags the divider and measures the strip of each image that survives its
 clip.
 
-The four PNGs are 3.1 MB total and load a pair at a time, only when the slider is
-opened. They are 8-bit palette PNGs: quantising to 255 colours costs about three
+The four PNGs are 3.1 MB total and load a pair at a time, fetched when the
+comparison map nears the viewport rather than on page load. They are 8-bit palette PNGs: quantising to 255 colours costs about three
 levels of mean error, invisible against the noise already in the composites, and
 roughly a third of the bytes of full RGBA.
 
@@ -355,11 +355,28 @@ every layer. Interaction:
 | | |
 | :-- | :-- |
 | Zoom | Quarter-level steps — the corridor is 120 km but a washed-out bridge is metres. `+` / `−` / `f` to fit |
-| Before/after | `◐` opens a draggable divider over the pre/post imagery, each side dated |
-| Click | A bridge, building or zone id flies there **and** opens the comparison |
+| Click | A bridge, building or zone id selects it and flies there |
 | Opacity | A slider per group fades observed against derived, which is the whole argument |
 | Zoom-gated | 1,626 building footprints draw from z12.5; the panel says so rather than looking broken |
-| Share | The view lives in the URL hash, so any view can be linked | `pipeline/stage4_hot.py` writes `web/public/data/`, so the app fetches static
+| Share | The view lives in the URL hash, so any view can be linked |
+
+**The before/after comparison is a second map, below this one.** It was a mode on
+this map, sharing the viewport with 1,600 damage polygons and a fourteen-layer
+panel, and that was wrong twice over. The imagery covers the Sentinel ROI, which
+is the northern third of a corridor this map has to fit end to end, so the slider
+spent most of its life showing a patch of overlay in one corner. And a swipe
+answers a different question from a layer toggle — *what changed here* against
+*what did the survey record here* — so sharing one viewport meant setting up for
+one destroyed the view you wanted for the other.
+
+The comparison map has no vector layers, one basemap and its own view, capped at
+z16 because the imagery is a 20 m grid and past that it is mush. It opens filling
+the frame with imagery rather than fitting the scene inside it: the scene is
+roughly square, the map is a wide band, and `fitBounds` strands a square of
+imagery in a field of basemap. Its overlays are fetched when the section nears
+the viewport, so a visitor who never scrolls that far never pays the 1.6 MB.
+
+`pipeline/stage4_hot.py` writes `web/public/data/`, so the app fetches static
 files at runtime rather than inlining 2.6 MB into the bundle.
 
 `web/public/data/` is committed for the same reason `maps/` is: regenerating it
