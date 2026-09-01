@@ -57,6 +57,12 @@ export default function App() {
             satellite is consulted.
           </p>
 
+          {/* Colour encodes one thing and only one thing: red is a loss, blue is
+              a measured extent, ink is exposure without a loss claim. Before
+              this rule the row had 264 road segments *destroyed* set in the same
+              ink as 10 hydropower projects merely *exposed*, while 39 bridges
+              destroyed were red -- five numbers at one size with a colour that
+              meant nothing, so the reader did the ranking. */}
           <div className="statbar">
             <div className="stat is-blue" style={{ animationDelay: "0ms" }}>
               <b>{fmt(a["HOT observed flood extent, whole corridor"], 1)} km²</b>
@@ -70,7 +76,7 @@ export default function App() {
               <b>{int(s.buildings_by_status.Destroyed)}</b>
               <span>Buildings destroyed</span>
             </div>
-            <div className="stat" style={{ animationDelay: "240ms" }}>
+            <div className="stat is-red" style={{ animationDelay: "240ms" }}>
               <b>{int(s.roads_by_status.Destroyed)}</b>
               <span>Road segments destroyed</span>
             </div>
