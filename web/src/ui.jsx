@@ -19,12 +19,17 @@ export const fmt = (v, d = 1) =>
 export const int = (v) =>
   v === null || v === undefined ? "—" : Number(v).toLocaleString("en");
 
+/**
+ * A numbered section. `display: contents` on the head puts the number in the
+ * section grid's margin column and the heading in the text column, without a
+ * wrapper box between them -- see the section grid in styles.css.
+ */
 export function Section({ no, title, lede, children, id }) {
   return (
     <section id={id}>
       <div className="wrap">
         <div className="sec-head">
-          <span className="sec-no">{no}</span>
+          <span className="sec-no idx">§{no}</span>
           <div>
             <h2>{title}</h2>
             {lede && <p>{lede}</p>}

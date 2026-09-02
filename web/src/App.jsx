@@ -199,7 +199,7 @@ export default function App() {
       {/* ---------------------------------------------------------------- */}
       <Section
         id="finding"
-        no="01"
+        no="1"
         title="Terrain alone finds the damage"
         lede="Height Above Nearest Drainage is computed from a 30 m elevation model and nothing else — no imagery, no flood report. It asks one question of every pixel: how far above the river is this ground?"
       >
@@ -284,7 +284,7 @@ export default function App() {
       {/* ---------------------------------------------------------------- */}
       <Section
         id="detection"
-        no="02"
+        no="2"
         title="What the satellites caught, and what they missed"
         lede="Sentinel-2 index differencing OR a Sentinel-1 backscatter swing, confined to the corridor. Measured against the survey, honestly."
       >
@@ -369,7 +369,7 @@ export default function App() {
       {/* ---------------------------------------------------------------- */}
       <Section
         id="exposure"
-        no="03"
+        no="3"
         title="What sat inside the water"
         lede="Counts clipped to the observed flood extent itself, not to the 200 m buffer the export ships. Being in the dataset is not evidence of damage; being inside the extent is."
       >
@@ -456,7 +456,7 @@ export default function App() {
       {/* ---------------------------------------------------------------- */}
       <Section
         id="method"
-        no="04"
+        no="4"
         title="Method, and where it breaks"
         lede="Four stages, each reading the previous one's files off disk. Nothing here is a validated classifier."
       >
@@ -515,7 +515,7 @@ export default function App() {
       {/* ---------------------------------------------------------------- */}
       <Section
         id="data"
-        no="05"
+        no="5"
         title="Data"
         lede="Every layer the map draws, as GeoJSON in WGS84. Open them in QGIS or ArcGIS Pro directly."
       >
