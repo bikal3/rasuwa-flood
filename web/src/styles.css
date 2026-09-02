@@ -1,6 +1,10 @@
-/* Survey-report aesthetic: warm paper, ink hairlines, monospaced figures.
-   The palette is config.py's, so the site and the matplotlib plates in maps/
-   read as one publication. */
+/* A printed technical report, not a web page about one.
+
+   Warm paper, ink hairlines, a serif text column and monospaced figures. The
+   palette is config.py's, so the site and the matplotlib plates in maps/ read
+   as one publication -- and the type now agrees with it: Spectral sets the
+   prose, IBM Plex Mono every number, label, figure caption and section index,
+   IBM Plex Sans only the map chrome, where a small serif goes mushy. */
 
 :root {
   --ink: #0b0b0b;
@@ -16,12 +20,15 @@
   --red: #d03b3b;
   --rule: 1px solid var(--grid);
 
+  --serif: "Spectral", Georgia, "Times New Roman", serif;
   --sans: "IBM Plex Sans", ui-sans-serif, sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, monospace;
-  --display: "Fraunces", Georgia, serif;
 
   --pad: clamp(1.25rem, 4vw, 4rem);
-  --max: 1280px;
+  --max: 1180px;
+  /* One measure for every column of prose on the page. Anything wider is a
+     paragraph you lose your place in. */
+  --measure: 34rem;
 }
 
 * { box-sizing: border-box; }
@@ -37,22 +44,28 @@ html { scroll-behavior: smooth; }
 
 body {
   margin: 0;
+  /* Flat stock. The two coloured washes that used to sit here were the page's
+     loudest tell that it was a website with a report inside it. */
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--sans);
-  font-size: 15px;
-  line-height: 1.62;
+  font-family: var(--serif);
+  font-size: 16.5px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  /* Faint paper tooth so the background is not a flat fill. */
-  background-image:
-    radial-gradient(circle at 15% 10%, rgba(42, 120, 214, .05), transparent 45%),
-    radial-gradient(circle at 85% 0%, rgba(208, 59, 59, .045), transparent 40%);
-  background-attachment: fixed;
+  text-rendering: optimizeLegibility;
 }
 
-h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -.015em; margin: 0; }
-a { color: var(--blue); text-decoration-thickness: 1px; text-underline-offset: 2px; }
-a:hover { color: var(--red); }
+h1, h2, h3, h4 {
+  font-family: var(--serif); font-weight: 600; letter-spacing: -.005em; margin: 0;
+}
+p { max-width: var(--measure); }
+/* Ink, not a colour: a citation-dense page in blue reads as a link farm. The
+   rule under the word carries it instead, and thickens on hover. */
+a {
+  color: var(--ink); text-decoration-color: var(--track);
+  text-decoration-thickness: 1px; text-underline-offset: 2.5px;
+}
+a:hover { text-decoration-color: var(--red); text-decoration-thickness: 2px; }
 
 .wrap { max-width: var(--max); margin: 0 auto; padding-inline: var(--pad); }
 
@@ -68,13 +81,10 @@ a:hover { color: var(--red); }
   content: ""; width: 2.5rem; height: 1px; background: var(--red); display: block;
 }
 .masthead h1 {
-  font-size: clamp(2.4rem, 6.5vw, 5rem); line-height: .98;
-  font-weight: 600; max-width: 18ch;
+  font-size: clamp(1.9rem, 3.6vw, 2.7rem); line-height: 1.14;
+  font-weight: 600; max-width: 26ch; letter-spacing: -.012em;
 }
-.masthead h1 em {
-  font-style: italic; font-weight: 300; color: var(--ink-2);
-  font-variation-settings: "SOFT" 40;
-}
+.masthead h1 em { font-style: italic; font-weight: 400; color: var(--ink-2); }
 .standfirst {
   max-width: 62ch; margin-top: 1.75rem; font-size: 1.06rem; color: var(--ink-2);
 }
@@ -83,10 +93,7 @@ a:hover { color: var(--red); }
   display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   margin-top: clamp(2rem, 5vw, 3.5rem); border-top: var(--rule);
 }
-.stat {
-  padding: 1.4rem 1.25rem 1.6rem; border-right: var(--rule);
-  animation: rise .7s cubic-bezier(.2, .7, .3, 1) backwards;
-}
+.stat { padding: 1.4rem 1.25rem 1.6rem; border-right: var(--rule); }
 .stat:last-child { border-right: 0; }
 .stat b {
   display: block; font-family: var(--mono); font-weight: 500;
@@ -95,8 +102,6 @@ a:hover { color: var(--red); }
 .stat span { display: block; font-size: .78rem; color: var(--muted); margin-top: .45rem; }
 .stat.is-red b { color: var(--red); }
 .stat.is-blue b { color: var(--blue); }
-
-@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
 
 /* ---------- sections ---------- */
 
@@ -119,6 +124,9 @@ section { padding-block: clamp(3rem, 7vw, 5.5rem); border-bottom: var(--rule); }
   display: grid; grid-template-columns: minmax(0, 1fr) 310px;
   height: min(82vh, 880px); min-height: 520px;
 }
+/* The map and its panel are instruments, not prose: they keep the sans, where
+   a 12px serif label over imagery would only go soft. */
+.maprow, .mapcanvas { font-family: var(--sans); }
 .mapcanvas { position: relative; background: var(--paper-2); }
 /* The host div must fill the cell before Leaflet initialises, or the map is
    built against a zero-height container and fitBounds picks the wrong zoom. */
@@ -215,7 +223,7 @@ section { padding-block: clamp(3rem, 7vw, 5.5rem); border-bottom: var(--rule); }
   max-height: 42%; overflow-y: auto; padding: 1rem 1.15rem 1.1rem;
 }
 .inspector .empty { color: var(--muted); font-size: .8rem; font-style: italic; }
-.inspector h4 { margin: 0 0 .5rem; font-size: .95rem; font-family: var(--display); }
+.inspector h4 { margin: 0 0 .5rem; font-size: .95rem; }
 .inspector dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: .18rem .8rem; font-size: .8rem; }
 .inspector dt { color: var(--muted); }
 .inspector dd { margin: 0; font-family: var(--mono); font-size: .76rem; word-break: break-word; }
@@ -350,7 +358,7 @@ section { padding-block: clamp(3rem, 7vw, 5.5rem); border-bottom: var(--rule); }
 
 /* ---------- tables ---------- */
 
-.tbl-scroll { overflow-x: auto; border: var(--rule); border-radius: 4px; background: var(--paper); }
+.tbl-scroll { overflow-x: auto; border: var(--rule); border-top-width: 2px; border-top-color: var(--ink); background: var(--paper); }
 table { border-collapse: collapse; width: 100%; font-size: .84rem; }
 caption {
   caption-side: top; text-align: left; padding: .85rem 1rem .7rem;
@@ -377,12 +385,12 @@ tbody tr:hover { background: var(--paper-2); }
 .bars { display: grid; gap: .35rem; }
 .bar-row { display: grid; grid-template-columns: 5.5rem 1fr 4.2rem; gap: .7rem; align-items: center; font-size: .8rem; }
 .bar-row .lbl { font-family: var(--mono); font-size: .73rem; color: var(--ink-2); text-align: right; }
-.bar-track { background: var(--paper-2); border-radius: 2px; height: 20px; overflow: hidden; }
+.bar-track { background: var(--paper-2); height: 18px; overflow: hidden; }
 /* display:block, or none of this applies: a span in a plain block box stays
    inline, and width, height and transform are all ignored on an inline box.
    Every bar on the page was drawing its empty track and nothing else. */
 .bar-fill {
-  display: block; height: 100%; border-radius: 2px; transform-origin: left;
+  display: block; height: 100%; transform-origin: left;
   animation: grow .9s cubic-bezier(.2, .8, .3, 1) backwards;
 }
 @keyframes grow { from { transform: scaleX(0); } }
@@ -391,8 +399,8 @@ tbody tr:hover { background: var(--paper-2); }
 .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: clamp(1.5rem, 4vw, 3rem); }
 
 .callout {
-  border-left: 3px solid var(--red); background: var(--paper-2);
-  padding: 1.1rem 1.3rem; margin: 2rem 0 0; border-radius: 0 4px 4px 0;
+  border-left: 2px solid var(--ink); background: var(--paper-2);
+  padding: 1.1rem 1.3rem; margin: 2rem 0 0;
 }
 .callout p { margin: 0; max-width: 70ch; font-size: .92rem; color: var(--ink-2); }
 .callout p + p { margin-top: .7rem; }
@@ -405,11 +413,11 @@ tbody tr:hover { background: var(--paper-2); }
 .files { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: .5rem; }
 .file {
   display: flex; justify-content: space-between; align-items: baseline; gap: .6rem;
-  padding: .6rem .8rem; border: var(--rule); border-radius: 4px;
+  padding: .6rem .8rem; border: var(--rule);
   background: var(--paper); text-decoration: none; color: var(--ink);
   font-size: .82rem; transition: .14s;
 }
-.file:hover { border-color: var(--ink); transform: translateY(-1px); color: var(--ink); }
+.file:hover { border-color: var(--ink); color: var(--ink); }
 .file span { font-family: var(--mono); font-size: .7rem; color: var(--muted); }
 
 footer { padding-block: 3rem 4rem; color: var(--muted); font-size: .8rem; }
