@@ -127,12 +127,16 @@ export default function App() {
               </div>
               <div>
                 <dt>Instruments</dt>
-                <dd>Sentinel-2 L2A · Sentinel-1 GRD · SRTM GL1 (30 m)</dd>
+                <dd>
+                  Sentinel-2 L2A · Sentinel-1 GRD · SRTM GL1 (30 m){" "}
+                  <a className="citelink" href="#ref-2">[2]</a>
+                </dd>
               </div>
               <div>
                 <dt>Ground truth</dt>
                 <dd>
-                  HOT survey · <b>{int(surveyed)}</b> buildings,{" "}
+                  HOT survey <a className="citelink" href="#ref-1">[1]</a> ·{" "}
+                  <b>{int(surveyed)}</b> buildings,{" "}
                   {int(s.roads_by_status.Standing + s.roads_by_status.Destroyed)} road
                   segments, {int(bridges)} bridges
                 </dd>
@@ -482,28 +486,26 @@ export default function App() {
       >
         <div className="cols">
           <div>
-            <h3 style={{ fontSize: "1rem", marginBottom: ".6rem" }}>Pipeline</h3>
-            <ol style={{ paddingLeft: "1.1rem", color: "var(--ink-2)", fontSize: ".92rem" }}>
+            <h3 className="subhead first">Pipeline</h3>
+            <ol className="steps">
               <li>
                 Sentinel-2 L2A and Sentinel-1 GRD pre/post composites plus SRTM,
                 on one relative orbit so terrain geometry cancels.
               </li>
               <li>
-                dNDVI &gt; {s.event.thresholds.dNDVI}, dMNDWI &gt;{" "}
-                {s.event.thresholds.dMNDWI}, or |Δσ⁰| &gt;{" "}
-                {s.event.thresholds.dSAR_dB} dB after a linear-power multilook.
+                A pixel is flagged as changed where <b>(1)</b> holds, after a
+                linear-power multilook on the radar.
               </li>
               <li>
-                Priority-flood fill → D8 → flow accumulation → HAND. Corridor is
-                HAND ≤ {s.event.hand_max_m} m of a channel draining ≥{" "}
-                {s.event.min_drainage_km2} km².
+                Priority-flood fill → D8 → flow accumulation → HAND. The corridor
+                is <b>(2)</b>, and the flagged pixels are clipped to it.
               </li>
               <li>HOT survey joined in, and everything above measured against it.</li>
             </ol>
           </div>
           <div>
-            <h3 style={{ fontSize: "1rem", marginBottom: ".6rem" }}>Known limits</h3>
-            <ul style={{ paddingLeft: "1.1rem", color: "var(--ink-2)", fontSize: ".92rem" }}>
+            <h3 className="subhead first">Known limits</h3>
+            <ul className="steps">
               <li>
                 Thresholds are the study design's, not calibrated against
                 reference polygons.
@@ -530,6 +532,33 @@ export default function App() {
             </ul>
           </div>
         </div>
+
+        {/* The two rules the whole analysis rests on, set where a reader can
+            check them rather than buried mid-sentence in a list item. The
+            numbers come from summary.json, so the notation cannot drift from
+            what stage 2 and stage 3 actually ran. */}
+        <div className="eq">
+          <code>
+            dNDVI &gt; {s.event.thresholds.dNDVI} ∨ dMNDWI &gt;{" "}
+            {fmt(s.event.thresholds.dMNDWI, 2)} ∨ |Δσ⁰| &gt;{" "}
+            {fmt(s.event.thresholds.dSAR_dB, 1)} dB
+          </code>
+          <span className="eqno">(1)</span>
+        </div>
+        <div className="eq">
+          <code>
+            corridor = &#123; x : HAND(x) ≤ {s.event.hand_max_m} m ∧ A(x) ≥{" "}
+            {s.event.min_drainage_km2} km² &#125;
+          </code>
+          <span className="eqno">(2)</span>
+        </div>
+        <Caption kind="Note" tight>
+          Δ is post minus pre. σ⁰ is Sentinel-1 VV backscatter, differenced in dB
+          after averaging in linear power. HAND is height above the nearest
+          drainage and A the upslope area draining to it, both from SRTM GL1
+          alone — neither reads the imagery, which is what makes §1 a test rather
+          than a restatement.
+        </Caption>
       </Section>
 
       {/* ---------------------------------------------------------------- */}
@@ -553,33 +582,57 @@ export default function App() {
         </div>
       </Section>
 
-      <footer>
-        <div className="wrap cols">
-          {s.sources.map((src) => (
-            <div key={src.name}>
-              <h3>{src.org}</h3>
-              <p>{src.name}</p>
-              <p>
+      {/* ---------------------------------------------------------------- */}
+      <Section
+        id="references"
+        no="6"
+        title="References and reuse"
+        lede="What this was built from, what it may be used for, and what it must not be read as."
+      >
+        <ol className="refs">
+          {s.sources.map((src, i) => (
+            <li key={src.name} id={`ref-${i + 1}`}>
+              <span className="refno">[{i + 1}]</span>
+              <div>
+                {src.org}. <i>{src.name}</i>. Licence: {src.licence}.{" "}
                 <a href={src.url} target="_blank" rel="noreferrer">
                   {src.url.replace(/^https:\/\//, "")}
                 </a>
-              </p>
-              <p>Licence: {src.licence}</p>
-            </div>
+              </div>
+            </li>
           ))}
-          <div>
-            <h3>About</h3>
-            <p>
-              Built from a four-stage Python pipeline (Earth Engine, rasterio,
-              geopandas). Ground survey by HOT and volunteer field reports;
-              hydropower inventory contributed by Niti Foundation.
-            </p>
-            <p>
-              Feature presence in the source export does not imply damage — only
-              the <code>status</code> field does.
-            </p>
-          </div>
-        </div>
+        </ol>
+
+        <h3 className="subhead">Data availability</h3>
+        <p>
+          Every layer this report draws is published in §5 as GeoJSON in WGS84,
+          together with <code>summary.json</code>, which holds every figure
+          quoted above — the page reads its own numbers from that file, so there
+          is no statistic here that is not in the download.
+        </p>
+
+        <h3 className="subhead">About this analysis</h3>
+        <p>
+          Built from a four-stage Python pipeline (Earth Engine, rasterio,
+          geopandas), each stage reading the previous one's files off disk. The
+          ground survey is the Humanitarian OpenStreetMap Team's{" "}
+          <a className="citelink" href="#ref-1">[1]</a> and the
+          field reports behind it; the hydropower inventory was contributed by
+          Niti Foundation.
+        </p>
+        <p>
+          Presence in a source export is not evidence of damage — only the{" "}
+          <code>status</code> field is. The thresholds in (1) are the study
+          design's rather than values calibrated against reference polygons, and
+          nothing here is a validated classifier.
+        </p>
+      </Section>
+
+      {/* A running foot: the header line again, so the document closes on the
+          same statement it opened with rather than stopping at a rule. */}
+      <footer className="wrap">
+        <span>The flood the terrain already knew about</span>
+        <span>Rasuwa · Bagmati · Nepal · {DATE}</span>
       </footer>
     </>
   );

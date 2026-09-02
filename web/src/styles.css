@@ -411,6 +411,54 @@ section { padding-block: clamp(3rem, 7vw, 5rem); border-bottom: var(--rule); }
   margin: 0 0 .3rem; font-size: 1.35rem; font-weight: 500; letter-spacing: -.01em;
 }
 .subhead { font-size: 1rem; font-weight: 600; margin: 2.5rem 0 .9rem; }
+.subhead.first { margin-top: 0; }
+.steps { padding-left: 1.2rem; margin: 0; color: var(--ink-2); font-size: .95rem; }
+.steps li { margin-bottom: .45rem; max-width: var(--measure); }
+.steps b { font-family: var(--mono); font-size: .84em; font-weight: 500; color: var(--ink); }
+
+/* ---------- notation ---------- */
+
+/* The two rules the analysis rests on, set as display notation with a tag in
+   the margin, so §4 can refer to (1) and (2) instead of restating them. */
+.eq {
+  display: grid; grid-template-columns: minmax(0, 1fr) 3rem;
+  align-items: baseline; gap: 1rem;
+  border-block: var(--rule); padding: .85rem 0; margin: 1.4rem 0 0;
+}
+.eq + .eq { border-top: 0; margin-top: 0; }
+.eq code {
+  font-family: var(--mono); font-size: .82rem; color: var(--ink);
+  line-height: 1.7; padding: 0 0 0 clamp(0rem, 4vw, 3rem); background: none;
+}
+.eqno { font-family: var(--mono); font-size: .74rem; color: var(--muted); text-align: right; }
+
+/* ---------- references ---------- */
+
+.refs { list-style: none; margin: 0; padding: 0; }
+.refs li {
+  display: grid; grid-template-columns: 2.4rem minmax(0, 1fr); gap: .6rem;
+  padding: .7rem 0; border-bottom: var(--rule); font-size: .9rem;
+  color: var(--ink-2); align-items: baseline;
+}
+.refs li:first-child { border-top: var(--rule); }
+.refno { font-family: var(--mono); font-size: .74rem; color: var(--ink); }
+.refs i { color: var(--ink); font-style: italic; }
+/* A citation marker, not a link that wants attention: mono, small, and it
+   keeps the rule the rest of the page's links carry. */
+.citelink {
+  font-family: var(--mono); font-size: .78em; color: var(--ink-2);
+  text-decoration-color: var(--grid); white-space: nowrap;
+}
+
+footer {
+  display: flex; justify-content: space-between; gap: 1rem 2rem; flex-wrap: wrap;
+  padding-block: 1.6rem 3rem; font-family: var(--mono); font-size: .66rem;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+}
+code {
+  font-family: var(--mono); font-size: .86em;
+  background: var(--paper-2); padding: .05em .3em;
+}
 .compareplaces { display: flex; flex-wrap: wrap; gap: .3rem; }
 .compareplaces button {
   font: inherit; font-family: var(--mono); font-size: .72rem;
@@ -525,11 +573,6 @@ tbody tr:hover { background: var(--paper-2); }
 }
 .file:hover { border-color: var(--ink); color: var(--ink); }
 .file span { font-family: var(--mono); font-size: .7rem; color: var(--muted); }
-
-footer { padding-block: 3rem 4rem; color: var(--muted); font-size: .8rem; }
-footer .cols { gap: 2rem; }
-footer h3 { font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); margin-bottom: .6rem; }
-footer p { margin: 0 0 .5rem; max-width: 48ch; }
 
 /* ---------- leaflet chrome, restyled ---------- */
 

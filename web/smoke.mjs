@@ -168,6 +168,38 @@ for (const name of Object.keys(summary.layer_bytes)) {
     "Betrawati is outside the imagery footprint and should not be offered");
 }
 
+// The furniture that makes this a report rather than a page about one. Each
+// of these carries a claim -- what was measured, over what, against what, and
+// which exhibit says so -- and each has a place a reader expects to find it.
+{
+  for (const label of ["Abstract", "Keywords", "Study area", "Ground truth",
+                       "Corridor", "Data availability", "References"]) {
+    want(text.includes(label), `the report is missing its ${label} block`);
+  }
+  // Numbers on the exhibits, or nothing in the prose can refer to one.
+  for (const n of [1, 2, 3, 4, 5]) {
+    want(text.includes(`Figure ${n}`), `Figure ${n} is not numbered on the page`);
+    want(text.includes(`Table ${n}.`), `Table ${n} is not numbered on the page`);
+  }
+  want(root.querySelectorAll(".figcap").length >= 7,
+    `exhibits are missing captions (${root.querySelectorAll(".figcap").length})`);
+
+  // The two rules the analysis rests on, set as notation and carrying the
+  // thresholds summary.json actually ran.
+  const eqs = [...root.querySelectorAll(".eq")];
+  want(eqs.length === 2, `expected the detection rule and the corridor definition, found ${eqs.length}`);
+  want(eqs[0]?.textContent.includes(String(summary.event.thresholds.dNDVI)),
+    "the notation does not quote the dNDVI threshold the pipeline used");
+  want(eqs[1]?.textContent.includes(String(summary.event.hand_max_m)),
+    "the corridor definition does not quote the HAND ceiling the pipeline used");
+
+  // Sources are numbered references, and the metadata cites them.
+  want(root.querySelectorAll(".refs li").length === summary.sources.length,
+    "the reference list does not match summary.json's sources");
+  want(root.querySelector("#ref-1") && root.querySelector('a[href="#ref-1"]'),
+    "reference [1] is never cited from the page");
+}
+
 // Panel order is importance order. The inspector answers the map's primary
 // action, so it leads; the basemap switch changes no data, so it trails. This
 // shipped the other way round, with the inspector 814px down a 667px panel.
