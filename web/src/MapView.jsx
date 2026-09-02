@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { LAYERS, BASEMAPS, PLACES, BRIDGE_COLOUR } from "./layers.js";
+import tameGestures from "./gestures.js";
 
 /** "Observed — HOT survey" -> "observed-hot-survey", for label/input pairing. */
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -132,6 +133,7 @@ export default function MapView() {
       wheelPxPerZoomLevel: 140,
     });
     map.current = m;
+    const freeGestures = tameGestures(m);
     L.control.scale({ imperial: false, position: "bottomright" }).addTo(m);
     m.on("zoomend", () => setZoom(m.getZoom()));
 
@@ -203,6 +205,7 @@ export default function MapView() {
 
     return () => {
       cancelled = true;
+      freeGestures();
       m.remove();
     };
   }, []);

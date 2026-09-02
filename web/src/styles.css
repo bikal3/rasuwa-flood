@@ -328,6 +328,18 @@ section { padding-block: clamp(3rem, 7vw, 5.5rem); border-bottom: var(--rule); }
 .compareplaces button:hover { border-color: var(--ink); color: var(--ink); }
 .comparecanvas { height: min(68vh, 720px); min-height: 420px; }
 
+/* The map hands plain scrolling back to the page, so it has to say how to
+   zoom instead. Shown on the wheel it just let through, gone 1.4s later. */
+.gesture-hint {
+  position: absolute; inset: 0; z-index: 640; display: grid; place-items: center;
+  background: rgba(11, 11, 11, .42); color: var(--paper);
+  font-family: var(--mono); font-size: .78rem; letter-spacing: .08em;
+  text-align: center; padding: 1rem; pointer-events: none;
+  opacity: 0; transition: opacity .18s ease;
+}
+.gesture-hint[data-on="true"] { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .gesture-hint { transition: none; } }
+
 .maploading {
   position: absolute; inset: 0; display: grid; place-items: center;
   background: var(--paper-2); font-family: var(--mono); font-size: .78rem;

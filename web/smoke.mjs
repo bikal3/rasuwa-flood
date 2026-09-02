@@ -203,6 +203,29 @@ for (const name of Object.keys(summary.layer_bytes)) {
     "the comparison imagery has no text alternative");
 }
 
+// Scrolling the page must not be hostage to the map. A plain wheel is stopped
+// above Leaflet's own listener, so it stays uncancelled and the browser scrolls
+// the page with it; ctrl/cmd + wheel is let through and Leaflet cancels it to
+// zoom. Both maps, because both used to swallow the page's scroll.
+{
+  const wheel = (el, mods) =>
+    el.dispatchEvent(new window.WheelEvent("wheel", {
+      bubbles: true, cancelable: true, deltaY: 120, clientX: 400, clientY: 300, ...mods,
+    }));
+  const canvases = [...root.querySelectorAll(".mapcanvas")];
+  want(canvases.length === 2, `expected two map canvases, found ${canvases.length}`);
+  for (const canvas of canvases) {
+    const pane = canvas.querySelector(".leaflet-map-pane");
+    want(pane, "a map has no pane to scroll over");
+    want(pane && wheel(pane, {}),
+      "a plain wheel over the map still reaches Leaflet: the page cannot scroll past it");
+    want(canvas.querySelector('.gesture-hint[data-on="true"]'),
+      "nothing told the reader how to zoom after the wheel was let through");
+    want(pane && !wheel(pane, { ctrlKey: true }),
+      "ctrl + wheel no longer zooms the map");
+  }
+}
+
 // Zone ids still fly the main map, and must not throw doing it.
 root.querySelector(".zonelink")
     ?.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));

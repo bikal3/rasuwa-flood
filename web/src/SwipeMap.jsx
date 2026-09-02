@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { BASEMAPS, PLACES } from "./layers.js";
 import useSwipe, { formatWindow } from "./useSwipe.js";
+import tameGestures from "./gestures.js";
 
 /**
  * The before/after comparison, on a map of its own.
@@ -70,8 +71,10 @@ export default function SwipeMap() {
     L.control.scale({ imperial: false, position: "bottomright" }).addTo(m);
     m.on("zoomend", () => setZoom(m.getZoom()));
     map.current = m;
+    const freeGestures = tameGestures(m);
     setReady(true);
     return () => {
+      freeGestures();
       m.remove();
       map.current = null;
     };
