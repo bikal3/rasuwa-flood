@@ -166,14 +166,37 @@ a:hover { text-decoration-color: var(--red); text-decoration-thickness: 2px; }
 
 /* ---------- sections ---------- */
 
-section { padding-block: clamp(3rem, 7vw, 5.5rem); border-bottom: var(--rule); }
-.sec-head { display: flex; gap: 1.5rem; align-items: baseline; margin-bottom: 2rem; flex-wrap: wrap; }
-.sec-no {
-  font-family: var(--mono); font-size: .72rem; color: var(--red);
-  letter-spacing: .16em; padding-top: .4rem;
+section { padding-block: clamp(3rem, 7vw, 5rem); border-bottom: var(--rule); }
+
+/* One grid per section, the same two columns as the rail above: indices in the
+   margin, everything else in the text column. Blocks that want an index --
+   the heading, a figure, a table -- are display:contents, so their label lands
+   in the margin and their body in the column without either being wrapped in
+   another box. The page keeps one left edge from the abstract to the
+   references, and a reader can find any block by scanning the margin. */
+section > .wrap {
+  display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: 0 1.7rem;
+  align-items: start;
 }
-.sec-head h2 { font-size: clamp(1.6rem, 3.4vw, 2.4rem); }
-.sec-head p { margin: .35rem 0 0; color: var(--ink-2); max-width: 66ch; }
+section > .wrap > * { grid-column: 2; }
+@media (max-width: 900px) {
+  section > .wrap { grid-template-columns: minmax(0, 1fr); }
+  section > .wrap > * { grid-column: 1; }
+}
+
+.sec-head { display: contents; }
+.sec-head > div { margin-bottom: 1.8rem; }
+/* Ink, not red: red means a recorded loss on this page, and a section number
+   is not one. */
+.sec-no {
+  font-family: var(--mono); font-size: .78rem; color: var(--ink);
+  letter-spacing: .04em; padding-top: .55rem; font-weight: 500;
+}
+.sec-head h2 { font-size: clamp(1.3rem, 2.3vw, 1.7rem); letter-spacing: -.008em; }
+.sec-head p {
+  margin: .5rem 0 0; color: var(--ink-2); font-style: italic;
+  max-width: var(--measure);
+}
 
 .lede { max-width: 68ch; color: var(--ink-2); margin: 0 0 2rem; font-size: 1rem; }
 .lede strong { color: var(--ink); font-weight: 600; }
