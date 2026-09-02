@@ -358,7 +358,20 @@ every layer. Interaction:
 | Click | A bridge, building or zone id selects it and flies there |
 | Opacity | A slider per group fades observed against derived, which is the whole argument |
 | Zoom-gated | 1,626 building footprints draw from z12.5; the panel says so rather than looking broken |
+| Scroll | The page's, not the map's — see below |
 | Share | The view lives in the URL hash, so any view can be linked |
+
+**Scrolling belongs to the page.** Both maps are most of a screen tall and
+Leaflet binds `wheel` on its own container, so a wheel anywhere over one used to
+zoom the map while the article stood still — the only way further down was to
+steer the cursor into the margin beside the map. A plain wheel is now stopped one
+element above Leaflet's listener, in the capture phase, so the browser scrolls
+the page with it; zoom asks for ctrl or ⌘, which a trackpad pinch already sends.
+Touch is the same trap with no margin to escape into, so one finger scrolls and
+two move the map: that needs `touch-action` set inline to `pan-x pan-y`, because
+the browser reads it when the gesture begins, too early for Leaflet's class
+toggle to help. Fullscreen is exempt — there is no page behind it. `web/src/gestures.js`,
+and `smoke.mjs` asserts both halves of the bargain on both maps.
 
 **The before/after comparison is a second map, below this one.** It was a mode on
 this map, sharing the viewport with 1,600 damage polygons and a fourteen-layer
