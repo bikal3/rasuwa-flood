@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { BASEMAPS, PLACES } from "./layers.js";
 import useSwipe, { formatWindow } from "./useSwipe.js";
+import { Caption } from "./ui.jsx";
 import tameGestures from "./gestures.js";
 
 /**
@@ -156,15 +157,9 @@ export default function SwipeMap() {
 
   return (
     <section className="comparesec" id="compare">
-      <div className="comparehead">
+      <div className="comparehead wrap">
         <div>
           <h2>Before and after</h2>
-          <p>
-            Two dates over the same ground, on one contrast stretch computed from
-            the pre-event image — so a difference in brightness is a difference on
-            the ground and not the normalisation moving. Drag the divider.
-          </p>
-          {sensor.source && <p className="comparesrc">{sensor.source}</p>}
         </div>
         <div className="compareplaces">
           <button onClick={() => show()}>Fit imagery</button>
@@ -271,6 +266,18 @@ export default function SwipeMap() {
           )}
           {swipe.loading && <div className="swipe-load">Loading imagery…</div>}
         </div>
+      </div>
+
+      {/* Under the figure, not above it: the description is a caption, and it
+          names the pair actually on screen, which the sensor switch changes. */}
+      <div className="wrap mapcapwrap">
+        <Caption no={2}>
+          <b>Before and after, over the Sentinel scene.</b> Two dates on the same
+          ground and one contrast stretch, computed on the pre-event image, so a
+          difference in brightness is a difference on the ground and not the
+          normalisation moving. Drag the divider, or focus it and use the arrow
+          keys. {sensor.source}.
+        </Caption>
       </div>
     </section>
   );

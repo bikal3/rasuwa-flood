@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import MapView from "./MapView.jsx";
 import SwipeMap from "./SwipeMap.jsx";
-import { Section, Table, Bars, fmt, int } from "./ui.jsx";
+import { Section, Table, Bars, Caption, fmt, int } from "./ui.jsx";
 import { C } from "./layers.js";
 
 const KB = (b) => (b < 1024 ? "<1 kB" : `${Math.round(b / 1024)} kB`);
@@ -192,6 +192,16 @@ export default function App() {
 
       <div className="mapsec" id="themap">
         <MapView />
+        <div className="wrap mapcapwrap">
+          <Caption no={1}>
+            <b>The corridor, Rasuwagadhi to the Narayani.</b> Fourteen layers in
+            two groups — what the HOT survey observed on the ground, and what
+            this pipeline derived from imagery and terrain — each fadeable
+            against the other, which is the comparison the report is about.
+            Clicking a feature reports its attributes; building footprints draw
+            from zoom 12.5. Basemap: Esri world imagery.
+          </Caption>
+        </div>
       </div>
 
       <SwipeMap />
@@ -219,11 +229,12 @@ export default function App() {
               }))}
               max={100}
             />
-            <p className="note">
-              Share of each kind of ground evidence falling inside the
-              terrain-derived corridor. The corridor never sees the imagery, so
+            <Caption no={3} tight>
+              <b>Ground evidence inside the terrain-derived corridor.</b> Share
+              of each kind of recorded loss falling within HAND ≤{" "}
+              {s.event.hand_max_m} m. The corridor never sees the imagery, so
               this is not the model marking its own homework.
-            </p>
+            </Caption>
           </div>
           <div>
             <div className="callout">
@@ -253,6 +264,7 @@ export default function App() {
 
         <div style={{ marginTop: "2rem" }}>
           <Table
+            no={1}
             caption="Ground evidence vs the derived masks, inside the study area"
             cols={[
               { key: "target", label: "Evidence" },
@@ -291,6 +303,7 @@ export default function App() {
         <div className="cols">
           <div>
             <Table
+              no={2}
               caption="Areas inside the study rectangle"
               cols={[
                 { key: "k", label: "Measure" },
@@ -323,10 +336,12 @@ export default function App() {
               ]}
               max={100}
             />
-            <p className="note">
-              Share covered by the detected-damage mask, which occupies{" "}
-              {fmt(hits[0]?.detected_base_pct, 2)}% of the study area.
-            </p>
+            <Caption no={4} tight>
+              <b>Ground evidence inside the detected-damage mask.</b> Share
+              covered by the mask, which occupies{" "}
+              {fmt(hits[0]?.detected_base_pct, 2)}% of the study area — an
+              eightieth of the corridor above it.
+            </Caption>
 
             <div className="callout">
               <p>
@@ -349,14 +364,7 @@ export default function App() {
           </div>
         </div>
 
-        <h3 style={{ marginTop: "2.5rem", fontSize: "1.05rem" }}>
-          Change rate against height above the river
-        </h3>
-        <p className="note" style={{ marginBottom: "1rem" }}>
-          The profile that set the corridor ceiling. Flat to 50 m, then falling
-          away to a far-field floor — a threshold cutting below 50 m would slice
-          through the middle of the signal.
-        </p>
+        <h3 className="subhead">Change rate against height above the river</h3>
         <Bars
           rows={s.change_vs_hand.map((r) => ({
             label: `${r.hand_lo_m}–${Number.isFinite(r.hand_hi_m) && r.hand_hi_m ? r.hand_hi_m : "∞"} m`,
@@ -364,6 +372,13 @@ export default function App() {
             colour: r.hand_hi_m && r.hand_hi_m <= s.event.hand_max_m ? C.blue : C.muted,
           }))}
         />
+        <Caption no={5}>
+          <b>The profile that set the corridor ceiling.</b> Share of each height
+          band flagged as changed, against height above the nearest drainage.
+          Flat to {s.event.hand_max_m} m, then falling away to a far-field floor;
+          blue is the band the corridor keeps. A threshold cutting below{" "}
+          {s.event.hand_max_m} m would slice through the middle of the signal.
+        </Caption>
       </Section>
 
       {/* ---------------------------------------------------------------- */}
@@ -373,8 +388,11 @@ export default function App() {
         title="What sat inside the water"
         lede="Counts clipped to the observed flood extent itself, not to the 200 m buffer the export ships. Being in the dataset is not evidence of damage; being inside the extent is."
       >
-        <div className="cols">
+        {/* Stacked, not paired: five columns of zone losses inside half the text
+            column meant Table 4 shipped with its last column cut off. */}
+        <div className="stack">
           <Table
+            no={3}
             caption="Exposure along the whole corridor"
             cols={[
               { key: "layer", label: "Feature" },
@@ -389,6 +407,7 @@ export default function App() {
             rows={s.exposure}
           />
           <Table
+            no={4}
             caption="Losses by impact zone"
             cols={[
               { key: "zone_id", label: "Zone" },
@@ -418,6 +437,7 @@ export default function App() {
 
         <div style={{ marginTop: "2rem" }}>
           <Table
+            no={5}
             caption="Detected damage by impact zone"
             cols={[
               { key: "zone_id", label: "Zone" },
@@ -444,12 +464,12 @@ export default function App() {
             ]}
             rows={s.zonal_flood}
           />
-          <p className="note">
+          <Caption kind="Note" tight>
             Scour swath is detected damage per metre of channel — the width of the
             disturbed valley floor. It is not the wetted channel width: Sentinel-1
             cannot resolve this river, whose backscatter never goes specular in a
             gorge this steep.
-          </p>
+          </Caption>
         </div>
       </Section>
 
