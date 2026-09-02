@@ -226,6 +226,31 @@ for (const name of Object.keys(summary.layer_bytes)) {
   }
 }
 
+// The same trap on a touchscreen, where there is no margin to escape into:
+// one finger has to scroll the article, two move the map. Leaflet's drag
+// handler is what would pan the map under the finger, and its touch-action
+// is what would stop the browser scrolling at all.
+{
+  const touch = (el, type, n) => {
+    const ev = new window.Event(type, { bubbles: true, cancelable: true });
+    Object.defineProperty(ev, "touches", { value: Array.from({ length: n }, () => ({})) });
+    el.dispatchEvent(ev);
+  };
+  for (const canvas of root.querySelectorAll(".mapcanvas")) {
+    const box = canvas.querySelector(".leaflet-container");
+    want(box?.style.touchAction === "pan-x pan-y",
+      `the map still claims the browser's touch gestures (${box?.style.touchAction || "unset"})`);
+    touch(box, "touchstart", 1);
+    want(!box.classList.contains("leaflet-touch-drag"),
+      "one finger on the map still drags it, so the page cannot scroll under the thumb");
+    want(canvas.querySelector('.gesture-hint[data-on="true"]'),
+      "nothing told the reader that two fingers move the map");
+    touch(box, "touchend", 0);
+    want(box.classList.contains("leaflet-touch-drag"),
+      "dragging was never restored after the hand left, so a mouse cannot pan either");
+  }
+}
+
 // Zone ids still fly the main map, and must not throw doing it.
 root.querySelector(".zonelink")
     ?.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
