@@ -69,39 +69,100 @@ a:hover { text-decoration-color: var(--red); text-decoration-thickness: 2px; }
 
 .wrap { max-width: var(--max); margin: 0 auto; padding-inline: var(--pad); }
 
-/* ---------- masthead ---------- */
+/* ---------- the rail ---------- */
 
-.masthead { border-bottom: var(--rule); padding-block: clamp(2.5rem, 6vw, 5rem) 0; }
+/* Every labelled block on the page hangs off one rail: its index -- ABSTRACT,
+   KEYWORDS, 3, FIGURE 4, TABLE 2 -- set in the margin, the content in the
+   column beside it. One primitive, so the page has a single left edge and a
+   reader can find any block by scanning the margin. */
+.rail { display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: 0 1.7rem; }
+.rail > .idx {
+  font-family: var(--mono); font-size: .64rem; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--muted); padding-top: .45rem;
+  font-weight: 500;
+}
+.rail + .rail { margin-top: 1.5rem; }
+@media (max-width: 900px) {
+  .rail { grid-template-columns: minmax(0, 1fr); gap: .35rem; }
+  .rail > .idx { padding-top: 0; }
+}
+
+/* ---------- title page ---------- */
+
+.masthead { border-bottom: var(--rule); padding-block: clamp(2.5rem, 6vw, 4.5rem) 0; }
+/* The report's own header line: what this is on the left, where and when on
+   the right, a rule under both. */
 .kicker {
-  font-family: var(--mono); font-size: .7rem; letter-spacing: .18em;
-  text-transform: uppercase; color: var(--red); margin-bottom: 1.25rem;
-  display: flex; gap: .75rem; align-items: center; flex-wrap: wrap;
+  display: flex; justify-content: space-between; gap: 1rem 2rem; flex-wrap: wrap;
+  font-family: var(--mono); font-size: .66rem; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--muted);
+  border-bottom: 1px solid var(--ink); padding-bottom: .6rem; margin-bottom: 2rem;
 }
-.kicker::before {
-  content: ""; width: 2.5rem; height: 1px; background: var(--red); display: block;
-}
+.kicker b { font-weight: 500; color: var(--ink); }
 .masthead h1 {
   font-size: clamp(1.9rem, 3.6vw, 2.7rem); line-height: 1.14;
   font-weight: 600; max-width: 26ch; letter-spacing: -.012em;
 }
 .masthead h1 em { font-style: italic; font-weight: 400; color: var(--ink-2); }
-.standfirst {
-  max-width: 62ch; margin-top: 1.75rem; font-size: 1.06rem; color: var(--ink-2);
+/* The formal description of the study, under the title the way a report
+   subtitle sits under its cover line. */
+.subtitle {
+  font-size: 1.05rem; font-style: italic; color: var(--ink-2); font-weight: 300;
+  max-width: var(--measure); margin: .85rem 0 0;
 }
+/* Status, not decoration: this is an unreviewed analysis and says so where a
+   journal would print its review state. */
+.status {
+  font-family: var(--mono); font-size: .68rem; color: var(--red);
+  margin: 1.1rem 0 0; letter-spacing: .04em; max-width: none;
+}
+
+.abstract { margin-top: clamp(2rem, 5vw, 3rem); }
+.abstract p { font-size: 1rem; margin: 0 0 .8rem; }
+.abstract p:last-child { margin-bottom: 0; }
+.abstract strong { font-weight: 600; }
+.keywords p { font-family: var(--mono); font-size: .74rem; color: var(--ink-2); margin: .4rem 0 0; }
+
+/* Everything a reader needs to judge the work before reading it: extent, dates,
+   instruments, ground truth, and the corridor's definition. A key-value list,
+   because that is what it is. */
+.meta { margin-top: 2.2rem; }
+.meta dl {
+  margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0 2.5rem; border-top: var(--rule);
+}
+.meta dt {
+  font-family: var(--mono); font-size: .62rem; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--muted); padding-top: .8rem;
+}
+.meta dd {
+  margin: 0 0 .85rem; font-size: .88rem; color: var(--ink-2);
+  padding-bottom: .1rem;
+}
+.meta dd b { font-weight: 500; color: var(--ink); }
 
 .statbar {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  margin-top: clamp(2rem, 5vw, 3.5rem); border-top: var(--rule);
+  margin-top: clamp(2rem, 5vw, 3rem); border-top: 2px solid var(--ink);
 }
-.stat { padding: 1.4rem 1.25rem 1.6rem; border-right: var(--rule); }
+.stat { padding: 1.1rem 1.25rem 1.3rem; border-right: var(--rule); }
 .stat:last-child { border-right: 0; }
 .stat b {
   display: block; font-family: var(--mono); font-weight: 500;
-  font-size: clamp(1.5rem, 3.2vw, 2.1rem); line-height: 1.1; letter-spacing: -.03em;
+  font-size: clamp(1.3rem, 2.6vw, 1.7rem); line-height: 1.1; letter-spacing: -.03em;
 }
-.stat span { display: block; font-size: .78rem; color: var(--muted); margin-top: .45rem; }
+.stat span {
+  display: block; font-size: .76rem; color: var(--muted); margin-top: .4rem;
+  font-family: var(--sans); line-height: 1.45;
+}
 .stat.is-red b { color: var(--red); }
 .stat.is-blue b { color: var(--blue); }
+/* The colour rule, stated on the page rather than left for the reader to
+   infer -- it is an encoding, so it gets a key like any other. */
+.statkey {
+  font-family: var(--mono); font-size: .66rem; color: var(--muted);
+  border-top: var(--rule); padding: .6rem 0 0; margin: 0; max-width: none;
+}
 
 /* ---------- sections ---------- */
 

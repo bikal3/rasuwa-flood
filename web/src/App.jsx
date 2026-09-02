@@ -35,27 +35,124 @@ export default function App() {
   const a = s.areas;
   const v = s.validation;
   const hits = v.hits || [];
+  const roi = s.event.roi;
+  const bridges = Object.values(s.bridges_by_status).reduce((x, y) => x + y, 0);
+  const surveyed = Object.values(s.buildings_by_status).reduce((x, y) => x + y, 0);
+  // "26 August 2026", from the event's own ISO date rather than written twice.
+  const DATE = new Date(`${s.event.date}T00:00:00Z`).toLocaleDateString("en-GB", {
+    day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
+  });
 
   return (
     <>
       <header className="masthead">
         <div className="wrap">
           <div className="kicker">
-            <span>Rasuwa · Bagmati · Nepal</span>
-            <span>26 August 2026</span>
+            <span><b>Technical report</b> · Multi-sensor change detection</span>
+            <span>Rasuwa · Bagmati · Nepal · {DATE}</span>
           </div>
           <h1>
             The flood the terrain <em>already knew about</em>
           </h1>
-          <p className="standfirst">
-            A glacial collapse on Langtang Lirung sent a debris flood down the
-            Lende Khola into the Bhote Koshi and Trishuli, erasing the
-            Rasuwagadhi border crossing. This is a multi-sensor change detection
-            of that corridor, checked against the ground survey mapped by the
-            Humanitarian OpenStreetMap Team — and a test of one idea: that the
-            shape of the land predicts where a flood can do damage, before any
-            satellite is consulted.
+          <p className="subtitle">
+            Terrain-derived flood corridors and multi-sensor change detection for
+            the {s.event.title}, tested against the HOT ground survey.
           </p>
+          <p className="status">
+            Unreviewed analysis · thresholds are the study design's, not
+            calibrated · nothing here is a validated classifier
+          </p>
+
+          {/* The abstract does the work the standfirst used to: says what was
+              done, on what, and what came out, with the numbers in it rather
+              than promised further down. Every figure is read from
+              summary.json, so it cannot drift from the tables below. */}
+          <div className="abstract rail">
+            <span className="idx">Abstract</span>
+            <div>
+              <p>
+                A glacial collapse on Langtang Lirung on {DATE} sent a debris
+                flood down the Lende Khola into the Bhote Koshi and Trishuli,
+                erasing the Rasuwagadhi border crossing. This report pairs a
+                multi-sensor change detection of that corridor — Sentinel-2 index
+                differencing and Sentinel-1 backscatter, confined by a corridor
+                derived from terrain alone — with the ground survey mapped by the
+                Humanitarian OpenStreetMap Team, and tests one claim: that the
+                shape of the land predicts where a flood can do damage before any
+                satellite is consulted.
+              </p>
+              <p>
+                Height Above Nearest Drainage, computed from a 30 m elevation
+                model and nothing else, defines a corridor covering{" "}
+                <strong>{fmt(hits[0]?.corridor_base_pct, 2)}%</strong> of the{" "}
+                {fmt(a["ROI area"], 0)} km² study area. Inside it fall{" "}
+                <strong>{fmt(hits[0]?.in_corridor_pct, 1)}%</strong> of buildings
+                recorded destroyed,{" "}
+                <strong>{fmt(hits[1]?.in_corridor_pct, 0)}%</strong> of bridges
+                washed out and{" "}
+                <strong>{fmt(v.observed_in_corridor_pct, 1)}%</strong> of the
+                observed flood extent — a{" "}
+                {fmt(hits[0]?.in_corridor_pct / hits[0]?.corridor_base_pct, 0)}×
+                concentration against its base rate. The change detector itself
+                flags {fmt(v.observed_flagged_by_stage3_pct, 1)}% of that extent;
+                most of the remainder is river channel that was already water
+                before the event, where a change detector correctly finds
+                nothing.
+              </p>
+            </div>
+          </div>
+
+          <div className="keywords rail">
+            <span className="idx">Keywords</span>
+            <p>
+              flood mapping · HAND · Sentinel-1 · Sentinel-2 · change detection ·
+              humanitarian mapping · Bhote Koshi · Rasuwa
+            </p>
+          </div>
+
+          {/* What a reader needs to judge the work before reading it: where,
+              when, with what, against what, and how the corridor is defined. */}
+          <div className="meta">
+            <dl>
+              <div>
+                <dt>Event</dt>
+                <dd><b>{DATE}</b> — glacial lake outburst and debris flood</dd>
+              </div>
+              <div>
+                <dt>Study area</dt>
+                <dd>
+                  {roi[0]}–{roi[2]}° E, {roi[1]}–{roi[3]}° N ·{" "}
+                  <b>{fmt(a["ROI area"], 0)} km²</b>
+                </dd>
+              </div>
+              <div>
+                <dt>Instruments</dt>
+                <dd>Sentinel-2 L2A · Sentinel-1 GRD · SRTM GL1 (30 m)</dd>
+              </div>
+              <div>
+                <dt>Ground truth</dt>
+                <dd>
+                  HOT survey · <b>{int(surveyed)}</b> buildings,{" "}
+                  {int(s.roads_by_status.Standing + s.roads_by_status.Destroyed)} road
+                  segments, {int(bridges)} bridges
+                </dd>
+              </div>
+              <div>
+                <dt>Corridor</dt>
+                <dd>
+                  HAND ≤ <b>{s.event.hand_max_m} m</b> of a channel draining ≥{" "}
+                  {s.event.min_drainage_km2} km²
+                </dd>
+              </div>
+              <div>
+                <dt>Products</dt>
+                <dd>
+                  {Object.keys(s.layer_bytes).length} GeoJSON layers, WGS84 —{" "}
+                  <a href="#data">§5</a>
+                </dd>
+              </div>
+            </dl>
+          </div>
 
           {/* Colour encodes one thing and only one thing: red is a loss, blue is
               a measured extent, ink is exposure without a loss claim. Before
@@ -64,27 +161,32 @@ export default function App() {
               destroyed were red -- five numbers at one size with a colour that
               meant nothing, so the reader did the ranking. */}
           <div className="statbar">
-            <div className="stat is-blue" style={{ animationDelay: "0ms" }}>
+            <div className="stat is-blue">
               <b>{fmt(a["HOT observed flood extent, whole corridor"], 1)} km²</b>
               <span>Observed flood extent, Rasuwagadhi to the Narayani</span>
             </div>
-            <div className="stat is-red" style={{ animationDelay: "80ms" }}>
+            <div className="stat is-red">
               <b>{int(s.bridges_by_status["Washed out"])}</b>
-              <span>Road bridges washed out, of {int(Object.values(s.bridges_by_status).reduce((x, y) => x + y, 0))} assessed</span>
+              <span>Road bridges washed out, of {int(bridges)} assessed</span>
             </div>
-            <div className="stat is-red" style={{ animationDelay: "160ms" }}>
+            <div className="stat is-red">
               <b>{int(s.buildings_by_status.Destroyed)}</b>
               <span>Buildings destroyed</span>
             </div>
-            <div className="stat is-red" style={{ animationDelay: "240ms" }}>
+            <div className="stat is-red">
               <b>{int(s.roads_by_status.Destroyed)}</b>
               <span>Road segments destroyed</span>
             </div>
-            <div className="stat" style={{ animationDelay: "320ms" }}>
+            <div className="stat">
               <b>{int(s.exposure.find((e) => e.layer.startsWith("Hydropower"))?.total)}</b>
               <span>Hydropower projects exposed</span>
             </div>
           </div>
+          <p className="statkey">
+            Red is a recorded loss · blue a measured extent · ink exposure
+            without a loss claim. Counts are the HOT survey's, not this
+            pipeline's.
+          </p>
         </div>
       </header>
 
