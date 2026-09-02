@@ -27,7 +27,7 @@ export const int = (v) =>
 export function Section({ no, title, lede, children, id }) {
   return (
     <section id={id}>
-      <div className="wrap">
+      <div className="wrap secgrid">
         <div className="sec-head">
           <span className="sec-no idx">§{no}</span>
           <div>
@@ -41,11 +41,31 @@ export function Section({ no, title, lede, children, id }) {
   );
 }
 
-export function Table({ caption, cols, rows }) {
+/**
+ * A numbered caption on the rail.
+ *
+ * Full-width exhibits hang their index in the section's margin column, beside
+ * the section number; one inside a narrow column stacks it above the caption
+ * instead, where a 7rem rail would eat the column it is sitting in.
+ */
+export function Caption({ no, kind = "Figure", tight, children }) {
+  return (
+    <div className={tight ? "cap" : "cap rail"}>
+      <span className="idx">{kind}{no ? ` ${no}` : ""}</span>
+      <p className="figcap">{children}</p>
+    </div>
+  );
+}
+
+export function Table({ no, caption, cols, rows }) {
   return (
     <div className="tbl-scroll">
       <table>
-        {caption && <caption>{caption}</caption>}
+        {caption && (
+          <caption>
+            {no && <b>Table {no}.</b>} {caption}
+          </caption>
+        )}
         <thead>
           <tr>
             {cols.map((c) => (
