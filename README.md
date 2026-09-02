@@ -401,7 +401,7 @@ needs the stage 1–3 rasters, which need Earth Engine credentials.
 python pipeline/test_analysis.py                 # stage 2
 python pipeline/test_corridor.py                 # stage 3
 cd web && node build.mjs && node smoke.mjs   # the site: data contract, layers, chrome
-cd web && node swipe-check.mjs               # the slider, in real Chrome
+cd web && node swipe-check.mjs               # the slider and the bars, in real Chrome
 ```
 
 `pipeline/test_analysis.py` builds synthetic rasters with a known damage footprint —

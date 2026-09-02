@@ -378,8 +378,11 @@ tbody tr:hover { background: var(--paper-2); }
 .bar-row { display: grid; grid-template-columns: 5.5rem 1fr 4.2rem; gap: .7rem; align-items: center; font-size: .8rem; }
 .bar-row .lbl { font-family: var(--mono); font-size: .73rem; color: var(--ink-2); text-align: right; }
 .bar-track { background: var(--paper-2); border-radius: 2px; height: 20px; overflow: hidden; }
+/* display:block, or none of this applies: a span in a plain block box stays
+   inline, and width, height and transform are all ignored on an inline box.
+   Every bar on the page was drawing its empty track and nothing else. */
 .bar-fill {
-  height: 100%; border-radius: 2px; transform-origin: left;
+  display: block; height: 100%; border-radius: 2px; transform-origin: left;
   animation: grow .9s cubic-bezier(.2, .8, .3, 1) backwards;
 }
 @keyframes grow { from { transform: scaleX(0); } }
