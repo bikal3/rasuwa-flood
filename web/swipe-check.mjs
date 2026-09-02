@@ -1,6 +1,9 @@
 /**
- * The one check jsdom cannot do: is the before/after slider actually showing
- * two images?
+ * The checks jsdom cannot do: is what the DOM claims actually on the screen?
+ *
+ * Both bugs caught here are the same shape -- a style that reads correctly in
+ * the DOM and resolves to no pixels -- and jsdom cannot see either, because it
+ * has no layout.
  *
  *   node build.mjs && node swipe-check.mjs
  *
@@ -140,6 +143,24 @@ await evaluate(String.raw`(async () => {
 
 const fail = [];
 const want = (cond, msg) => !cond && fail.push(msg);
+
+// Every bar on the page drew its empty track and nothing else: .bar-fill is a
+// span inside a plain block box, so it stayed inline, and width, height and
+// transform are all ignored on an inline box. The DOM said 96.1%, the screen
+// said nothing. Measured against the track, in a browser that has done layout.
+{
+  const bars = await evaluate(String.raw`[...document.querySelectorAll(".bar-row")].map((row) => ({
+    label: row.querySelector(".lbl").textContent.trim(),
+    want: parseFloat(row.querySelector(".bar-fill").style.width),
+    got: Math.round(1000 * row.querySelector(".bar-fill").getBoundingClientRect().width
+                         / row.querySelector(".bar-track").getBoundingClientRect().width) / 10,
+  }))`);
+  want(bars.length >= 4, `expected the page's bar charts, found ${bars.length} bars`);
+  for (const b of bars) {
+    want(Math.abs(b.got - b.want) < 1.5,
+      `bar "${b.label}" fills ${b.got}% of its track where the data says ${b.want}%`);
+  }
+}
 
 /** Drag the divider to a fraction of the map. Real mouse events, pressed on the
  *  grip where it currently is: dragDivider only starts from a pointerdown on the
