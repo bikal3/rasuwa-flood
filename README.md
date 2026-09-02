@@ -347,7 +347,19 @@ node smoke.mjs              # check the built site actually renders
 `site/` is plain static files — drop it on GitHub Pages, Netlify, S3, anything.
 No Vite, no framework CLI: esbuild bundles `src/main.jsx` in about 20 ms.
 
-The page is an interactive Leaflet map over the whole corridor with 14 toggleable
+**The page is set as a technical report, not a feature.** It opens on a title
+block — what this is, the study area's bounding box, the instruments, the ground
+truth, the corridor's definition, and a status line saying out loud that the
+thresholds are uncalibrated — then an abstract carrying the actual findings, with
+every figure in it read from `summary.json` so the opening claims cannot drift
+from the tables that support them. Sections are numbered and hang off one rail:
+the index in the margin column, content in the text column, which is where figure
+and table numbers live too. Both maps are numbered figures with captions, the
+change test and the corridor definition are display notation tagged (1) and (2),
+and the sources are a reference list cited from the metadata. Spectral sets the
+prose, IBM Plex Mono every number and label, IBM Plex Sans only the map chrome.
+
+Inside it, an interactive Leaflet map over the whole corridor with 14 toggleable
 layers, split into what HOT *observed* and what this pipeline *derived*, plus the
 validation above, exposure tables, method, caveats and a GeoJSON download for
 every layer. Interaction:
