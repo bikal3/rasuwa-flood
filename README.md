@@ -347,7 +347,19 @@ node smoke.mjs              # check the built site actually renders
 `site/` is plain static files — drop it on GitHub Pages, Netlify, S3, anything.
 No Vite, no framework CLI: esbuild bundles `src/main.jsx` in about 20 ms.
 
-**The page is set as a technical report, not a feature.** It opens on a title
+**The page serves two readers.** A sticky section bar sits under the title page,
+and §1 is the plain-language half: what a glacial lake outburst is and why it
+arrives as wet concrete rather than water, what "height above the river" means
+and why it predicts damage, why a monsoon flood needs both a camera satellite
+and a radar one, what a damage survey actually records, and how to read the map.
+Its explainers are native `<details>` — the browser already ships the disclosure
+widget, its keyboard handling and its state, and unlike a React accordion they
+open on ctrl-F. §2 and §3 each fold in an "in plain English" reading of their own
+result, and §7 closes with a glossary. Every figure in that half is read from
+`summary.json` like the technical half's, so the plain reading and the measured
+one cannot disagree. A specialist skips it in one click from the bar.
+
+**The rest is set as a technical report, not a feature.** It opens on a title
 block — what this is, the study area's bounding box, the instruments, the ground
 truth, the corridor's definition, and a status line saying out loud that the
 thresholds are uncalibrated — then an abstract carrying the actual findings, with
@@ -367,6 +379,7 @@ every layer. Interaction:
 | | |
 | :-- | :-- |
 | Zoom | Quarter-level steps — the corridor is 120 km but a washed-out bridge is metres. `+` / `−` / `f` to fit |
+| Navigate | A sticky bar of section links; `--navh` in `styles.css` is what the map chrome and anchor jumps clear it by |
 | Click | A bridge, building or zone id selects it and flies there |
 | Opacity | A slider per group fades observed against derived, which is the whole argument |
 | Zoom-gated | 1,626 building footprints draw from z12.5; the panel says so rather than looking broken |
@@ -429,11 +442,19 @@ assertion falls out of that one line: HAND to within 0.5 m, the corridor exactly
 as many columns wide as the threshold allows, accumulation collecting 100% of the
 domain at the outlet, a bowl filled to its rim and no further.
 
+`web/swipe-check.mjs` builds its throwaway Chrome profile in the OS temp dir and
+removes it on the way out, so a run leaves nothing in the tree.
+
 `web/smoke.mjs` loads the *built* bundle in jsdom with `fetch` served off disk,
 so it exercises the real data contract: if `pipeline/stage4_hot.py` renames a field, drops
 a layer or emits a `NaN` that `JSON.parse` rejects, it fails there instead of
 rendering a blank page in someone's browser. It asserts the page quotes real
 figures, Leaflet initialises, all 14 layers parse, and the console stays clean.
+The figures it checks are read from `summary.json` and `overlays.json` rather
+than transcribed from them, so re-running stage 4 or stage 5 cannot break it for
+no reason. It also holds the general-reader half in place: the plain-language
+section, the glossary, five `<details>` explainers, and a nav whose section
+numbers must match the sections they point at.
 
 No pytest, no fixtures, no test framework.
 

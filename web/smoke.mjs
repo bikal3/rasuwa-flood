@@ -64,6 +64,15 @@ window.fetch = async (url) => {
   }
 };
 
+// The figures below are read from the pipeline's own output, never typed in:
+// re-running stage 4 or stage 5 changes them, and a check that fails for that
+// is a check nobody keeps.
+const read = async (f) => JSON.parse(await readFile(path.join(site, "data", f), "utf8"));
+const summary = await read("summary.json");
+const overlays = await read("overlays.json");
+const MONTH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 try {
   window.eval(await readFile(path.join(site, "app.js"), "utf8"));
 } catch (e) {
@@ -87,9 +96,12 @@ want(!text.includes("Data not loaded"), "app reported it could not load summary.
 want(text.length > 2000, `root rendered only ${text.length} chars`);
 
 // Content the page must be quoting from summary.json, not from a placeholder.
+const km2 = summary.areas["HOT observed flood extent, whole corridor"]
+  .toLocaleString("en", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
 for (const s of [
   "flood",                       // headline
-  "31.7 km²",                    // observed extent, whole corridor
+  `${km2} km²`,                  // observed extent, whole corridor
   "Terrain alone finds the damage",
   "What the satellites caught",
   "What sat inside the water",
@@ -112,7 +124,6 @@ want((html.match(/href="data\/[a-z_]+\.geojson"/g) || []).length >= 14,
 want(/\d+<\/span>/.test(html), "layer feature counts never populated");
 
 // Every layer the app asks for must exist on disk.
-const summary = JSON.parse(await readFile(path.join(site, "data", "summary.json"), "utf8"));
 for (const name of Object.keys(summary.layer_bytes)) {
   const r = await window.fetch(`data/${name}.geojson`);
   want(r.ok, `layer file missing: ${name}.geojson`);
@@ -136,11 +147,22 @@ for (const name of Object.keys(summary.layer_bytes)) {
   want(sw, "the swipe divider is missing from the comparison map");
   want(sw?.getAttribute("style")?.includes("--x"), "divider position is not bound");
 
-  // It opens on the pair with post-event pixels, which is radar: the optical
-  // "after" is 17% cloud-free and would open on a mostly empty frame.
-  want(root.textContent.includes("8\u201325 Aug 2026"), "before label is missing its date window");
-  want(root.textContent.includes("26 Aug \u2013 1 Sep 2026"), "after label is missing its date window");
-  want(root.textContent.includes("97.4% in frame"), "radar cover is not stated on the slider");
+  // The slider opens on whichever pair has post-event pixels -- radar, while the
+  // optical "after" is mostly cloud. Both tags must carry that pair's own dates
+  // and cover figure, read from the manifest so the check cannot go stale.
+  const cover = (k) =>
+    `${overlays[k].valid_pct}% ${overlays.sensors.find((x) => k.startsWith(x.id)).cover}`;
+  const ends = (k) => {
+    const [y, m, d] = overlays[k].window[1].split("-").map(Number);
+    return `${d} ${MONTH[m - 1]} ${y}`;
+  };
+  const shows = (k) => {
+    const tags = [...root.querySelectorAll(".swipe-tag")].map((t) => t.textContent).join(" ");
+    want(tags.includes(ends(k)), `the ${k} date window is not on the slider`);
+    want(tags.includes(cover(k)), `the ${k} cover figure is not on the slider`);
+  };
+  shows("s1_pre");
+  shows("s1_post");
 
   // Switching to optical must relabel both tags from the same manifest.
   const optical = [...root.querySelectorAll(".swipe-sensor button")]
@@ -148,8 +170,8 @@ for (const name of Object.keys(summary.layer_bytes)) {
   want(optical, "no optical/radar switch on the slider");
   optical?.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
   await new Promise((r) => setTimeout(r, 60));
-  want(root.textContent.includes("87% cloud-free") && root.textContent.includes("17% cloud-free"),
-    "switching to optical did not relabel the slider with its cloud cover");
+  shows("s2_pre");
+  shows("s2_post");
 
   // Whether the slider actually *renders* two images is not checkable here:
   // jsdom has no layout, and this file stubs every element's box to the same
@@ -198,6 +220,41 @@ for (const name of Object.keys(summary.layer_bytes)) {
     "the reference list does not match summary.json's sources");
   want(root.querySelector("#ref-1") && root.querySelector('a[href="#ref-1"]'),
     "reference [1] is never cited from the page");
+}
+
+// The general-reader half. Two audiences read this page, and the plain-language
+// section, the nav that lets a specialist skip it and the glossary are what
+// serve the first one; without them the site is a paper with a map in it.
+{
+  want(root.querySelector("#primer"), "the plain-language section is missing");
+  want(text.includes("What happened, in plain language"),
+    "the plain-language section lost its heading");
+  want(text.includes("Glossary") && text.includes("Height Above Nearest Drainage"),
+    "the glossary is missing or no longer defines HAND");
+
+  // Native <details>, not a hand-rolled accordion: it must open on ctrl-F and
+  // work with JS half-loaded, which a div with an onClick does not.
+  const folds = [...root.querySelectorAll("details.plain")];
+  want(folds.length >= 5, `expected the plain-English explainers, found ${folds.length}`);
+  want(folds.every((d) => d.querySelector("summary")),
+    "an explainer has no summary, so nothing opens it");
+
+  // Every nav target must exist, or the bar is a row of dead links.
+  const nav = [...root.querySelectorAll(".tocbar a")];
+  want(nav.length >= 8, `the section nav has only ${nav.length} entries`);
+  for (const a of nav) {
+    const id = a.getAttribute("href").slice(1);
+    want(root.querySelector(`#${id}`) || window.document.getElementById(id),
+      `nav points at #${id}, which is not on the page`);
+  }
+  // The numbering the nav prints has to be the numbering the sections carry.
+  for (const a of nav) {
+    const m = /^§(\d)/.exec(a.textContent);
+    if (!m) continue;
+    const sec = root.querySelector(`#${a.getAttribute("href").slice(1)}`);
+    want(sec?.textContent.startsWith(`§${m[1]}`),
+      `nav calls #${a.getAttribute("href").slice(1)} §${m[1]}, the section does not`);
+  }
 }
 
 // Panel order is importance order. The inspector answers the map's primary
