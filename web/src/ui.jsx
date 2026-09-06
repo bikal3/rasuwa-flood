@@ -5,7 +5,7 @@
  * threaded through five components: there is exactly one map, one sender shape,
  * and no state to share -- only a message.
  */
-export const flyTo = (zoneId) =>
+const flyTo = (zoneId) =>
   window.dispatchEvent(new CustomEvent("map:fly", { detail: zoneId }));
 
 export const fmt = (v, d = 1) =>
@@ -119,7 +119,7 @@ export function Bars({ rows, max }) {
             />
           </span>
           <span className="val">
-            {fmt(r.value, r.decimals ?? 1)}
+            {fmt(r.value, 1)}
             %
           </span>
         </div>

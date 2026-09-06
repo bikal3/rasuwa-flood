@@ -24,7 +24,8 @@
  */
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
-import { createReadStream, existsSync, statSync } from "node:fs";
+import { createReadStream, existsSync, mkdtempSync, rmSync, statSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -56,10 +57,14 @@ const server = createServer((req, res) => {
 await new Promise((r) => server.listen(0, "127.0.0.1", r));
 const origin = `http://127.0.0.1:${server.address().port}/`;
 
+// A throwaway profile in the OS temp dir, not in the repo: Chrome writes tens of
+// megabytes of cache into it and nothing here wants it kept between runs.
+const profile = mkdtempSync(path.join(tmpdir(), "swipe-check-"));
+
 const chrome = spawn(CHROME, [
   "--headless=new", "--remote-debugging-port=0",
   "--no-first-run", "--no-default-browser-check", "--disable-gpu",
-  `--user-data-dir=${path.join(here, ".chrome-swipe-check")}`,
+  `--user-data-dir=${profile}`,
   "--window-size=1400,900", "--hide-scrollbars", "about:blank",
 ], { stdio: ["ignore", "ignore", "pipe"] });
 
@@ -249,6 +254,10 @@ if (g.pre && g.post) {
 ws.close();
 chrome.kill();
 server.close();
+// Wait for it to actually go: kill() only signals, and Chrome keeps writing its
+// cache on the way out, so removing the directory under it fails with ENOTEMPTY.
+await new Promise((r) => chrome.on("exit", r));
+rmSync(profile, { recursive: true, force: true });
 
 if (fail.length) {
   console.error("\nFAIL");

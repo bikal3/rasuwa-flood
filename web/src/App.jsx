@@ -6,6 +6,23 @@ import { C } from "./layers.js";
 
 const KB = (b) => (b < 1024 ? "<1 kB" : `${Math.round(b / 1024)} kB`);
 
+/**
+ * The page in one line. Two audiences read it: someone who wants to know what
+ * happened to this valley, and someone who wants to check how it was measured.
+ * The bar is what lets the second skip §1 and the first skip §5.
+ */
+const NAV = [
+  ["primer", "§1 Start here"],
+  ["themap", "Map"],
+  ["compare", "Before / after"],
+  ["finding", "§2 Terrain"],
+  ["detection", "§3 Satellites"],
+  ["exposure", "§4 Exposure"],
+  ["method", "§5 Method"],
+  ["data", "§6 Data"],
+  ["references", "§7 References"],
+];
+
 export default function App() {
   const [s, setS] = useState(null);
   const [err, setErr] = useState(null);
@@ -152,7 +169,7 @@ export default function App() {
                 <dt>Products</dt>
                 <dd>
                   {Object.keys(s.layer_bytes).length} GeoJSON layers, WGS84 —{" "}
-                  <a href="#data">§5</a>
+                  <a href="#data">§6</a>
                 </dd>
               </div>
             </dl>
@@ -194,6 +211,163 @@ export default function App() {
         </div>
       </header>
 
+      <nav className="tocbar" aria-label="Sections">
+        <ol>
+          {NAV.map(([id, label]) => (
+            <li key={id}><a href={`#${id}`}>{label}</a></li>
+          ))}
+        </ol>
+      </nav>
+
+      {/* ---------------------------------------------------------------- */}
+      {/* The other half of the page. Everything below §1 assumes you know what
+          a backscatter swing is; this section assumes you do not, and it is
+          first because the report is about a valley before it is about a
+          method. Its figures are read from summary.json like every other
+          number here, so the plain reading and the technical one cannot
+          disagree. */}
+      <Section
+        id="primer"
+        no="1"
+        title="What happened, in plain language"
+        lede="A lake above a glacier emptied in an afternoon and took a border crossing, a highway and most of two villages with it. This section is the story and the vocabulary — every term it uses is defined in the glossary in §7 — and the rest of the report is the measurement."
+      >
+        <p className="lede">
+          On {DATE} a mass of ice and rock came off Langtang Lirung, high above
+          the Nepal–China border, and released the meltwater ponded behind it.
+          What came down the Lende Khola was not a swollen river. It was a{" "}
+          <strong>debris flood</strong> — water carrying so much rock and
+          sediment that it behaves more like wet concrete than like water,
+          heavier and far more destructive than the same volume of clear flow.
+        </p>
+        <p className="lede">
+          It reached the Bhote Koshi, turned south, and ran{" "}
+          <strong>{fmt(a["HOT observed flood extent, whole corridor"], 1)} km²</strong>{" "}
+          of valley floor — roughly{" "}
+          {int(Math.round(a["HOT observed flood extent, whole corridor"] * 1e6 / 7140))}{" "}
+          football pitches — down to the Narayani. The Rasuwagadhi border post,
+          the customs yard and the road to Tibet are gone. Surveyors on the
+          ground afterwards recorded{" "}
+          <strong>{int(s.buildings_by_status.Destroyed)} buildings destroyed</strong>,{" "}
+          {int(s.roads_by_status.Destroyed)} stretches of road broken and{" "}
+          {int(s.bridges_by_status["Washed out"])} of {int(bridges)} bridges
+          washed away.
+        </p>
+
+        <h3 className="subhead">The one question this report asks</h3>
+        <p className="lede">
+          Could you have drawn the dangerous ground <em>beforehand</em>, from a
+          contour map, with no satellite and no warning? The answer here is
+          largely yes — and that matters, because elevation data exists for the
+          whole planet already, while a satellite pass over a specific valley on
+          a specific afternoon does not.
+        </p>
+
+        <h3 className="subhead">Three things worth knowing</h3>
+
+        <details className="plain">
+          <summary>Why a glacial lake bursting is worse than heavy rain</summary>
+          <p>
+            Glaciers leave behind loose ridges of rubble, and meltwater ponds
+            behind them. That dam is gravel and ice, not concrete. A rockfall
+            into the lake, an ice avalanche, or simply the ridge soaking through
+            can open it, and when it opens the lake does not drain over days —
+            it leaves in minutes.
+          </p>
+          <p>
+            The wave picks up everything loose on the way down: boulders,
+            gravel, trees, whole hillsides. Steep Himalayan valleys make it
+            worse by funnelling the flow instead of letting it spread. What
+            arrives at a village 40 km downstream is a wall of moving rock,
+            which is why the damage here is scouring and burial rather than the
+            soaking you would expect from a river in flood. Nepal has hundreds
+            of these lakes and they are growing as the ice retreats.
+          </p>
+        </details>
+
+        <details className="plain">
+          <summary>What "height above the river" means, and why it predicts damage</summary>
+          <p>
+            Start with an elevation model: a grid where every 30 m cell holds
+            its height. For each cell, work out which way water would run off
+            it, follow that path downhill until it meets a river, and record how
+            much higher the cell sits than the river it drains into. That number
+            is <strong>HAND</strong> — Height Above Nearest Drainage.
+          </p>
+          <p>
+            It is not height above sea level. A house 5 m above the channel and
+            a house 300 m up the valley side can share an altitude; HAND tells
+            them apart, because it measures each against <em>its own</em> river.
+            Water cannot climb, so low HAND is ground a flood can reach and high
+            HAND is ground it cannot. Everything within{" "}
+            <strong>{s.event.hand_max_m} m</strong> of a channel here is{" "}
+            {fmt(hits[0]?.corridor_base_pct, 2)}% of the map — and{" "}
+            {fmt(hits[0]?.in_corridor_pct, 1)}% of the destroyed buildings are
+            inside it.
+          </p>
+          <p>
+            The corridor never looks at the satellite imagery. That is the whole
+            point: it is drawn from the shape of the land alone, so checking the
+            damage against it is a test rather than a restatement.
+          </p>
+        </details>
+
+        <details className="plain">
+          <summary>Why this needs two different satellites</summary>
+          <p>
+            <strong>Sentinel-2 is a camera.</strong> It sees colour the way you
+            would from an aeroplane — and, like you, it sees nothing at all
+            through cloud. This flood happened at the height of the monsoon, and
+            the clear-sky image taken after it covers only a sixth of the scene.
+          </p>
+          <p>
+            <strong>Sentinel-1 is radar.</strong> It sends its own microwave
+            pulse down and times the echo, so it works at night and straight
+            through cloud. What it measures is roughness rather than colour:
+            smooth standing water and fresh wet sediment bounce the pulse away
+            from the satellite, so they come back dark. The cost is that a radar
+            image is not a photograph — it is grainy, false-coloured, and
+            genuinely hard to read.
+          </p>
+          <p>
+            Neither one alone gets through a monsoon disaster. So the detector
+            accepts a change flagged by <em>either</em>, and the before/after
+            slider below lets you switch between them over the same ground.
+          </p>
+        </details>
+
+        <h3 className="subhead">What a damage survey actually records</h3>
+        <p className="lede">
+          Not "a village was destroyed". Mappers walk the imagery and the ground
+          feature by feature, tagging each one with a condition. That is what
+          the counts on this page are made of, and it is why a bridge and a
+          field boundary are counted separately:
+        </p>
+        <div className="meta">
+          <dl>
+            {Object.entries(s.damaged_features_by_type)
+              .slice(0, 8)
+              .map(([kind, n]) => (
+                <div key={kind}>
+                  <dt>{kind}</dt>
+                  <dd><b>{int(n)}</b> mapped as damaged or destroyed</dd>
+                </div>
+              ))}
+          </dl>
+        </div>
+
+        <h3 className="subhead">How to read the map above</h3>
+        <p className="lede">
+          The layer panel splits in two, and the split is the argument.{" "}
+          <em>Observed</em> layers are what surveyors recorded on the ground.{" "}
+          <em>Derived</em> layers are what this pipeline worked out from imagery
+          and terrain, having never seen the survey. Drag one group's opacity
+          slider down and watch whether the other one is underneath it. That
+          overlap is the finding, and everything from §2 on is an attempt to put
+          a number on it.
+        </p>
+      </Section>
+
       <div className="mapsec" id="themap">
         <MapView />
         <div className="wrap mapcapwrap">
@@ -213,7 +387,7 @@ export default function App() {
       {/* ---------------------------------------------------------------- */}
       <Section
         id="finding"
-        no="1"
+        no="2"
         title="Terrain alone finds the damage"
         lede="Height Above Nearest Drainage is computed from a 30 m elevation model and nothing else — no imagery, no flood report. It asks one question of every pixel: how far above the river is this ground?"
       >
@@ -266,6 +440,24 @@ export default function App() {
           </div>
         </div>
 
+        <details className="plain" style={{ marginTop: "2rem" }}>
+          <summary>In plain English</summary>
+          <p>
+            The corridor is {fmt(hits[0]?.corridor_base_pct, 2)}% of the map. If
+            the flood had damaged buildings at random you would expect about{" "}
+            {fmt(hits[0]?.corridor_base_pct, 0)} in every 100 destroyed
+            buildings to fall inside it. {fmt(hits[0]?.in_corridor_pct, 0)} in
+            100 did.
+          </p>
+          <p>
+            Nothing about the corridor knows a flood happened. It is a contour
+            map asking which ground is low enough to be reached. So this is a
+            statement about the whole of the high Himalaya, not only about 26
+            August: the ground a debris flood can occupy is largely decidable in
+            advance, anywhere there is an elevation model — which is everywhere.
+          </p>
+        </details>
+
         <div style={{ marginTop: "2rem" }}>
           <Table
             no={1}
@@ -300,7 +492,7 @@ export default function App() {
       {/* ---------------------------------------------------------------- */}
       <Section
         id="detection"
-        no="2"
+        no="3"
         title="What the satellites caught, and what they missed"
         lede="Sentinel-2 index differencing OR a Sentinel-1 backscatter swing, confined to the corridor. Measured against the survey, honestly."
       >
@@ -368,6 +560,27 @@ export default function App() {
           </div>
         </div>
 
+        <details className="plain">
+          <summary>In plain English: why "29.5% flagged" is not "70% missed"</summary>
+          <p>
+            A change detector does one thing: it compares the same ground on two
+            dates and flags what is different. The river was already a river on
+            both dates, so along the channel itself there is nothing to flag —
+            and the channel is most of the mapped flood extent. Finding nothing
+            there is the detector being right, not being blind.
+          </p>
+          <p>
+            What it does light up is ground that changed <em>state</em>: forest
+            stripped to gravel, terraces buried in sediment, a village replaced
+            by riverbed. Add the monsoon — 65–80% cloud over the upper
+            catchment, leaving the radar working alone — and the honest way to
+            read the score is concentration rather than coverage:{" "}
+            {fmt(v.detected_inside_observed_pct, 1)}% of what the detector
+            flagged is inside real flood water, against a{" "}
+            {fmt(v.observed_share_of_roi_pct, 2)}% base rate.
+          </p>
+        </details>
+
         <h3 className="subhead">Change rate against height above the river</h3>
         <Bars
           rows={s.change_vs_hand.map((r) => ({
@@ -388,7 +601,7 @@ export default function App() {
       {/* ---------------------------------------------------------------- */}
       <Section
         id="exposure"
-        no="3"
+        no="4"
         title="What sat inside the water"
         lede="Counts clipped to the observed flood extent itself, not to the 200 m buffer the export ships. Being in the dataset is not evidence of damage; being inside the extent is."
       >
@@ -480,7 +693,7 @@ export default function App() {
       {/* ---------------------------------------------------------------- */}
       <Section
         id="method"
-        no="4"
+        no="5"
         title="Method, and where it breaks"
         lede="Four stages, each reading the previous one's files off disk. Nothing here is a validated classifier."
       >
@@ -564,7 +777,7 @@ export default function App() {
       {/* ---------------------------------------------------------------- */}
       <Section
         id="data"
-        no="5"
+        no="6"
         title="Data"
         lede="Every layer the map draws, as GeoJSON in WGS84. Open them in QGIS or ArcGIS Pro directly."
       >
@@ -585,7 +798,7 @@ export default function App() {
       {/* ---------------------------------------------------------------- */}
       <Section
         id="references"
-        no="6"
+        no="7"
         title="References and reuse"
         lede="What this was built from, what it may be used for, and what it must not be read as."
       >
@@ -602,6 +815,31 @@ export default function App() {
             </li>
           ))}
         </ol>
+
+        <h3 className="subhead">Glossary</h3>
+        <div className="meta gloss">
+          <dl>
+            {[
+              ["GLOF", "Glacial lake outburst flood. A lake dammed by glacial rubble or ice fails, and empties in minutes rather than days."],
+              ["Debris flood", "Water carrying so much rock and sediment that it moves and destroys more like wet concrete than like a river."],
+              ["DEM", "Digital elevation model — a grid where every cell holds the height of the ground. Here, SRTM at 30 m."],
+              ["HAND", `Height Above Nearest Drainage. How far a cell sits above the river it drains into, rather than above sea level. The corridor here is everything within ${s.event.hand_max_m} m.`],
+              ["Sentinel-2", "An optical satellite: a camera that sees colour, and nothing through cloud."],
+              ["Sentinel-1", "A radar satellite: it sends its own microwave pulse and measures the echo, so it works at night and through cloud. Smooth water returns a dark signal."],
+              ["Backscatter (σ⁰)", "How much of a radar pulse comes back to the satellite. A swing between two dates means the surface changed its roughness or wetness."],
+              ["NDVI / MNDWI", "Index images built from Sentinel-2 bands, one tracking living vegetation and one tracking surface water. Differencing them between dates is how vegetation loss and new water are detected."],
+              ["Change detection", "Comparing the same ground on two dates and flagging what differs. It cannot see damage to something that already looked that way — a river channel, for instance."],
+              ["Base rate / concentration", "The share of the map a mask covers, and how many times more damage falls inside it than that share alone would predict. A mask over 4% of the map holding 96% of the losses is a 22× concentration."],
+              ["Ground truth", "Independent observation used to test a result. Here, the HOT survey, which this pipeline never reads before making its own estimate."],
+              ["GeoJSON", "A plain-text file format for map features. Every layer in §6 is one, and opens directly in QGIS or ArcGIS Pro."],
+            ].map(([term, def]) => (
+              <div key={term}>
+                <dt>{term}</dt>
+                <dd>{def}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
 
         <h3 className="subhead">Data availability</h3>
         <p>
