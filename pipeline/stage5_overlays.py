@@ -76,9 +76,13 @@ def s2_rgb(path):
 # pairs are read the same way and cover the same windows; the only difference is
 # which file stage 1 wrote them from.
 SENSORS = (
+    # "of pixels kept", not "of the frame": the number sits on a tag beside an
+    # image that is solid cloud, and anything that reads as a clarity figure
+    # there will be read as one. This way it contrasts directly with the masked
+    # pair's "17% cloud-free" -- same frame, one keeps everything, one does not.
     ("s2raw", "Without cloud filter", (cfg.S2_PRE, cfg.S2_POST),
      "Sentinel-2 L2A true colour, every pixel the satellite returned",
-     "of the frame"),
+     "of pixels kept"),
     ("s2", "With cloud filter", (cfg.S2_PRE, cfg.S2_POST),
      "Sentinel-2 L2A true colour, cloud, shadow and snow masked out per pixel",
      "cloud-free"),

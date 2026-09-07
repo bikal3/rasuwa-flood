@@ -129,9 +129,10 @@ def _fetch_band(image, band, dest):
 
 
 def download_stack(image, bands, out):
+    """-> True if it fetched, False if the file was already there."""
     if out.exists():
         print(f"  {out.name} exists, skipping")
-        return
+        return False
     with tempfile.TemporaryDirectory() as tmp:
         parts = []
         for b in bands:
@@ -151,6 +152,7 @@ def download_stack(image, bands, out):
                     dst.write(src.read(1).astype("float32"), i)
                 dst.set_band_description(i, name)
     print(f"  wrote {out.name}  ({out.stat().st_size / 1e6:.1f} MB)")
+    return True
 
 
 # --- Vector -----------------------------------------------------------------
@@ -180,6 +182,21 @@ def write_vectors():
     outside = zones[~zones.to_crs("EPSG:4326").intersects(box(*cfg.ROI))]
     if len(outside):
         print(f"  note: {', '.join(outside.zone_id)} fall outside ROI -- widen ROI in config.py")
+
+
+def read_manifest():
+    """Rows from a previous run, keyed by filename.
+
+    A skipped file was downloaded by some earlier run, under whatever parameters
+    that run resolved -- and `shared_orbit()` in particular is data-dependent, so
+    a later run can pick a different orbit while the cached file stays as it was.
+    Rewriting its row from this run's parameters would describe the file as
+    something it is not, silently, in the one place that records provenance.
+    """
+    path = cfg.RASTER / "manifest.csv"
+    if not path.exists():
+        return {}
+    return {r["file"]: r for r in pd.read_csv(path).to_dict("records")}
 
 
 def write_manifest(rows):
@@ -215,16 +232,23 @@ def main():
     jobs = [
         ("s2_pre", s2_pre, cfg.S2_BANDS, "Sentinel-2 L2A", f"{cfg.S2_PRE[0]}..{cfg.S2_PRE[1]}"),
         ("s2_post", s2_post, cfg.S2_BANDS, "Sentinel-2 L2A", f"{cfg.S2_POST[0]}..{cfg.S2_POST[1]}"),
-        ("s2raw_pre", s2raw_pre, cfg.S2_RGB, "Sentinel-2 L2A, unmasked", f"{cfg.S2_PRE[0]}..{cfg.S2_PRE[1]}"),
-        ("s2raw_post", s2raw_post, cfg.S2_RGB, "Sentinel-2 L2A, unmasked", f"{cfg.S2_POST[0]}..{cfg.S2_POST[1]}"),
+        ("s2raw_pre", s2raw_pre, cfg.S2_RGB, "Sentinel-2 L2A unmasked", f"{cfg.S2_PRE[0]}..{cfg.S2_PRE[1]}"),
+        ("s2raw_post", s2raw_post, cfg.S2_RGB, "Sentinel-2 L2A unmasked", f"{cfg.S2_POST[0]}..{cfg.S2_POST[1]}"),
         ("s1_pre", s1_pre, cfg.S1_BANDS, f"Sentinel-1 GRD orbit {orbit}", f"{cfg.S1_PRE[0]}..{cfg.S1_PRE[1]}"),
         ("s1_post", s1_post, cfg.S1_BANDS, f"Sentinel-1 GRD orbit {orbit}", f"{cfg.S1_POST[0]}..{cfg.S1_POST[1]}"),
         ("dem", dem, ["elevation"], "SRTM GL1 v3", "baseline"),
     ]
+    prior = read_manifest()
     rows = []
     for name, img, bands, source, window in jobs:
         out = cfg.RASTER / f"{name}.tif"
-        download_stack(img, bands, out)
+        fetched = download_stack(img, bands, out)
+        if not fetched and out.name in prior:
+            rows.append(prior[out.name])
+            continue
+        if not fetched:
+            print(f"    warning: {out.name} predates the manifest; "
+                  "its provenance below is this run's, not the one that wrote it")
         rows.append({
             "file": out.name, "bands": " ".join(bands), "source": source,
             "window": window, "crs": cfg.CRS, "pixel_m": cfg.SCALE, "nodata": cfg.NODATA,

@@ -12,19 +12,33 @@
  "event": "2026-08-26",
  "sensors": [
   {
-   "id": "s2",
-   "label": "Optical",
-   "source": "Sentinel-2 L2A true colour, cloud-masked median composite",
-   "cover": "cloud-free"
+   "id": "s2raw",
+   "label": "Without cloud filter",
+   "source": "Sentinel-2 L2A true colour, every pixel the satellite returned",
+   "cover": "of pixels kept"
   },
   {
-   "id": "s1",
-   "label": "Radar",
-   "source": "Sentinel-1 GRD median, VV backscatter in dB \u2014 sees through cloud",
-   "cover": "in frame"
+   "id": "s2",
+   "label": "With cloud filter",
+   "source": "Sentinel-2 L2A true colour, cloud, shadow and snow masked out per pixel",
+   "cover": "cloud-free"
   }
  ],
  "note": "Both dates share one contrast stretch, computed on the pre-event image, so a difference in brightness is a difference on the ground.",
+ "s2raw_pre": {
+  "window": [
+   "2026-08-01",
+   "2026-08-25"
+  ],
+  "valid_pct": 97.4
+ },
+ "s2raw_post": {
+  "window": [
+   "2026-08-26",
+   "2026-09-01"
+  ],
+  "valid_pct": 97.4
+ },
  "s2_pre": {
   "window": [
    "2026-08-01",
@@ -38,19 +52,5 @@
    "2026-09-01"
   ],
   "valid_pct": 17.0
- },
- "s1_pre": {
-  "window": [
-   "2026-08-08",
-   "2026-08-25"
-  ],
-  "valid_pct": 97.4
- },
- "s1_post": {
-  "window": [
-   "2026-08-26",
-   "2026-09-01"
-  ],
-  "valid_pct": 97.4
  }
 }
