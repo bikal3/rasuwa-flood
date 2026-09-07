@@ -1,5 +1,5 @@
 /**
- * Static build. esbuild only -- no Vite, no framework CLI.
+ * Static build. esbuild only -- no Vite, no framework CLI, no router.
  *
  *   node build.mjs           bundle web/ into ../site/, ready to publish
  *   node build.mjs --serve   same, but watched and served on :5173
@@ -8,11 +8,21 @@
  * ships as static files the app fetches at runtime rather than being inlined
  * into the bundle. That keeps the JS small and lets a browser cache the layers
  * independently of the code.
+ *
+ * The site is genuinely multi-page: one real directory and index.html per entry
+ * in routes.mjs, each loading the same bundle and told which page it is by a
+ * data attribute. That means no client-side router, no history interception and
+ * no 404 rewrite rule on the host -- the browser's own navigation does the work,
+ * back and forward included, and a link to /terrain/ is a link to a file that
+ * exists. The cost is a full page load between sections, which after the first
+ * one is a cache hit on app.js and app.css.
  */
 import * as esbuild from "esbuild";
-import { cp, mkdir, rm } from "node:fs/promises";
+import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+
+import { ROUTES } from "./src/routes.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const out = path.resolve(here, "..", "site");
@@ -40,6 +50,32 @@ const options = {
   define: { "process.env.NODE_ENV": serve ? '"development"' : '"production"' },
 };
 
+/**
+ * One index.html per route, from one template.
+ *
+ * Every route is a directory exactly one level below the root, so the relative
+ * path back to app.js, app.css and data/ is "" at the top and "../" everywhere
+ * else -- stamped into the page rather than worked out at runtime, so the site
+ * survives being mounted in a subdirectory.
+ */
+async function writePages() {
+  const tpl = await readFile(path.join(here, "template.html"), "utf8");
+  for (const r of ROUTES) {
+    const dir = r.path ? path.join(out, r.path) : out;
+    await mkdir(dir, { recursive: true });
+    // The home page is already called "Rasuwa Flood 2026"; the rest hang the
+    // site name off their own.
+    const html = tpl
+      .replaceAll("{{titletag}}", r.path ? `${r.title} — Rasuwa Flood 2026` : r.title)
+      .replaceAll("{{base}}", r.path ? "../" : "")
+      .replaceAll("{{page}}", r.id)
+      .replaceAll("{{title}}", r.title)
+      .replaceAll("{{desc}}", r.desc);
+    await writeFile(path.join(dir, "index.html"), html);
+  }
+}
+await writePages();
+
 if (serve) {
   const ctx = await esbuild.context(options);
   await ctx.watch();
@@ -50,8 +86,11 @@ if (serve) {
   });
   const { hosts, host } = served;
   const h = (hosts?.[0] ?? host ?? "localhost").replace(/^(0\.0\.0\.0|::)$/, "localhost");
-  console.log(`\n  serving http://${h}:${served.port}  (watching web/src)\n`);
+  // Note: routes.mjs is read by writePages above, not by esbuild, so adding a
+  // route needs a restart rather than a rebuild.
+  console.log(`\n  serving http://${h}:${served.port}  (watching web/src)`);
+  console.log(`  ${ROUTES.length} pages: ${ROUTES.map((r) => "/" + r.path).join(" ")}\n`);
 } else {
   await esbuild.build(options);
-  console.log(`\n  built -> ${out}`);
+  console.log(`\n  built ${ROUTES.length} pages -> ${out}`);
 }

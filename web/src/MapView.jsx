@@ -3,6 +3,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { LAYERS, BASEMAPS, PLACES, BRIDGE_COLOUR } from "./layers.js";
 import tameGestures from "./gestures.js";
+import { DATA } from "./base.js";
 
 /** "Observed — HOT survey" -> "observed-hot-survey", for label/input pairing. */
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -19,8 +20,6 @@ const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g
  * Canvas renderer throughout -- the damaged-buildings layer alone is 1,626
  * polygons and the SVG renderer creates a DOM node per feature.
  */
-
-const DATA = "data";
 
 /**
  * The view lives in the URL hash: #zoom/lat/lon/layer,layer
@@ -96,7 +95,7 @@ function emphasise(lyr, o, hard) {
   lyr.bringToFront?.();
 }
 
-export default function MapView() {
+export default function MapView({ short }) {
   const host = useRef(null);
   const map = useRef(null);
   const groups = useRef({});
@@ -342,7 +341,7 @@ export default function MapView() {
   }, {});
 
   return (
-    <div className="maprow">
+    <div className={short ? "maprow short" : "maprow"}>
       <div className="mapcanvas">
         {/* Leaflet gives the container tabindex=0, so a screen reader stops here.
             Without a name it announces a group whose only readable content is the
