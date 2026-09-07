@@ -172,6 +172,7 @@ function How({ s }) {
         lede="Five things worth knowing before any of the numbers on this site mean anything. No prior knowledge assumed."
       />
 
+      <div className="cols explainers">
       <Explain q="Why a glacial lake bursting is worse than heavy rain">
         <p>
           Glaciers leave behind loose ridges of rubble, and meltwater ponds
@@ -265,6 +266,7 @@ function How({ s }) {
           damage.
         </p>
       </Explain>
+      </div>
 
       <h2>What the survey recorded here</h2>
       <p className="muted">
@@ -465,20 +467,33 @@ function Terrain({ s }) {
       </Explain>
 
       <h2>Ground evidence inside the corridor</h2>
-      <Bars
-        rows={hits.map((h) => ({
-          label: `${h.target.split(" ")[0]} (${h.n_in_roi})`,
-          value: h.in_corridor_pct,
-          colour: C.teal,
-        }))}
-        max={100}
-      />
-      <Figcap>
-        Share of each kind of recorded loss falling within HAND ≤{" "}
-        {s.event.hand_max_m} m of a channel draining at least{" "}
-        {s.event.min_drainage_km2} km². The corridor never sees the imagery, so
-        this is not the model marking its own homework.
-      </Figcap>
+      <div className="cols">
+        <div>
+          <Bars
+            rows={hits.map((h) => ({
+              label: `${h.target.split(" ")[0]} (${h.n_in_roi})`,
+              value: h.in_corridor_pct,
+              colour: C.teal,
+            }))}
+            max={100}
+          />
+          <Figcap>
+            Share of each kind of recorded loss falling within HAND ≤{" "}
+            {s.event.hand_max_m} m of a channel draining at least{" "}
+            {s.event.min_drainage_km2} km². The corridor never sees the imagery,
+            so this is not the model marking its own homework.
+          </Figcap>
+        </div>
+        <Callout>
+          <p>
+            <strong>Read this as a well-drawn corridor, not a skill score.</strong>{" "}
+            {fmt(hits[0]?.in_corridor_pct, 1)}% containment says the corridor is
+            right <em>here</em>, on one event. It is not cross-validated, and the
+            survey's own mapping is densest along the river, which inflates any
+            containment statistic computed against it.
+          </p>
+        </Callout>
+      </div>
 
       <Table
         caption={<><b>Ground evidence against the derived masks,</b> inside the study rectangle.</>}
@@ -511,16 +526,6 @@ function Terrain({ s }) {
         satellites flagged inside it. Concentration is the last column over its
         own base rate — how much better than chance each mask does.
       </Figcap>
-
-      <Callout>
-        <p>
-          <strong>Read this as a well-drawn corridor, not a skill score.</strong>{" "}
-          {fmt(hits[0]?.in_corridor_pct, 1)}% containment says the corridor is
-          right <em>here</em>, on one event. It is not cross-validated, and the
-          survey's own mapping is densest along the river, which inflates any
-          containment statistic computed against it.
-        </p>
-      </Callout>
     </>
   );
 }
@@ -569,20 +574,32 @@ function Satellites({ s }) {
       </Explain>
 
       <h2>Ground evidence inside the detected-damage mask</h2>
-      <Bars
-        rows={[
-          { label: "Buildings", value: hits[0]?.in_detected_pct, colour: C.red },
-          { label: "Roads", value: hits[2]?.in_detected_pct, colour: C.red },
-          { label: "Bridges", value: hits[1]?.in_detected_pct, colour: C.red },
-          { label: "Flood extent", value: v.observed_flagged_by_stage3_pct, colour: C.blue },
-        ]}
-        max={100}
-      />
-      <Figcap>
-        Share covered by the detected-damage mask, which occupies{" "}
-        {fmt(hits[0]?.detected_base_pct, 2)}% of the study area — an eightieth of
-        the terrain corridor above it.
-      </Figcap>
+      <div className="cols">
+        <div>
+          <Bars
+            rows={[
+              { label: "Buildings", value: hits[0]?.in_detected_pct, colour: C.red },
+              { label: "Roads", value: hits[2]?.in_detected_pct, colour: C.red },
+              { label: "Bridges", value: hits[1]?.in_detected_pct, colour: C.red },
+              { label: "Flood extent", value: v.observed_flagged_by_stage3_pct, colour: C.blue },
+            ]}
+            max={100}
+          />
+          <Figcap>
+            Share covered by the detected-damage mask, which occupies{" "}
+            {fmt(hits[0]?.detected_base_pct, 2)}% of the study area — an
+            eightieth of the terrain corridor above it.
+          </Figcap>
+        </div>
+        <Callout kind="warn">
+          <p>
+            <strong>The upper catchment sat under 65–80% cloud.</strong> Those
+            pixels rest on radar alone, and one zone — Ghattekhola — has only
+            7.1% usable optical coverage. Its figure should not be quoted
+            without that caveat.
+          </p>
+        </Callout>
+      </div>
 
       <Table
         caption={<><b>Areas inside the study rectangle,</b> in km².</>}
@@ -614,15 +631,6 @@ function Satellites({ s }) {
         is the band the corridor keeps. A threshold cutting below{" "}
         {s.event.hand_max_m} m would slice through the middle of the signal.
       </Figcap>
-
-      <Callout kind="warn">
-        <p>
-          <strong>The upper catchment sat under 65–80% cloud.</strong> Those
-          pixels rest on radar alone, and one zone — Ghattekhola — has only 7.1%
-          usable optical coverage. Its figure should not be quoted without that
-          caveat.
-        </p>
-      </Callout>
     </>
   );
 }
@@ -720,6 +728,8 @@ function Method({ s }) {
         ["Products", `${Object.keys(s.layer_bytes).length} GeoJSON layers, WGS84`],
       ]} />
 
+      <div className="cols">
+        <div>
       <h2>The pipeline</h2>
       <ol className="steps">
         <li>
@@ -727,16 +737,63 @@ function Method({ s }) {
           relative orbit so terrain geometry cancels between the dates.
         </li>
         <li>
-          A pixel is flagged as changed where <b>(1)</b> holds, after a
+          A pixel is flagged as changed where <code>(1)</code> holds, after a
           linear-power multilook on the radar to knock down speckle.
         </li>
         <li>
           Priority-flood fill → D8 flow directions → flow accumulation → HAND.
-          The corridor is <b>(2)</b>, and the flagged pixels are clipped to it.
+          The corridor is <code>(2)</code>, and the flagged pixels are clipped to it.
         </li>
         <li>The ground survey is joined in, and everything above is measured against it.</li>
         <li>Pre/post imagery is reprojected to Web Mercator for the before/after slider.</li>
       </ol>
+        </div>
+        <div>
+          <h2>Known limits</h2>
+          <ul className="steps">
+            <li>
+              <b>Thresholds are uncalibrated.</b> They are the study design's,
+              not values tuned against reference polygons. This is a starting
+              point, not a validated classifier.
+            </li>
+            <li>
+              <b>HAND has no notion of flow volume or timing.</b> It cannot
+              separate the {eventDate(s).replace(/ \d{4}$/, "")} surge from
+              ordinary high-monsoon inundation on the same valley floor.
+            </li>
+            <li>
+              <b>Flow accumulation is truncated at the study boundary.</b> The
+              Bhote Koshi's Tibetan headwaters lie outside the elevation model,
+              so the first few kilometres below the border are undercounted.
+            </li>
+            <li>
+              <b>No radiometric terrain flattening on the radar.</b> Same-orbit
+              differencing cancels most of the topographic bias, but the
+              residual is real on the steepest slopes.
+            </li>
+            <li>
+              <b>The collapse source itself is out of scope.</b> Excluding snow
+              and ice is what stops fresh snowfall reading as damage, but it
+              also means this pipeline cannot speak to the high-altitude genesis
+              zone.
+            </li>
+            <li>
+              <b>One event, one corridor.</b> Containment says the corridor is
+              well drawn here. It is not a cross-validated skill score.
+            </li>
+            {s.dropped_bridges?.length > 0 && (
+              <li>
+                <b>
+                  {s.dropped_bridges.length} bridge
+                  {s.dropped_bridges.length > 1 ? "s" : ""} dropped from the map.
+                </b>{" "}
+                {s.dropped_bridges.join(", ")} — published with latitude in both
+                coordinate slots.
+              </li>
+            )}
+          </ul>
+        </div>
+      </div>
 
       <h2>The two rules everything rests on</h2>
       <div className="eq">
@@ -764,48 +821,6 @@ function Method({ s }) {
         this notation cannot drift from what actually ran.
       </Figcap>
 
-      <h2>Known limits</h2>
-      <ul className="steps">
-        <li>
-          <b>Thresholds are uncalibrated.</b> They are the study design's, not
-          values tuned against reference polygons. This is a starting point, not
-          a validated classifier.
-        </li>
-        <li>
-          <b>HAND has no notion of flow volume or timing.</b> It cannot separate
-          the {eventDate(s).replace(/ \d{4}$/, "")} surge from ordinary
-          high-monsoon inundation on the same valley floor.
-        </li>
-        <li>
-          <b>Flow accumulation is truncated at the study boundary.</b> The Bhote
-          Koshi's Tibetan headwaters lie outside the elevation model, so the
-          first few kilometres below the border are undercounted.
-        </li>
-        <li>
-          <b>No radiometric terrain flattening on the radar.</b> Same-orbit
-          differencing cancels most of the topographic bias, but the residual is
-          real on the steepest slopes.
-        </li>
-        <li>
-          <b>The collapse source itself is out of scope.</b> Excluding snow and
-          ice is what stops fresh snowfall reading as damage, but it also means
-          this pipeline cannot speak to the high-altitude genesis zone.
-        </li>
-        <li>
-          <b>One event, one corridor.</b> Containment says the corridor is well
-          drawn here. It is not a cross-validated skill score.
-        </li>
-        {s.dropped_bridges?.length > 0 && (
-          <li>
-            <b>
-              {s.dropped_bridges.length} bridge
-              {s.dropped_bridges.length > 1 ? "s" : ""} dropped from the map.
-            </b>{" "}
-            {s.dropped_bridges.join(", ")} — published with latitude in both
-            coordinate slots.
-          </li>
-        )}
-      </ul>
     </>
   );
 }
