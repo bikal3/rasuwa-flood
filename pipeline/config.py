@@ -49,6 +49,10 @@ S1_PRE = ("2026-08-08", "2026-08-25")
 S1_POST = ("2026-08-26", "2026-09-01")
 
 S2_BANDS = ["B2", "B3", "B4", "B8", "B11", "B12"]
+# True colour only, for the unfiltered pair the before/after slider shows beside
+# the masked one. Stage 1 exports these bands and stage 5 reads them back, so
+# they live here rather than being written out twice and drifting.
+S2_RGB = ["B4", "B3", "B2"]
 S1_BANDS = ["VV", "VH"]
 
 # Sentinel-2 scene classification values kept as valid ground: 4=vegetation,

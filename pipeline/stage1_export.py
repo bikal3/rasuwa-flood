@@ -38,8 +38,14 @@ def _roi():
     return ee.Geometry.Rectangle(cfg.ROI)
 
 
-def s2_composite(start, end):
-    """Cloud-masked Sentinel-2 L2A median, reflectance rescaled to 0-1."""
+def s2_composite(start, end, masked=True):
+    """Sentinel-2 L2A median, reflectance rescaled to 0-1.
+
+    `masked=False` skips the per-pixel SCL mask and keeps every pixel the
+    satellite returned, cloud included. Nothing in the analysis uses that -- it
+    exists so the site's before/after slider can show what the mask removes,
+    which on a monsoon week is most of the post-event frame.
+    """
     def mask(img):
         keep = img.select("SCL").remap(cfg.SCL_KEEP, [1] * len(cfg.SCL_KEEP), 0)
         return img.updateMask(keep)
@@ -57,7 +63,9 @@ def s2_composite(start, end):
             f"No Sentinel-2 scenes for {start}..{end}. Widen the window in "
             "config.py (monsoon cloud over Rasuwa is heavy) or lean on the SAR."
         )
-    return coll.map(mask).select(cfg.S2_BANDS).median().divide(10000).clip(_roi())
+    if masked:
+        coll = coll.map(mask)
+    return coll.select(cfg.S2_BANDS).median().divide(10000).clip(_roi())
 
 
 def _s1(start, end, orbit=None):
@@ -190,6 +198,10 @@ def main():
     print("Sentinel-2")
     s2_pre = s2_composite(*cfg.S2_PRE)
     s2_post = s2_composite(*cfg.S2_POST)
+    # The same composites with the cloud mask off. True colour only: these are
+    # never analysed, they are the "before the filter" half of the slider.
+    s2raw_pre = s2_composite(*cfg.S2_PRE, masked=False)
+    s2raw_post = s2_composite(*cfg.S2_POST, masked=False)
 
     print("Sentinel-1")
     orbit = shared_orbit()
@@ -203,6 +215,8 @@ def main():
     jobs = [
         ("s2_pre", s2_pre, cfg.S2_BANDS, "Sentinel-2 L2A", f"{cfg.S2_PRE[0]}..{cfg.S2_PRE[1]}"),
         ("s2_post", s2_post, cfg.S2_BANDS, "Sentinel-2 L2A", f"{cfg.S2_POST[0]}..{cfg.S2_POST[1]}"),
+        ("s2raw_pre", s2raw_pre, cfg.S2_RGB, "Sentinel-2 L2A, unmasked", f"{cfg.S2_PRE[0]}..{cfg.S2_PRE[1]}"),
+        ("s2raw_post", s2raw_post, cfg.S2_RGB, "Sentinel-2 L2A, unmasked", f"{cfg.S2_POST[0]}..{cfg.S2_POST[1]}"),
         ("s1_pre", s1_pre, cfg.S1_BANDS, f"Sentinel-1 GRD orbit {orbit}", f"{cfg.S1_PRE[0]}..{cfg.S1_PRE[1]}"),
         ("s1_post", s1_post, cfg.S1_BANDS, f"Sentinel-1 GRD orbit {orbit}", f"{cfg.S1_POST[0]}..{cfg.S1_POST[1]}"),
         ("dem", dem, ["elevation"], "SRTM GL1 v3", "baseline"),
