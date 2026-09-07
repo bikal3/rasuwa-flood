@@ -71,6 +71,12 @@ Bands carry descriptions, so ArcGIS Pro shows `B8`, not `Band_4`. Everything is
 already projected and metric, so Zonal Statistics and Raster Calculator give real
 areas with no reprojection step.
 
+Files that already exist are skipped, and **their manifest rows are preserved
+rather than rewritten**. `shared_orbit()` is data-dependent — Earth Engine's
+holdings change — so a later run can resolve a different orbit while the cached
+SAR stays as it was, and rewriting its row from the new run would silently
+describe the file as something it is not.
+
 Both SAR dates come from the **same relative orbit** — the script picks one that
 covers both windows. Mixing orbits across a pre/post pair manufactures fake
 change in steep terrain, because local incidence angle, layover and radar shadow
@@ -218,12 +224,15 @@ Reprojects the Sentinel-2 composites to Web Mercator as 8-bit palette PNGs, plus
 
 - **Two pairs of the same imagery**, differing only in whether the cloud mask
   ran. *Without the filter* is every pixel the satellite returned — on a monsoon
-  week over a Himalayan gorge, mostly cloud. *With the filter* is the same median
-  composite with cloud, shadow and snow dropped per pixel by `SCL_KEEP`, leaving
-  the post-event frame **17% covered** against the pre's **87%**. The holes are
-  the point: they are what the filter removed. Stage 1 exports the unmasked pair
-  as `s2raw_{pre,post}.tif`, true colour only, and nothing in the analysis reads
-  them.
+  week over a Himalayan gorge, an after-frame that is almost solid cloud. *With
+  the filter* is the same median composite with cloud, shadow and snow dropped
+  per pixel by `SCL_KEEP`, leaving the post-event frame **17% cloud-free**
+  against the pre's **87%**. The holes are the point: they are what the filter
+  removed. Stage 1 exports the unmasked pair as `s2raw_{pre,post}.tif`, true
+  colour only, and nothing in the analysis reads them.
+- **The unmasked tag says "of pixels kept", not "of the frame".** It sits beside
+  an image that is solid cloud, and a percentage there is read as a clarity
+  figure unless it is worded so it cannot be.
 - **One stretch across all four frames**, computed on the *masked* pre-event
   image so the percentiles come off ground rather than cloud tops. Give each
   pair its own and the unmasked one renders darker, which would make the filter
