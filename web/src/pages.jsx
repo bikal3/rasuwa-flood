@@ -169,7 +169,7 @@ function How({ s }) {
       <PageHead
         kicker="Understand"
         title="How it works"
-        lede="Five things worth knowing before any of the numbers on this site mean anything. No prior knowledge assumed."
+        lede="Five things worth knowing to make sense of the numbers on this site. No prior knowledge assumed — start here if any of the analysis pages lost you."
       />
 
       <div className="cols explainers">

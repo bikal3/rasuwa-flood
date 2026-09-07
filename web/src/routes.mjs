@@ -20,18 +20,6 @@ export const ROUTES = [
     desc: "What the 26 August 2026 debris flood did to the Bhote Koshi valley, and how it was measured from satellites and terrain.",
   },
   {
-    id: "how", path: "how-it-works", group: "Understand", icon: "💡",
-    label: "How it works",
-    title: "How it works",
-    desc: "What a glacial lake outburst flood is, what height above the river means, and why mapping one needs both a camera satellite and a radar satellite.",
-  },
-  {
-    id: "glossary", path: "glossary", group: "Understand", icon: "📖",
-    label: "Glossary",
-    title: "Glossary",
-    desc: "Every term this site uses, in plain language: GLOF, HAND, backscatter, change detection, base rate.",
-  },
-  {
     id: "map", path: "map", group: "Explore data", icon: "🗺️",
     label: "Flood map",
     title: "Flood map",
@@ -60,6 +48,18 @@ export const ROUTES = [
     label: "Damage & exposure",
     title: "Damage & exposure",
     desc: "Buildings, roads, bridges and hydropower inside the observed flood extent, counted by impact zone.",
+  },
+  {
+    id: "how", path: "how-it-works", group: "Understand", icon: "💡",
+    label: "How it works",
+    title: "How it works",
+    desc: "What a glacial lake outburst flood is, what height above the river means, and why mapping one needs both a camera satellite and a radar satellite.",
+  },
+  {
+    id: "glossary", path: "glossary", group: "Understand", icon: "📖",
+    label: "Glossary",
+    title: "Glossary",
+    desc: "Every term this site uses, in plain language: GLOF, HAND, backscatter, change detection, base rate.",
   },
   {
     id: "method", path: "method", group: "Reference", icon: "📋",
