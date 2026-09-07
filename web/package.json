@@ -5,7 +5,8 @@
   "description": "Static site for the 2026 Rasuwa transboundary flood analysis",
   "scripts": {
     "build": "node build.mjs",
-    "dev": "node build.mjs --serve"
+    "dev": "node build.mjs --serve",
+    "pages": "node build.mjs && node smoke.mjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

@@ -31,6 +31,7 @@ and 3, or run them and pull the outputs in as extra layers.
 ```
 pipeline/   the Python stages and their checks; everything tunable is config.py
 web/        React source for the site; routes.mjs is the page table, build.mjs writes one HTML per page
+.node-version  pins Node 20 for the Cloudflare Pages build
 data/       stage outputs (gitignored except tables/*.csv)
 maps/       matplotlib plates, committed
 site/       built site, gitignored -- rebuild with: cd web && node build.mjs
@@ -347,16 +348,27 @@ node smoke.mjs              # check every page actually renders
 `site/` is plain static files — drop it on GitHub Pages, Netlify, S3, anything.
 No Vite, no framework CLI: esbuild bundles `src/main.jsx` in about 25 ms.
 
-**It publishes itself.** `.github/workflows/pages.yml` builds on every push to
-`main`, runs `smoke.mjs` against the result, and hands `site/` to GitHub Pages as
-an artifact — so a broken build fails in CI rather than going live, and nothing
-is ever committed back to the repo. `site/` stays gitignored because it is
-entirely reproducible; `web/public/data/` is committed, which is what lets a
-runner without Earth Engine credentials build the site at all.
+**Deployed on Cloudflare Pages**, at
+[rasuwaflood.bikal3.com.np](https://rasuwaflood.bikal3.com.np). Connect the repo
+once in the dashboard, then every push to `main` rebuilds it:
 
-The custom domain lives in `web/public/CNAME`, which `public/` copies verbatim
-into the site root, so it travels with the artifact rather than only existing in
-the repository settings.
+| Setting | Value |
+| :-- | :-- |
+| Root directory | `/` |
+| Build command | `cd web && npm ci && npm run pages` |
+| Output directory | `site` |
+| Node version | `.node-version` in the repo root pins it to 20 |
+
+`npm run pages` is `node build.mjs && node smoke.mjs`, so the check runs as part
+of the build and a broken site fails the deploy instead of going live. The recipe
+lives in `web/package.json` rather than only in the dashboard, so changing the
+build steps is a commit, not a settings edit.
+
+GitHub Pages would want this repository public, or a paid plan; Cloudflare Pages
+serves a private one on the free plan, and the DNS for `bikal3.com.np` is already
+there. `site/` stays gitignored because it is entirely reproducible, and
+`web/public/data/` is committed, which is what lets a build runner without Earth
+Engine credentials build the site at all.
 
 **It is a public information site, not a paper.** An app shell: a sand sidebar of
 grouped navigation against a white reading column, the shape a reader recognises
