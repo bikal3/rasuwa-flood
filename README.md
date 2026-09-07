@@ -20,7 +20,7 @@ without any of it:
 | 3 | `pipeline/stage3_corridor.py` | terrain + HAND, the flood corridor, corridor-confined damage | **Python**, ditto — and the DEM stack HEC-RAS wants |
 | 4 | `pipeline/stage4_hot.py` | HOT ground survey, validation scores, the site's data | **Python**, and `web/` |
 | 5 | `pipeline/stage5_overlays.py` | pre/post optical + radar PNGs in Web Mercator | the site's before/after slider |
-| — | `web/` (React + esbuild) | a static site: interactive map, findings, tables, downloads | **Anyone with a browser** |
+| — | `web/` (React + esbuild) | a static site: a plain-language half, a technical report, two maps, tables, downloads | **Anyone with a browser** |
 
 Each stage reads the previous one's files off disk and nothing else. No stage calls
 another, so you can do the whole analysis in ArcGIS Pro instead and ignore stages 2
@@ -48,7 +48,7 @@ export EE_PROJECT=your-gcloud-project-id
 ```
 
 Everything tunable — study area, dates, pixel size, thresholds, impact zones —
-lives in `pipeline/config.py`. All three stages read it; edit nothing else.
+lives in `pipeline/config.py`. All five stages read it; edit nothing else.
 
 ## Way 1 — data only (ArcGIS Pro)
 
@@ -219,7 +219,7 @@ the table after changing the ROI or the stage 2 thresholds.
   matters if `terrain.tif` is used as a HEC-RAS surface. 19% of the corridor is
   reconstructed ground.
 - **Sentinel-1 cannot measure this river's width, so stage 3 does not claim to.**
-  The plan was wetted-area-before / wetted-area-after for §4.1's 200–300% channel
+  The plan was wetted-area-before / wetted-area-after for proposal §4.1's 200–300% channel
   widening. On trunk-channel cells VV never goes specular: 1st percentile −14.9 dB,
   median −7.5 dB, against a −16 dB water threshold. A 20–60 m whitewater gorge
   river is rough, mixed-pixel and foreshortened against bright banks — it has no
@@ -474,7 +474,7 @@ No pytest, no fixtures, no test framework.
 - **`scour_width_m` is a swath width, not a channel width.** It is flood-damage
   area per metre of channel — the width of the disturbed valley floor, which is
   the widened channel plus its deposition aprons. Do not quote it as the wetted
-  channel width, and do not derive §4.1's widening ratio from it without a
+  channel width, and do not derive proposal §4.1's widening ratio from it without a
   pre-event waterline.
 - **No radiometric terrain flattening on the SAR.** Same-orbit differencing
   cancels most of the topographic bias, which is why the orbit matching above
@@ -490,7 +490,7 @@ No pytest, no fixtures, no test framework.
   whether a cell is low enough above the drainage network. It has no notion of
   flow volume, velocity or timing, so it cannot distinguish the 26 August surge
   from ordinary high-monsoon inundation on the same valley floor. That separation
-  needs the hydrodynamic model in §6.2, for which `terrain.tif` is the input.
+  needs the hydrodynamic model in proposal §6.2, for which `terrain.tif` is the input.
 - **The high-altitude collapse source is out of scope of the mask.** Excluding
   snow/ice from `SCL_KEEP` is what stops fresh snowfall reading as damage, but it
   also means this pipeline cannot speak to the genesis zone in proposal §2. That
@@ -499,7 +499,7 @@ No pytest, no fixtures, no test framework.
   falling inside the corridor says the corridor is well drawn *here*. It is not a
   cross-validated skill score, and HOT's mapping is itself densest along the
   river, which inflates any containment statistic computed against it.
-- **Not built:** the HEC-RAS / Telemac-2D hydrodynamic model (§6.2) and
+- **Not built:** the HEC-RAS / Telemac-2D hydrodynamic model (proposal §6.2) and
   PlanetScope ingestion (commercial, needs a Planet API key). Stage 3's
   `terrain.tif` is the conditioned surface HEC-RAS wants — hydrologically
   enforced, metric, with `fill_m` marking which parts of it are reconstructed
