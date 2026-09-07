@@ -145,10 +145,15 @@ a:hover { color: var(--brand-deep); }
   box-shadow: var(--shadow);
 }
 
+/* No max-width: the content fills whatever the sidebar leaves it. The old
+   78rem cap left a third of a wide screen empty beside a column of text, which
+   on a site whose whole subject is a 120 km corridor is the wrong instinct --
+   the tables, the charts and both maps all read better with the room. Prose
+   that would otherwise run to an unreadable measure is put into columns
+   instead of being fenced in; see .cols below. */
 main {
   flex: 1 1 auto; min-width: 0;
   padding: 2.75rem 3rem 5rem;
-  max-width: 78rem;
 }
 
 /* ── Type ────────────────────────────────────────────────────────────────── */
@@ -156,7 +161,7 @@ main {
 h1, h2, h3, h4 { letter-spacing: -.015em; }
 h1.page-title {
   font-size: clamp(1.9rem, 3.4vw, 2.5rem); font-weight: 700; line-height: 1.14;
-  margin: 0 0 .5rem; max-width: 24ch;
+  margin: 0 0 .5rem; max-width: 30ch;
 }
 .page-kicker {
   font-family: var(--mono); font-size: .68rem; letter-spacing: .14em;
@@ -165,17 +170,17 @@ h1.page-title {
 }
 h2 { font-size: 1.45rem; font-weight: 600; margin: 2.6rem 0 .5rem; line-height: 1.25; }
 h3 { font-size: 1.08rem; font-weight: 600; margin: 1.9rem 0 .35rem; }
-p { margin: .8rem 0; max-width: 68ch; }
+p { margin: .8rem 0; }
 
 /* Reading passages, as opposed to interface copy. The serif is the tell. */
 .prose { font-family: var(--serif); font-size: 1.045rem; line-height: 1.68; }
 .prose p { margin: .9rem 0; }
 .lede {
   font-family: var(--serif); font-size: 1.14rem; line-height: 1.6;
-  color: var(--ink-soft); margin: .3rem 0 1.4rem; max-width: 60ch;
+  color: var(--ink-soft); margin: .3rem 0 1.4rem;
 }
 .muted { color: var(--ink-soft); font-size: .9rem; }
-.figcap { color: var(--ink-soft); font-size: .86rem; line-height: 1.55; margin: .55rem 0 1.6rem; max-width: 78ch; }
+.figcap { color: var(--ink-soft); font-size: .86rem; line-height: 1.55; margin: .55rem 0 1.6rem; }
 .figcap b { color: var(--ink); font-weight: 600; }
 hr { border: 0; border-top: 1px solid var(--line-soft); margin: 2.4rem 0; }
 strong { font-weight: 600; }
@@ -194,7 +199,7 @@ code {
 }
 .callout.warn { background: var(--amber-wash); border-left-color: var(--amber); }
 .callout.alert { background: var(--red-wash); border-left-color: var(--red); }
-.callout p { margin: .5rem 0; max-width: 72ch; }
+.callout p { margin: .5rem 0; }
 .callout p:first-child { margin-top: 0; }
 .callout p:last-child { margin-bottom: 0; }
 .callout h3 { margin: 0 0 .3rem; font-size: 1rem; }
@@ -279,8 +284,8 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; font-family: var(-
 
 /* ── Bars ────────────────────────────────────────────────────────────────── */
 
-.bars { display: grid; gap: .4rem; margin: 1rem 0 .4rem; max-width: 44rem; }
-.bar-row { display: grid; grid-template-columns: 8.5rem 1fr 3.6rem; gap: .7rem; align-items: center; font-size: .85rem; }
+.bars { display: grid; gap: .4rem; margin: 1rem 0 .4rem; }
+.bar-row { display: grid; grid-template-columns: 10rem minmax(0, 1fr) 3.6rem; gap: .9rem; align-items: center; font-size: .85rem; }
 .bar-row .lbl { color: var(--ink-soft); text-align: right; font-size: .84rem; }
 .bar-track { background: var(--sand); height: 20px; border-radius: 3px; overflow: hidden; }
 /* display:block, or none of this applies: a span in a block box stays inline,
@@ -297,7 +302,7 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; font-family: var(-
 /* <details> because the browser already ships the disclosure widget, its
    keyboard handling and its open/closed state -- and unlike a scripted
    accordion, ctrl-F opens it. */
-.plain { border-top: 1px solid var(--line-soft); max-width: 68ch; }
+.plain { border-top: 1px solid var(--line-soft); }
 .plain:last-of-type { border-bottom: 1px solid var(--line-soft); margin-bottom: 1.5rem; }
 .plain summary {
   cursor: pointer; padding: .85rem 0; font-weight: 600; font-size: 1rem;
@@ -325,14 +330,13 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; font-family: var(-
 
 /* ── Definition lists (metadata, glossary) ───────────────────────────────── */
 
-/* Capped, or the rules run to the window edge while the text stops at 62ch. */
-.deflist { margin: 1rem 0 1.5rem; border-top: 1px solid var(--line-soft); max-width: 62rem; }
+.deflist { margin: 1rem 0 1.5rem; border-top: 1px solid var(--line-soft); }
 .deflist > div {
-  display: grid; grid-template-columns: 12rem minmax(0, 1fr); gap: .3rem 1.5rem;
+  display: grid; grid-template-columns: 14rem minmax(0, 1fr); gap: .3rem 2rem;
   padding: .7rem 0; border-bottom: 1px solid var(--line-soft);
 }
 .deflist dt { font-weight: 600; font-size: .93rem; }
-.deflist dd { margin: 0; color: var(--ink-soft); font-size: .95rem; max-width: 62ch; }
+.deflist dd { margin: 0; color: var(--ink-soft); font-size: .95rem; }
 .deflist dd b { color: var(--ink); font-weight: 600; }
 @media (max-width: 700px) {
   .deflist > div { grid-template-columns: minmax(0, 1fr); }
@@ -349,7 +353,7 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; font-family: var(-
 .refs i { color: var(--ink); }
 
 .steps { padding-left: 1.25rem; margin: .7rem 0 1.2rem; color: var(--ink-soft); }
-.steps li { margin-bottom: .5rem; max-width: 64ch; }
+.steps li { margin-bottom: .5rem; }
 .steps b { font-family: var(--mono); font-size: .86em; color: var(--ink); font-weight: 500; }
 
 /* ── Maps ────────────────────────────────────────────────────────────────── */
@@ -542,7 +546,7 @@ footer {
   margin-top: 3.5rem; padding-top: 1.4rem; border-top: 1px solid var(--line-soft);
   font-size: .84rem; color: var(--ink-faint);
 }
-footer p { margin: .4rem 0; max-width: 78ch; }
+footer p { margin: .4rem 0; }
 
 /* Next / previous, so the site can be read straight through as well as
    looked things up in. */
