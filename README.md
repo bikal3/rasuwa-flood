@@ -380,6 +380,16 @@ path, because the two differ (`how` lives at `how-it-works/`) and a caller that
 passes the wrong one produces a link to a page that does not exist; `smoke.mjs`
 walks every link on every page against the files on disk.
 
+**The content fills the page.** `main` has no max-width and neither does
+anything in it: the tables have five columns, the charts have a long tail of
+small values, and both maps are what people came for, so a cap that left a third
+of a wide window empty beside a column of text was the wrong instinct. What
+stops a line running to 150 characters is `.cols` — a two-up grid that collapses
+to one column below about 27rem a side — rather than a measure. Terrain and
+Satellite detection put each bar chart beside the caveat that reads it, Method
+puts the five pipeline stages beside the seven things the pipeline cannot tell
+you, and How it works sets its explainers two abreast.
+
 Type and colour: Public Sans does the interface — navigation, labels, numbers,
 tables, map chrome, because at 13px over satellite imagery a serif goes to mush —
 and Source Serif 4 sets the explanatory passages, which is the one signal left
