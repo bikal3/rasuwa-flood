@@ -20,7 +20,7 @@ without any of it:
 | 3 | `pipeline/stage3_corridor.py` | terrain + HAND, the flood corridor, corridor-confined damage | **Python**, ditto — and the DEM stack HEC-RAS wants |
 | 4 | `pipeline/stage4_hot.py` | HOT ground survey, validation scores, the site's data | **Python**, and `web/` |
 | 5 | `pipeline/stage5_overlays.py` | pre/post optical + radar PNGs in Web Mercator | the site's before/after slider |
-| — | `web/` (React + esbuild) | a static site: a plain-language half, a technical report, two maps, tables, downloads | **Anyone with a browser** |
+| — | `web/` (React + esbuild) | a ten-page static site: explainers, two interactive maps, tables, downloads | **Anyone with a browser** |
 
 Each stage reads the previous one's files off disk and nothing else. No stage calls
 another, so you can do the whole analysis in ArcGIS Pro instead and ignore stages 2
@@ -30,7 +30,7 @@ and 3, or run them and pull the outputs in as extra layers.
 
 ```
 pipeline/   the Python stages and their checks; everything tunable is config.py
-web/        React source for the site, bundled by esbuild
+web/        React source for the site; routes.mjs is the page table, build.mjs writes one HTML per page
 data/       stage outputs (gitignored except tables/*.csv)
 maps/       matplotlib plates, committed
 site/       built site, gitignored -- rebuild with: cd web && node build.mjs
@@ -341,45 +341,63 @@ cd web
 npm install                 # react, react-dom, leaflet; esbuild + jsdom as dev deps
 node build.mjs              # -> ../site/, ready to publish
 node build.mjs --serve      # watched, http://localhost:5173
-node smoke.mjs              # check the built site actually renders
+node smoke.mjs              # check every page actually renders
 ```
 
 `site/` is plain static files — drop it on GitHub Pages, Netlify, S3, anything.
-No Vite, no framework CLI: esbuild bundles `src/main.jsx` in about 20 ms.
+No Vite, no framework CLI: esbuild bundles `src/main.jsx` in about 25 ms.
 
-**The page serves two readers.** A sticky section bar sits under the title page,
-and §1 is the plain-language half: what a glacial lake outburst is and why it
-arrives as wet concrete rather than water, what "height above the river" means
-and why it predicts damage, why a monsoon flood needs both a camera satellite
-and a radar one, what a damage survey actually records, and how to read the map.
-Its explainers are native `<details>` — the browser already ships the disclosure
-widget, its keyboard handling and its state, and unlike a React accordion they
-open on ctrl-F. §2 and §3 each fold in an "in plain English" reading of their own
-result, and §7 closes with a glossary. Every figure in that half is read from
-`summary.json` like the technical half's, so the plain reading and the measured
-one cannot disagree. A specialist skips it in one click from the bar.
+**It is a public information site, not a paper.** An app shell: a sand sidebar of
+grouped navigation against a white reading column, the shape a reader recognises
+as something you look things up in. Ten pages in four groups —
 
-**The rest is set as a technical report, not a feature.** It opens on a title
-block — what this is, the study area's bounding box, the instruments, the ground
-truth, the corridor's definition, and a status line saying out loud that the
-thresholds are uncalibrated — then an abstract carrying the actual findings, with
-every figure in it read from `summary.json` so the opening claims cannot drift
-from the tables that support them. Sections are numbered and hang off one rail:
-the index in the margin column, content in the text column, which is where figure
-and table numbers live too. Both maps are numbered figures with captions, the
-change test and the corridor definition are display notation tagged (1) and (2),
-and the sources are a reference list cited from the metadata. Spectral sets the
-prose, IBM Plex Mono every number and label, IBM Plex Sans only the map chrome.
+| Group | Pages |
+| :-- | :-- |
+| — | Overview |
+| Understand | How it works · Glossary |
+| Explore data | Flood map · Before & after |
+| Analysis | Terrain corridor · Satellite detection · Damage & exposure |
+| Reference | Method & limits · Data & sources |
 
-Inside it, an interactive Leaflet map over the whole corridor with 14 toggleable
-layers, split into what HOT *observed* and what this pipeline *derived*, plus the
-validation above, exposure tables, method, caveats and a GeoJSON download for
-every layer. Interaction:
+— so the general reader and the specialist take different routes through the
+same material rather than one of them scrolling past the other's half. *How it
+works* assumes no prior knowledge and explains what a GLOF is, what height above
+the river means, why this needs two satellites and what change detection cannot
+see; *Terrain corridor* and *Satellite detection* each fold in an "in plain
+English" reading of their own result. Explainers are native `<details>` — the
+browser already ships the disclosure widget, its keyboard handling and its state,
+and unlike a scripted accordion they open on ctrl-F.
+
+**Genuinely multi-page, and there is no router.** `web/src/routes.mjs` is the one
+table of pages; `build.mjs` writes a real directory and `index.html` per entry,
+each loading the same bundle and told which page it is by a `data-page`
+attribute. So the browser's own navigation handles back, forward, middle-click,
+refresh and deep links without a line of code, and there is no 404-rewrite rule
+for the host to get wrong. `data-base` carries the relative path back to the
+root — `""` at the top, `"../"` everywhere else — so the site also works mounted
+in a subdirectory. `href()` in `base.js` resolves links by **route id**, not by
+path, because the two differ (`how` lives at `how-it-works/`) and a caller that
+passes the wrong one produces a link to a page that does not exist; `smoke.mjs`
+walks every link on every page against the files on disk.
+
+Type and colour: Public Sans does the interface — navigation, labels, numbers,
+tables, map chrome, because at 13px over satellite imagery a serif goes to mush —
+and Source Serif 4 sets the explanatory passages, which is the one signal left
+that this is written material and not a dashboard. Colour means one thing
+throughout, and it is the map's own meaning: teal is the site, **red a recorded
+loss**, **blue a measured extent**. The teal is `pipeline/config.py`'s, so the
+site, the map layers and the matplotlib plates in `maps/` are one palette.
+
+Every figure on every page is read from `summary.json` at load time. There is no
+number written into the page source, so the prose cannot drift from what the
+pipeline computed — and the file itself is on the downloads page, so there is no
+statistic quoted anywhere on the site that is not in the download.
+
+Two interactive maps, on pages of their own:
 
 | | |
 | :-- | :-- |
 | Zoom | Quarter-level steps — the corridor is 120 km but a washed-out bridge is metres. `+` / `−` / `f` to fit |
-| Navigate | A sticky bar of section links; `--navh` in `styles.css` is what the map chrome and anchor jumps clear it by |
 | Click | A bridge, building or zone id selects it and flies there |
 | Opacity | A slider per group fades observed against derived, which is the whole argument |
 | Zoom-gated | 1,626 building footprints draw from z12.5; the panel says so rather than looking broken |
@@ -395,24 +413,20 @@ the page with it; zoom asks for ctrl or ⌘, which a trackpad pinch already send
 Touch is the same trap with no margin to escape into, so one finger scrolls and
 two move the map: that needs `touch-action` set inline to `pan-x pan-y`, because
 the browser reads it when the gesture begins, too early for Leaflet's class
-toggle to help. Fullscreen is exempt — there is no page behind it. `web/src/gestures.js`,
-and `smoke.mjs` asserts both halves of the bargain on both maps.
+toggle to help. Fullscreen is exempt — there is no page behind it.
+`web/src/gestures.js`, and `smoke.mjs` asserts both halves of the bargain on both
+maps.
 
-**The before/after comparison is a second map, below this one.** It was a mode on
-this map, sharing the viewport with 1,600 damage polygons and a fourteen-layer
-panel, and that was wrong twice over. The imagery covers the Sentinel ROI, which
-is the northern third of a corridor this map has to fit end to end, so the slider
-spent most of its life showing a patch of overlay in one corner. And a swipe
-answers a different question from a layer toggle — *what changed here* against
-*what did the survey record here* — so sharing one viewport meant setting up for
-one destroyed the view you wanted for the other.
-
-The comparison map has no vector layers, one basemap and its own view, capped at
-z16 because the imagery is a 20 m grid and past that it is mush. It opens filling
-the frame with imagery rather than fitting the scene inside it: the scene is
-roughly square, the map is a wide band, and `fitBounds` strands a square of
-imagery in a field of basemap. Its overlays are fetched when the section nears
-the viewport, so a visitor who never scrolls that far never pays the 1.6 MB.
+**The before/after comparison is its own page**, not a mode on the flood map. The
+imagery covers the Sentinel ROI, which is the northern third of a corridor the
+flood map has to fit end to end, so as a mode the slider spent most of its life
+showing a patch of overlay in one corner. And a swipe answers a different
+question from a layer toggle — *what changed here* against *what did the survey
+record here* — so sharing one viewport meant setting up for one destroyed the
+view you wanted for the other. It has no vector layers, one basemap and its own
+view, capped at z16 because the imagery is a 20 m grid and past that it is mush.
+Its overlays are fetched when the map nears the viewport, so nobody pays the
+1.6 MB for a page they only pass through.
 
 `pipeline/stage4_hot.py` writes `web/public/data/`, so the app fetches static
 files at runtime rather than inlining 2.6 MB into the bundle.
@@ -425,7 +439,7 @@ needs the stage 1–3 rasters, which need Earth Engine credentials.
 ```bash
 python pipeline/test_analysis.py                 # stage 2
 python pipeline/test_corridor.py                 # stage 3
-cd web && node build.mjs && node smoke.mjs   # the site: data contract, layers, chrome
+cd web && node build.mjs && node smoke.mjs   # all 10 pages: data contract, layers, links
 cd web && node swipe-check.mjs               # the slider and the bars, in real Chrome
 ```
 
@@ -445,16 +459,21 @@ domain at the outlet, a bowl filled to its rim and no further.
 `web/swipe-check.mjs` builds its throwaway Chrome profile in the OS temp dir and
 removes it on the way out, so a run leaves nothing in the tree.
 
-`web/smoke.mjs` loads the *built* bundle in jsdom with `fetch` served off disk,
-so it exercises the real data contract: if `pipeline/stage4_hot.py` renames a field, drops
-a layer or emits a `NaN` that `JSON.parse` rejects, it fails there instead of
-rendering a blank page in someone's browser. It asserts the page quotes real
-figures, Leaflet initialises, all 14 layers parse, and the console stays clean.
-The figures it checks are read from `summary.json` and `overlays.json` rather
-than transcribed from them, so re-running stage 4 or stage 5 cannot break it for
-no reason. It also holds the general-reader half in place: the plain-language
-section, the glossary, five `<details>` explainers, and a nav whose section
-numbers must match the sections they point at.
+`web/smoke.mjs` loads **every page's** built bundle in jsdom, each from its own
+URL at its own directory depth with `fetch` served off disk, so it exercises the
+real data contract: if `pipeline/stage4_hot.py` renames a field, drops a layer or
+emits a `NaN` that `JSON.parse` rejects, it fails there instead of rendering a
+blank page in someone's browser. A page whose `data-base` is wrong fetches
+nothing and is caught rather than 404-ing in production, and every internal link
+on every page is resolved against the files on disk. Per page it asserts the
+shell renders, the sidebar carries all ten links and marks the current one, and
+the console stays clean; then the things each page exists for — the metric tiles
+and explore cards, fourteen layer toggles, both overlay images and the slider's
+labels, the bar charts, three exposure tables, the two rules quoting the
+thresholds that actually ran, one download per layer, the explainers and the
+glossary. Every figure it checks is read from `summary.json` and `overlays.json`
+rather than transcribed from them, so re-running stage 4 or stage 5 cannot break
+it for no reason.
 
 No pytest, no fixtures, no test framework.
 

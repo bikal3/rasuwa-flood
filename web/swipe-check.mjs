@@ -45,8 +45,11 @@ const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/cs
 // Static server on an ephemeral port. Chrome will not fetch relative URLs off
 // file://, so the site has to be served even for a local check.
 const server = createServer((req, res) => {
-  const rel = decodeURIComponent(req.url.split("?")[0]).replace(/^\/+/, "") || "index.html";
-  const file = path.join(site, rel);
+  const rel = decodeURIComponent(req.url.split("?")[0]).replace(/^\/+/, "");
+  let file = path.join(site, rel);
+  // Directory URLs, the way any static host serves them.
+  if (existsSync(file) && statSync(file).isDirectory()) file = path.join(file, "index.html");
+  if (!rel) file = path.join(site, "index.html");
   if (!file.startsWith(site) || !existsSync(file) || !statSync(file).isFile()) {
     res.writeHead(404).end();
     return;
@@ -131,16 +134,13 @@ const GEOM = String.raw`(() => {
 
 await send("Page.enable");
 await send("Runtime.enable");
-await send("Page.navigate", { url: origin });
+await send("Page.navigate", { url: `${origin}compare/` });
 await sleep(4000);
 
-// Scroll the comparison section in -- that is what triggers the overlay fetch --
-// then fly somewhere the imagery footprint fills the map. At the whole-scene view
-// the frame has basemap around its edges, and "half the map is the before image"
-// is not the right expectation there.
+// Fly somewhere the imagery footprint fills the map. At the whole-scene view the
+// frame has basemap around its edges, and "half the map is the before image" is
+// not the right expectation there.
 await evaluate(String.raw`(async () => {
-  document.querySelector(".comparesec").scrollIntoView({ block: "center" });
-  await new Promise((r) => setTimeout(r, 2000));
   [...document.querySelectorAll(".compareplaces button")]
     .find((b) => b.textContent.trim() === "Rasuwagadhi").click();
   await new Promise((r) => setTimeout(r, 2500));
@@ -149,23 +149,35 @@ await evaluate(String.raw`(async () => {
 const fail = [];
 const want = (cond, msg) => !cond && fail.push(msg);
 
-// Every bar on the page drew its empty track and nothing else: .bar-fill is a
+// Every bar on the site drew its empty track and nothing else: .bar-fill is a
 // span inside a plain block box, so it stayed inline, and width, height and
 // transform are all ignored on an inline box. The DOM said 96.1%, the screen
-// said nothing. Measured against the track, in a browser that has done layout.
-{
+// said nothing. Measured against the track, in a browser that has done layout,
+// on the two pages that carry charts.
+for (const page of ["terrain", "satellites"]) {
+  await send("Page.navigate", { url: `${origin}${page}/` });
+  await sleep(2500);
   const bars = await evaluate(String.raw`[...document.querySelectorAll(".bar-row")].map((row) => ({
     label: row.querySelector(".lbl").textContent.trim(),
     want: parseFloat(row.querySelector(".bar-fill").style.width),
     got: Math.round(1000 * row.querySelector(".bar-fill").getBoundingClientRect().width
                          / row.querySelector(".bar-track").getBoundingClientRect().width) / 10,
   }))`);
-  want(bars.length >= 4, `expected the page's bar charts, found ${bars.length} bars`);
+  want(bars.length >= 4, `${page}: expected bar charts, found ${bars.length} bars`);
   for (const b of bars) {
     want(Math.abs(b.got - b.want) < 1.5,
-      `bar "${b.label}" fills ${b.got}% of its track where the data says ${b.want}%`);
+      `${page}: bar "${b.label}" fills ${b.got}% of its track where the data says ${b.want}%`);
   }
 }
+
+// Back to the slider for the rest.
+await send("Page.navigate", { url: `${origin}compare/` });
+await sleep(3500);
+await evaluate(String.raw`(async () => {
+  [...document.querySelectorAll(".compareplaces button")]
+    .find((b) => b.textContent.trim() === "Rasuwagadhi").click();
+  await new Promise((r) => setTimeout(r, 2500));
+})()`);
 
 /** Drag the divider to a fraction of the map. Real mouse events, pressed on the
  *  grip where it currently is: dragDivider only starts from a pointerdown on the
@@ -230,7 +242,6 @@ if (g.pre && g.post) {
              text: b.getAttribute("aria-valuetext") };
   })()`);
 
-  await evaluate(`document.querySelector(".comparesec").scrollIntoView({block:"center"})`);
   let hops = 0;
   while (hops < 14 && !(await bar()).focused) { await key("Tab"); hops++; }
   const focused = await bar();

@@ -19,53 +19,56 @@ export const fmt = (v, d = 1) =>
 export const int = (v) =>
   v === null || v === undefined ? "—" : Number(v).toLocaleString("en");
 
-/**
- * A numbered section. `display: contents` on the head puts the number in the
- * section grid's margin column and the heading in the text column, without a
- * wrapper box between them -- see the section grid in styles.css.
- */
-export function Section({ no, title, lede, children, id }) {
+/** The heading block every page opens on. */
+export function PageHead({ kicker, title, lede, children }) {
   return (
-    <section id={id}>
-      <div className="wrap secgrid">
-        <div className="sec-head">
-          <span className="sec-no idx">§{no}</span>
-          <div>
-            <h2>{title}</h2>
-            {lede && <p>{lede}</p>}
-          </div>
-        </div>
-        {children}
-      </div>
-    </section>
+    <header>
+      {kicker && <p className="page-kicker">{kicker}</p>}
+      <h1 className="page-title">{title}</h1>
+      {lede && <p className="lede">{lede}</p>}
+      {children}
+    </header>
   );
 }
 
-/**
- * A numbered caption on the rail.
- *
- * Full-width exhibits hang their index in the section's margin column, beside
- * the section number; one inside a narrow column stacks it above the caption
- * instead, where a 7rem rail would eat the column it is sitting in.
- */
-export function Caption({ no, kind = "Figure", tight, children }) {
+/** A headline number. `tone` carries the site's one colour rule. */
+export function Metric({ value, label, tone }) {
   return (
-    <div className={tight ? "cap" : "cap rail"}>
-      <span className="idx">{kind}{no ? ` ${no}` : ""}</span>
-      <p className="figcap">{children}</p>
+    <div className={tone ? `metric is-${tone}` : "metric"}>
+      <div className="value">{value}</div>
+      <div className="label">{label}</div>
     </div>
   );
 }
 
-export function Table({ no, caption, cols, rows }) {
+export function Callout({ kind, title, children }) {
   return (
-    <div className="tbl-scroll">
+    <div className={kind ? `callout ${kind}` : "callout"}>
+      {title && <h3>{title}</h3>}
+      {children}
+    </div>
+  );
+}
+
+/** A fold of plain-language explanation. Native <details>: ctrl-F opens it. */
+export function Explain({ q, children }) {
+  return (
+    <details className="plain">
+      <summary>{q}</summary>
+      <div className="body">{children}</div>
+    </details>
+  );
+}
+
+export function Figcap({ children }) {
+  return <p className="figcap">{children}</p>;
+}
+
+export function Table({ caption, cols, rows }) {
+  return (
+    <div className="table-wrap">
       <table>
-        {caption && (
-          <caption>
-            {no && <b>Table {no}.</b>} {caption}
-          </caption>
-        )}
+        {caption && <caption>{caption}</caption>}
         <thead>
           <tr>
             {cols.map((c) => (
@@ -118,12 +121,23 @@ export function Bars({ rows, max }) {
               }}
             />
           </span>
-          <span className="val">
-            {fmt(r.value, 1)}
-            %
-          </span>
+          <span className="val">{fmt(r.value, 1)}%</span>
         </div>
       ))}
     </div>
+  );
+}
+
+/** A key/value block: page metadata, or a glossary. */
+export function DefList({ items }) {
+  return (
+    <dl className="deflist">
+      {items.map(([term, def]) => (
+        <div key={term}>
+          <dt>{term}</dt>
+          <dd>{def}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }

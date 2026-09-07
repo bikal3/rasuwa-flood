@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import L from "leaflet";
+import { DATA } from "./base.js";
 
 /**
  * Before/after imagery swipe.
@@ -26,7 +27,6 @@ import L from "leaflet";
  * 1.6 MB. Each pair is built once and kept, so switching back is instant.
  */
 
-const DATA = "data";
 const MONTH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
