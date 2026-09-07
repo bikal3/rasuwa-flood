@@ -380,11 +380,29 @@ export default function MapView({ short }) {
       </div>
 
       <aside className="panel">
-        {/* Order is importance, top to bottom. The inspector answers the map's
-            primary action -- clicking a feature -- so it comes first and sticks;
-            it used to sit 814px down a 667px panel, which put the reply to every
-            click off screen. Navigation and the basemap switch are utilities and
-            go last. */}
+        {/* Order is importance, top to bottom. "Fly to" leads: the corridor is
+            120 km end to end and the places that matter are four named points on
+            it, so jumping between them is how anyone actually moves around this
+            map -- panning there by hand at quarter-zoom steps is not a thing to
+            ask of a reader.
+
+            The inspector answers the map's other primary action, clicking a
+            feature, so it follows and sticks: scroll down to reach a layer,
+            click something, and a merely-second inspector would be off screen
+            again. It pins over the fly-to row, which is the right trade, since
+            by then you have already flown. The basemap switch changes no data
+            and goes last. */}
+        <div className="panel-nav">
+          <h3>Fly to</h3>
+          <div className="zoombar">
+            {PLACES.map((p) => (
+              <button key={p.label} onClick={() => goto(p)}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="inspector">
           <h3 style={{ padding: 0, marginBottom: ".5rem" }}>Selected feature</h3>
           {selected ? (
@@ -465,15 +483,6 @@ export default function MapView({ short }) {
             ))}
           </div>
         ))}
-
-        <h3>Fly to</h3>
-        <div className="zoombar">
-          {PLACES.map((p) => (
-            <button key={p.label} onClick={() => goto(p)}>
-              {p.label}
-            </button>
-          ))}
-        </div>
 
         <h3>Basemap</h3>
         <div className="basemaps">

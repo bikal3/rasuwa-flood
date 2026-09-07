@@ -170,14 +170,22 @@ async function exists(p) {
   want((html.match(/class="layer"/g) || []).length >= 14, `${at} layer panel is missing toggles`);
   want(/\d+<\/span>/.test(html), `${at} layer feature counts never populated`);
 
-  // Panel order is importance order: the inspector answers the map's primary
-  // action, so it leads; the basemap switch changes no data, so it trails.
+  // Panel order is importance order: flying between the four named places is how
+  // anyone moves around a 120 km corridor, so it leads; the inspector answers
+  // the map's other primary action and sticks under it; the basemap switch
+  // changes no data, so it trails.
   const blocks = [...root.querySelector("aside.panel").children];
-  const first = blocks.findIndex((b) => b.className.includes("inspector"));
-  const layers = blocks.findIndex((b) => b.className.includes("panel-group"));
-  const basemaps = blocks.findIndex((b) => b.className.includes("basemaps"));
-  want(first === 0, `${at} the selected-feature inspector is not first in the panel`);
-  want(layers > first && layers < basemaps, `${at} panel blocks are out of importance order`);
+  const [flyto, inspector, layers, basemaps] =
+    ["panel-nav", "inspector", "panel-group", "basemaps"]
+      .map((cls) => blocks.findIndex((b) => b.className.includes(cls)));
+  want(flyto === 0, `${at} "Fly to" is not at the top of the panel (index ${flyto})`);
+  want(inspector === 1, `${at} the selected-feature inspector does not follow it (index ${inspector})`);
+  want(layers > inspector && layers < basemaps,
+    `${at} panel blocks are out of importance order `
+    + `(fly-to ${flyto}, inspector ${inspector}, layers ${layers}, basemap ${basemaps})`);
+  want(blocks[flyto]?.textContent.includes("Fly to"), `${at} the fly-to block lost its heading`);
+  want(blocks[flyto]?.querySelectorAll("button").length >= 4,
+    `${at} the fly-to block has lost its places`);
 
   const rows = [...root.querySelectorAll(".fade-row")];
   want(rows.length === 2, `${at} expected two labelled opacity controls, found ${rows.length}`);
