@@ -347,6 +347,17 @@ node smoke.mjs              # check every page actually renders
 `site/` is plain static files — drop it on GitHub Pages, Netlify, S3, anything.
 No Vite, no framework CLI: esbuild bundles `src/main.jsx` in about 25 ms.
 
+**It publishes itself.** `.github/workflows/pages.yml` builds on every push to
+`main`, runs `smoke.mjs` against the result, and hands `site/` to GitHub Pages as
+an artifact — so a broken build fails in CI rather than going live, and nothing
+is ever committed back to the repo. `site/` stays gitignored because it is
+entirely reproducible; `web/public/data/` is committed, which is what lets a
+runner without Earth Engine credentials build the site at all.
+
+The custom domain lives in `web/public/CNAME`, which `public/` copies verbatim
+into the site root, so it travels with the artifact rather than only existing in
+the repository settings.
+
 **It is a public information site, not a paper.** An app shell: a sand sidebar of
 grouped navigation against a white reading column, the shape a reader recognises
 as something you look things up in. Ten pages in four groups —
