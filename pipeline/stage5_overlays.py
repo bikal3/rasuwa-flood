@@ -2,25 +2,30 @@
 
     python pipeline/stage5_overlays.py
 
-Reprojects the Sentinel-2 and Sentinel-1 composites to Web Mercator and writes
-them as PNGs the Leaflet map can lay over the terrain, plus the metadata the
-slider labels itself with.
+Reprojects the Sentinel-2 composites to Web Mercator and writes them as PNGs the
+Leaflet map can lay over the terrain, plus the metadata the slider labels itself
+with.
 
-Reads   data/raster/s2_pre.tif, s2_post.tif      (stage 1)
-        data/raster/s1_pre.tif, s1_post.tif      (stage 1)
-Writes  web/public/data/{s2,s1}_{pre,post}.png
+Reads   data/raster/s2_pre.tif, s2_post.tif            (stage 1, cloud-masked)
+        data/raster/s2raw_pre.tif, s2raw_post.tif      (stage 1, unmasked)
+Writes  web/public/data/{s2,s2raw}_{pre,post}.png
         web/public/data/overlays.json            bounds, windows, valid cover
 
-Two pairs, because one of them cannot answer the question on its own:
+Two pairs of the same imagery, differing only in whether the cloud mask ran:
 
-- **Optical (s2).** True colour, the picture anyone can read without being told
-  how. The post-event composite is 17% cloud-free -- six days of monsoon over a
-  Himalayan gorge -- so most of the "after" frame is a hole. Widening the window
-  does not help: the event is six days old, there is no later imagery yet.
-- **Radar (s1).** Sentinel-1 does not care about cloud, so both dates are
-  complete. VV backscatter in dB, rendered grey: smooth water reflects away from
-  the sensor and comes back near black, so the widened channel is the thing that
-  moves when you swipe. This is the cloud-free before/after.
+- **Without the filter (s2raw).** Every pixel the satellite returned. On a
+  monsoon week over a Himalayan gorge that is mostly cloud, which is the honest
+  picture of what an optical satellite gets during a disaster and the reason the
+  analysis leans on radar it cannot show you here.
+- **With the filter (s2).** The same median composite with cloud, shadow and
+  snow dropped per pixel by the SCL mask. The post-event frame comes out 17%
+  cloud-free, so most of it is a transparent hole -- and that hole is the point:
+  it is exactly what the filter removed.
+
+Both pairs share one contrast stretch, computed on the *masked* pre-event image,
+so switching between them changes what is covered and nothing else. Give them
+their own stretches and the unmasked pair renders darker, because bright cloud
+drags its percentiles up, and the switch would look like a brightness control.
 
 Two things this does that stage 2's plate does not:
 
@@ -66,32 +71,22 @@ def s2_rgb(path):
     return read_bands(path, ("B4", "B3", "B2"))
 
 
-def s1_grey(path):
-    """Sentinel-1 VV backscatter in dB, repeated into three grey channels.
-
-    VV alone rather than a VV/VH/VV-VH false colour: in a gorge this steep the
-    colour version is dominated by layover and shadow striping, which is fixed
-    terrain geometry, identical in both dates, and reads as noise the eye has to
-    subtract before it can see anything. Grey puts every surface on one scale and
-    leaves the dark, widened channel as the only thing that changes across the
-    divider.
-    """
-    arr, profile = read_bands(path, ("VV",))
-    return np.repeat(arr, 3, axis=0), profile
-
-
-# (id, label, reader, (pre window, post window), provenance, what the gaps are)
-# The last field is the word the slider puts after the valid percentage. For the
-# optical pair the gaps are cloud; for radar they are the corner collar left by
-# reprojecting a UTM rectangle to Web Mercator, and calling that "cloud-free"
-# would credit Sentinel-1 with beating a problem it never had.
+# (id, label, (pre window, post window), provenance, what the gaps are)
+# The last field is the word the slider puts after the valid percentage. Both
+# pairs are read the same way and cover the same windows; the only difference is
+# which file stage 1 wrote them from.
 SENSORS = (
-    ("s2", "Optical", s2_rgb, (cfg.S2_PRE, cfg.S2_POST),
-     "Sentinel-2 L2A true colour, cloud-masked median composite", "cloud-free"),
-    ("s1", "Radar", s1_grey, (cfg.S1_PRE, cfg.S1_POST),
-     "Sentinel-1 GRD median, VV backscatter in dB \u2014 sees through cloud",
-     "in frame"),
+    ("s2raw", "Without cloud filter", (cfg.S2_PRE, cfg.S2_POST),
+     "Sentinel-2 L2A true colour, every pixel the satellite returned",
+     "of the frame"),
+    ("s2", "With cloud filter", (cfg.S2_PRE, cfg.S2_POST),
+     "Sentinel-2 L2A true colour, cloud, shadow and snow masked out per pixel",
+     "cloud-free"),
 )
+
+# The pair whose pre-event image sets the stretch for every pair. The masked one:
+# its percentiles are computed on ground rather than on cloud tops.
+STRETCH_FROM = "s2"
 
 
 def to_web_mercator(arr, profile):
@@ -161,20 +156,26 @@ def main():
         sys.exit(f"Missing {missing} in {cfg.RASTER}. Run stage1_export.py first.")
     cfg.SITE_DATA.mkdir(parents=True, exist_ok=True)
 
+    # One stretch for every image on the slider, computed once on the masked
+    # pre-event frame so the percentiles come off ground rather than cloud tops.
+    # Before the loop, not inside it: the unmasked pair is listed first, and
+    # ordering the switch by an implementation constraint is how that breaks
+    # silently the next time someone reorders it.
+    ref_arr, ref_profile = s2_rgb(cfg.RASTER / f"{STRETCH_FROM}_pre.tif")
+    ref_web, _, _ = to_web_mercator(ref_arr, ref_profile)
+    limits = stretch_bounds(ref_web)
+    print("shared stretch, from " + STRETCH_FROM + "_pre: "
+          + ", ".join(f"{lo:.2f}..{hi:.2f}" for lo, hi in limits))
+
     meta, bounds = {}, None
-    for sid, label, reader, windows, _, cover_word in SENSORS:
+    for sid, label, windows, _, cover_word in SENSORS:
         print(f"{label} overlays")
-        pre_arr, profile = reader(cfg.RASTER / f"{sid}_pre.tif")
-        post_arr, _ = reader(cfg.RASTER / f"{sid}_post.tif")
+        pre_arr, profile = s2_rgb(cfg.RASTER / f"{sid}_pre.tif")
+        post_arr, _ = s2_rgb(cfg.RASTER / f"{sid}_post.tif")
 
         pre_web, transform, (w, h) = to_web_mercator(pre_arr, profile)
         post_web, _, _ = to_web_mercator(post_arr, profile)
         print(f"  reprojected to {WEB_CRS}: {w} x {h}")
-
-        # The pre-event image sets the scale; the post is measured against it.
-        limits = stretch_bounds(pre_web)
-        print("  shared stretch: "
-              + ", ".join(f"{lo:.2f}..{hi:.2f}" for lo, hi in limits))
 
         west, south, east, north = transform_bounds(
             WEB_CRS, "EPSG:4326",
@@ -202,7 +203,7 @@ def main():
         "bounds": bounds,
         "event": cfg.EVENT,
         "sensors": [{"id": sid, "label": label, "source": source, "cover": word}
-                    for sid, label, _, _, source, word in SENSORS],
+                    for sid, label, _, source, word in SENSORS],
         "note": "Both dates share one contrast stretch, computed on the pre-event "
                 "image, so a difference in brightness is a difference on the ground.",
         **meta,

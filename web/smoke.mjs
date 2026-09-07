@@ -215,29 +215,48 @@ async function exists(p) {
   want(root.querySelector(".leaflet-imgPre-pane img"), `${at} before overlay was never added`);
   want(root.querySelector(".leaflet-imgPost-pane img"), `${at} after overlay was never added`);
 
-  // Both tags carry the pair's own dates and cover figure, read from the
-  // manifest so the check cannot go stale.
+  // Every pair stage 5 emitted must be reachable from the switch and must label
+  // both tags with its own dates and cover figure. Driven off the manifest
+  // rather than off ids written in here: which pairs exist is stage 5's
+  // decision, and this check should survive changing it.
+  //
+  // The id is everything before the last underscore, not a prefix match --
+  // "s2raw_pre".startsWith("s2") is true, and a prefix match would read the
+  // wrong pair's cover word depending on the order of the sensors array.
+  const idOf = (k) => k.slice(0, k.lastIndexOf("_"));
   const cover = (k) =>
-    `${overlays[k].valid_pct}% ${overlays.sensors.find((x) => k.startsWith(x.id)).cover}`;
+    `${overlays[k].valid_pct}% ${overlays.sensors.find((x) => x.id === idOf(k)).cover}`;
   const ends = (k) => {
     const [y, m, d] = overlays[k].window[1].split("-").map(Number);
     return `${d} ${MONTH[m - 1]} ${y}`;
   };
-  const shows = (k) => {
+  const shows = (id) => {
     const tags = [...root.querySelectorAll(".swipe-tag")].map((t) => t.textContent).join(" ");
-    want(tags.includes(ends(k)), `${at} the ${k} date window is not on the slider`);
-    want(tags.includes(cover(k)), `${at} the ${k} cover figure is not on the slider`);
+    for (const k of [`${id}_pre`, `${id}_post`]) {
+      want(tags.includes(ends(k)), `${at} the ${k} date window is not on the slider`);
+      want(tags.includes(cover(k)), `${at} the ${k} cover figure is not on the slider`);
+    }
   };
-  shows("s1_pre");
-  shows("s1_post");
 
-  const optical = [...root.querySelectorAll(".swipe-sensor button")]
-    .find((b) => b.textContent === "Optical");
-  want(optical, `${at} no optical/radar switch on the slider`);
-  optical?.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
-  await new Promise((r) => setTimeout(r, 60));
-  shows("s2_pre");
-  shows("s2_post");
+  const buttons = [...root.querySelectorAll(".swipe-sensor button")];
+  want(buttons.length === overlays.sensors.length,
+    `${at} the switch offers ${buttons.length} pairs, the manifest has ${overlays.sensors.length}`);
+  for (const spec of overlays.sensors) {
+    want(buttons.some((b) => b.textContent === spec.label), `${at} no button for "${spec.label}"`);
+  }
+
+  // It opens on whichever pair has the most post-event pixels; every other pair
+  // must relabel both tags when clicked.
+  const opensOn = overlays.sensors.reduce((a, b) =>
+    overlays[`${b.id}_post`].valid_pct > overlays[`${a.id}_post`].valid_pct ? b : a);
+  shows(opensOn.id);
+  for (const spec of overlays.sensors) {
+    if (spec.id === opensOn.id) continue;
+    buttons.find((b) => b.textContent === spec.label)
+      ?.dispatchEvent(new window.MouseEvent("click", { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 80));
+    shows(spec.id);
+  }
 
   // Only the named views the imagery covers get a button.
   const places = [...root.querySelectorAll(".compareplaces button")].map((b) => b.textContent);

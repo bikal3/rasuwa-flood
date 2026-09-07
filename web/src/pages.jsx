@@ -138,7 +138,7 @@ function Home({ s }) {
         <ExploreCard id="terrain" title="⛰️ Terrain corridor"
           text="The finding: a corridor drawn from elevation alone holds almost every recorded loss." />
         <ExploreCard id="compare" title="🛰️ Before & after"
-          text="The same ground on two dates, optical and radar, on a draggable divider." />
+          text="The same ground on two dates, with and without the cloud filter, on a draggable divider." />
         <ExploreCard id="exposure" title="👥 Damage & exposure"
           text="What sat inside the water, counted by impact zone from Rasuwagadhi south." />
         <ExploreCard id="satellites" title="📡 Satellite detection"
@@ -234,8 +234,10 @@ function How({ s }) {
         </p>
         <p>
           Neither one alone gets through a monsoon disaster, so the detector
-          accepts a change flagged by <em>either</em>. You can switch between
-          them on the <a href={href("compare")}>before &amp; after</a> page.
+          accepts a change flagged by <em>either</em>. The{" "}
+          <a href={href("compare")}>before &amp; after</a> slider shows the
+          optical half of that, with and without its cloud filter, so you can see
+          how much of the frame the radar had to carry on its own.
         </p>
       </Explain>
 
@@ -382,33 +384,48 @@ function Compare({ s }) {
       <PageHead
         kicker="Explore data"
         title="Before &amp; after"
-        lede="The same ground on two dates, with one contrast stretch computed on the pre-event image — so a difference in brightness is a difference on the ground and not the normalisation moving."
+        lede="The same Sentinel-2 imagery on two dates, shown twice: once as the satellite returned it, and once with cloud, shadow and snow masked out. One contrast stretch across all four frames, so a difference in brightness is a difference on the ground."
       />
       <SwipeMap />
       <Figcap>
         <b>Drag the divider</b>, or focus it and use the arrow keys. The change to
         look for is the Bhote Koshi channel between Rasuwagadhi and Syabrubesi:
-        after the flood it is wider and, in radar, darker — smooth standing water
-        and fresh wet sediment reflect the radar pulse away from the sensor.
+        after the flood it is wider, and the valley floor either side of it has
+        been stripped to bare gravel.
       </Figcap>
 
       <div className="cards">
         <div className="card">
-          <h3>📷 Optical — Sentinel-2</h3>
+          <h3>☁️ Without cloud filter</h3>
           <p>
-            True colour, readable at a glance, and useless under cloud. The
-            post-event composite is a monsoon week: most of the frame is white.
+            Every pixel the satellite returned. On a monsoon week over a
+            Himalayan gorge that is mostly cloud — which is the honest picture of
+            what an optical satellite gets during a disaster, and the reason the
+            detection leans on radar this slider does not show.
           </p>
         </div>
         <div className="card">
-          <h3>📡 Radar — Sentinel-1</h3>
+          <h3>🔍 With cloud filter</h3>
           <p>
-            False colour and grainy, but it sees through the monsoon and covers
-            both dates. This is the pair the slider opens on, because it is the
-            one with post-event pixels to show.
+            The same composite with cloud, shadow and snow dropped pixel by pixel.
+            What is left is real ground — and the transparent holes are exactly
+            what the filter removed. The tag on each half of the slider gives the
+            share that survived; on the post-event frame it is most of it gone.
           </p>
         </div>
       </div>
+
+      <Callout kind="warn">
+        <p>
+          <strong>Neither frame gives a clear post-event view of the whole
+          valley.</strong> There is no cloud-free optical image of this ground
+          after {eventDate(s)} — the event is six days from the end of the
+          window and the monsoon did not break. That gap is why the{" "}
+          <a href={href("satellites")}>detection</a> accepts a change flagged by
+          radar alone, and why {fmt(s.validation.observed_flagged_by_stage3_pct, 1)}%
+          is the share of the flood extent it could confirm.
+        </p>
+      </Callout>
 
       <Callout>
         <p>

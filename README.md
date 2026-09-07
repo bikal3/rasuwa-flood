@@ -57,6 +57,7 @@ Writes `data/`, all **EPSG:32645** (UTM 45N, metres), **NODATA −9999**:
 ```
 data/raster/s2_pre.tif     B2 B3 B4 B8 B11 B12   surface reflectance 0–1
 data/raster/s2_post.tif    ″
+data/raster/s2raw_*.tif    B4 B3 B2, cloud mask off -- the slider's "before the filter"
 data/raster/s1_pre.tif     VV VH   sigma0 dB
 data/raster/s1_post.tif    ″
 data/raster/dem.tif        SRTM elevation, m
@@ -212,24 +213,34 @@ Two numbers that look bad and are not:
 python pipeline/stage5_overlays.py
 ```
 
-Reprojects both composites to Web Mercator as 8-bit palette PNGs (3.1 MB for
-four), plus `overlays.json` with bounds, windows and valid cover.
+Reprojects the Sentinel-2 composites to Web Mercator as 8-bit palette PNGs, plus
+`overlays.json` with bounds, windows and valid cover.
 
-- **One stretch for both dates**, computed on the pre-event image, so a
-  difference in brightness is a difference on the ground.
+- **Two pairs of the same imagery**, differing only in whether the cloud mask
+  ran. *Without the filter* is every pixel the satellite returned — on a monsoon
+  week over a Himalayan gorge, mostly cloud. *With the filter* is the same median
+  composite with cloud, shadow and snow dropped per pixel by `SCL_KEEP`, leaving
+  the post-event frame **17% covered** against the pre's **87%**. The holes are
+  the point: they are what the filter removed. Stage 1 exports the unmasked pair
+  as `s2raw_{pre,post}.tif`, true colour only, and nothing in the analysis reads
+  them.
+- **One stretch across all four frames**, computed on the *masked* pre-event
+  image so the percentiles come off ground rather than cloud tops. Give each
+  pair its own and the unmasked one renders darker, which would make the filter
+  switch look like a brightness control.
 - **EPSG:3857, not UTM** — Leaflet stretches an `ImageOverlay` linearly between
   two corners in Web Mercator, so a UTM raster lands wrong and the error grows
   across the frame.
-- **Two pairs.** The post-event Sentinel-2 composite is **17% cloud-free**
-  against the pre's **87%**, so the slider also carries Sentinel-1: radar sees
-  through cloud and both dates are complete. Rendered grey, not VV/VH false
-  colour, which in this terrain is dominated by layover striping identical in
-  both dates. The slider opens on whichever pair has post-event pixels.
 
 Gaps are transparent and the valid figure is printed on the slider, so dragging
 across a hole tells you it is cloud rather than clear ground. Labels read
 `1–25 Aug 2026` and `26 Aug – 1 Sep 2026` because these are median composites
 over a window, not single acquisitions.
+
+There is no cloud-free optical view of this ground after the event, which is why
+the detection accepts a change flagged by radar alone and why only 29.5% of the
+observed extent could be confirmed. The slider shows the optical half of that
+problem; it does not show the radar.
 
 ## The site
 
