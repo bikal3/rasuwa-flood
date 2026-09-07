@@ -407,6 +407,9 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; font-family: var(-
   padding: .9rem 1rem .45rem; margin: 0;
 }
 .panel-group { border-bottom: 1px solid var(--line-soft); padding-bottom: .6rem; }
+/* Leads the panel, so it needs the rule under it that the layer groups have. */
+.panel-nav { border-bottom: 1px solid var(--line); }
+.panel-nav .zoombar { padding-bottom: .8rem; }
 
 /* The reply to the map's primary action, so it leads the panel and stays put. */
 .inspector {
