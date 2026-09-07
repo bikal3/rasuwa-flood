@@ -204,6 +204,27 @@ code {
 .callout p:last-child { margin-bottom: 0; }
 .callout h3 { margin: 0 0 .3rem; font-size: 1rem; }
 
+/* ── Two-up ──────────────────────────────────────────────────────────────── */
+
+/* Two things side by side once the page is wide enough for both: a chart and
+   what it means, the pipeline and the list of what it cannot do. This is what
+   replaced the measure caps -- prose that would run to 150 characters across a
+   wide window is put in a column rather than fenced into the middle of an empty
+   one. Collapses to a single column below about 60rem of content width. */
+.cols {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(27rem, 1fr));
+  gap: .5rem 3rem; align-items: start;
+}
+.cols > * > h2:first-child, .cols > h2:first-child { margin-top: 0; }
+.cols > * > .callout:first-child, .cols > .callout:first-child { margin-top: 0; }
+
+/* The explainer stack, two abreast. One border on the container and one under
+   each fold, rather than a border above and below every one of them, which in a
+   grid doubles up between rows. */
+.explainers { border-top: 1px solid var(--line-soft); }
+.explainers .plain { border-top: 0; border-bottom: 1px solid var(--line-soft); }
+.explainers .plain:last-of-type { margin-bottom: 0; }
+
 /* ── Metrics ─────────────────────────────────────────────────────────────── */
 
 .metrics {
@@ -354,7 +375,9 @@ td.n { text-align: right; font-variant-numeric: tabular-nums; font-family: var(-
 
 .steps { padding-left: 1.25rem; margin: .7rem 0 1.2rem; color: var(--ink-soft); }
 .steps li { margin-bottom: .5rem; }
-.steps b { font-family: var(--mono); font-size: .86em; color: var(--ink); font-weight: 500; }
+/* Bold in a list is a lead-in sentence, not notation. The (1)/(2) references
+   are <code>, which is what carries the mono. */
+.steps b { color: var(--ink); font-weight: 600; }
 
 /* ── Maps ────────────────────────────────────────────────────────────────── */
 
