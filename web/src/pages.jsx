@@ -138,7 +138,7 @@ function Home({ s }) {
         <ExploreCard id="terrain" title="⛰️ Terrain corridor"
           text="The finding: a corridor drawn from elevation alone holds almost every recorded loss." />
         <ExploreCard id="compare" title="🛰️ Before & after"
-          text="The same ground on two dates, with and without the cloud filter, on a draggable divider." />
+          text="The Trishuli at Betrawati on 12 and 27 August, on a draggable divider." />
         <ExploreCard id="exposure" title="👥 Damage & exposure"
           text="What sat inside the water, counted by impact zone from Rasuwagadhi south." />
         <ExploreCard id="satellites" title="📡 Satellite detection"
@@ -235,9 +235,10 @@ function How({ s }) {
         <p>
           Neither one alone gets through a monsoon disaster, so the detector
           accepts a change flagged by <em>either</em>. The{" "}
-          <a href={href("compare")}>before &amp; after</a> slider shows the
-          optical half of that, with and without its cloud filter, so you can see
-          how much of the frame the radar had to carry on its own.
+          <a href={href("compare")}>before &amp; after</a> slider shows what the
+          cloud filter takes out of an optical frame — though on a clearer day and
+          30 km south of this study rectangle, which is the only reason it has a
+          post-event optical view worth looking at.
         </p>
       </Explain>
 
@@ -384,55 +385,61 @@ function Compare({ s }) {
       <PageHead
         kicker="Explore data"
         title="Before &amp; after"
-        lede="The same Sentinel-2 imagery on two dates, shown twice: once as the satellite returned it, and once with cloud, shadow and snow masked out. One contrast stretch across all four frames, so a difference in brightness is a difference on the ground."
+        lede="The Trishuli at Betrawati and Gerkhu on 12 and 27 August 2026 — the two Copernicus Sentinel-2 passes either side of the flood, one acquisition each rather than a composite of a week. Shown twice: as the satellite returned them, and with cloud, shadow and snow masked out."
       />
       <SwipeMap />
       <Figcap>
-        <b>Drag the divider</b>, or focus it and use the arrow keys. The change to
-        look for is the Bhote Koshi channel between Rasuwagadhi and Syabrubesi:
-        after the flood it is wider, and the valley floor either side of it has
-        been stripped to bare gravel.
+        <b>Drag the divider</b>, or focus it and use the arrow keys. On 12 August
+        the Trishuli is a thread of water on a green valley floor. On 27 August it
+        is a bare grey bed several times wider, and the fields and terraces either
+        side of it are under flood deposits.
       </Figcap>
 
       <div className="cards">
         <div className="card">
           <h3>☁️ Without cloud filter</h3>
           <p>
-            Every pixel the satellite returned. On a monsoon week over a
-            Himalayan gorge that is mostly cloud — which is the honest picture of
-            what an optical satellite gets during a disaster, and the reason the
-            detection leans on radar this slider does not show.
+            Every pixel the satellite returned on the day, cloud included. It is
+            what the instrument actually delivered, and on 27 August that includes
+            a bank of cumulus over the hills south-east of the confluence.
           </p>
         </div>
         <div className="card">
           <h3>🔍 With cloud filter</h3>
           <p>
-            The same composite with cloud, shadow and snow dropped pixel by pixel.
-            What is left is real ground — and the transparent holes are exactly
-            what the filter removed. The tag on each half of the slider gives the
-            share that survived; on the post-event frame it is most of it gone.
+            The same two frames with cloud, shadow and snow dropped pixel by
+            pixel. What is left is real ground, and the transparent holes are
+            exactly what the filter removed. The tag on each half gives the share
+            that survived, so the gap between the two pairs is a measure of how
+            much of the picture is weather.
           </p>
         </div>
       </div>
 
       <Callout kind="warn">
         <p>
-          <strong>Neither frame gives a clear post-event view of the whole
-          valley.</strong> There is no cloud-free optical image of this ground
-          after {eventDate(s)} — the event is six days from the end of the
-          window and the monsoon did not break. That gap is why the{" "}
+          <strong>This is the clear frame, and it is not where the numbers come
+          from.</strong> Betrawati got a mostly cloud-free look on 27 August — the
+          tag on the slider gives the exact share. The study rectangle 30 km north
+          got no such view after {eventDate(s)} at all, and that gap is why the{" "}
           <a href={href("satellites")}>detection</a> accepts a change flagged by
           radar alone, and why {fmt(s.validation.observed_flagged_by_stage3_pct, 1)}%
-          is the share of the flood extent it could confirm.
+          is the share of the flood extent it could confirm. Read this page as a
+          picture of the event, not as evidence for the figures.
         </p>
       </Callout>
 
       <Callout>
         <p>
-          The imagery covers the Sentinel study rectangle — the northern third of
-          the corridor the <a href={href("map")}>flood map</a> spans end to end.
-          Places outside that footprint get no button here, because a button that
-          flies you off the overlay is a trap.
+          The frame reproduces{" "}
+          <a href="https://eu-space.europa.eu/components/earth-observation-copernicus/image-of-the-day/aftermath-nepal-flash-flood">
+            the Copernicus image of the day
+          </a>{" "}
+          for this flood — same ground, same two dates — so the two can be held
+          side by side. It sits at the foot of the corridor the{" "}
+          <a href={href("map")}>flood map</a> spans; places outside it get no
+          button above, because a button that flies you off the overlay is a trap.
+          Imagery: European Union, Copernicus Sentinel-2, processed here.
         </p>
       </Callout>
     </>
