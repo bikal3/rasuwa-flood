@@ -17,7 +17,7 @@ history: `git show 3f629c2:Rasuwa_Nepal_China_Flood_Project_Proposal.md`.
 | 2 | `pipeline/stage2_analysis.py` | change rasters, damage polygons, zonal stats, plates |
 | 3 | `pipeline/stage3_corridor.py` | terrain + HAND, the flood corridor, corridor-confined damage |
 | 4 | `pipeline/stage4_hot.py` | HOT ground survey, validation scores, the site's data |
-| 5 | `pipeline/stage5_overlays.py` | pre/post optical + radar PNGs in Web Mercator |
+| 5 | `pipeline/stage5_overlays.py` | the before/after slider's PNGs in Web Mercator |
 | — | `web/` | the ten-page static site |
 
 Each stage reads the previous one's files off disk and nothing else. No stage
@@ -57,7 +57,8 @@ Writes `data/`, all **EPSG:32645** (UTM 45N, metres), **NODATA −9999**:
 ```
 data/raster/s2_pre.tif     B2 B3 B4 B8 B11 B12   surface reflectance 0–1
 data/raster/s2_post.tif    ″
-data/raster/s2raw_*.tif    B4 B3 B2, cloud mask off -- the slider's "before the filter"
+data/raster/slide_*.tif    B4 B3 B2 over SLIDE_ROI, one date each -- the slider
+data/raster/slideraw_*.tif ″, cloud mask off
 data/raster/s1_pre.tif     VV VH   sigma0 dB
 data/raster/s1_post.tif    ″
 data/raster/dem.tif        SRTM elevation, m
@@ -219,20 +220,28 @@ Two numbers that look bad and are not:
 python pipeline/stage5_overlays.py
 ```
 
-Reprojects the Sentinel-2 composites to Web Mercator as 8-bit palette PNGs, plus
-`overlays.json` with bounds, windows and valid cover.
+Reprojects stage 1's slider frames to Web Mercator as 8-bit palette PNGs, plus
+`overlays.json` with bounds, dates and valid cover.
 
-- **Two pairs of the same imagery**, differing only in whether the cloud mask
-  ran. *Without the filter* is every pixel the satellite returned — on a monsoon
-  week over a Himalayan gorge, an after-frame that is almost solid cloud. *With
-  the filter* is the same median composite with cloud, shadow and snow dropped
-  per pixel by `SCL_KEEP`, leaving the post-event frame **17% cloud-free**
-  against the pre's **87%**. The holes are the point: they are what the filter
-  removed. Stage 1 exports the unmasked pair as `s2raw_{pre,post}.tif`, true
-  colour only, and nothing in the analysis reads them.
+- **Not the analysis frame.** `SLIDE_ROI` is the Trishuli at Betrawati and
+  Gerkhu, ~11 km across at the foot of the corridor, 30 km south of `ROI`, at the
+  Sentinel-2 native 10 m. It reproduces the [Copernicus image of the
+  day](https://eu-space.europa.eu/components/earth-observation-copernicus/image-of-the-day/aftermath-nepal-flash-flood)
+  for this flood, so the site's headline before/after can be held against the
+  published one. Nothing downstream of stage 1 reads it, and the site says so on
+  the page.
+- **One acquisition each, 12 and 27 August 2026**, not a median of a week. A
+  composite is the right input for differencing indices and the wrong thing to
+  show someone: it is an image of no particular moment, and the flood was a
+  moment.
+- **Two pairs of those same two frames**, differing only in whether the cloud
+  mask ran. *Without the filter* is every pixel the satellite returned. *With the
+  filter* drops cloud, shadow and snow per pixel by `SCL_KEEP`, leaving the
+  post-event frame **67% cloud-free** against the pre's **94%**. The holes are
+  the point: they are what the filter removed.
 - **The unmasked tag says "of pixels kept", not "of the frame".** It sits beside
-  an image that is solid cloud, and a percentage there is read as a clarity
-  figure unless it is worded so it cannot be.
+  an image that carries its own cloud, and a percentage there is read as a
+  clarity figure unless it is worded so it cannot be.
 - **One stretch across all four frames**, computed on the *masked* pre-event
   image so the percentiles come off ground rather than cloud tops. Give each
   pair its own and the unmasked one renders darker, which would make the filter
@@ -243,13 +252,12 @@ Reprojects the Sentinel-2 composites to Web Mercator as 8-bit palette PNGs, plus
 
 Gaps are transparent and the valid figure is printed on the slider, so dragging
 across a hole tells you it is cloud rather than clear ground. Labels read
-`1–25 Aug 2026` and `26 Aug – 1 Sep 2026` because these are median composites
-over a window, not single acquisitions.
+`12 Aug 2026` and `27 Aug 2026`: one date, one pass.
 
-There is no cloud-free optical view of this ground after the event, which is why
-the detection accepts a change flagged by radar alone and why only 29.5% of the
-observed extent could be confirmed. The slider shows the optical half of that
-problem; it does not show the radar.
+Betrawati got a usable post-event look. The study rectangle 30 km north did not,
+which is why the detection accepts a change flagged by radar alone and why only
+29.5% of the observed extent could be confirmed. The slider is a picture of the
+event, not evidence for those figures, and the page says as much.
 
 ## The site
 
