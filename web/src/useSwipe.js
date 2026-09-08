@@ -14,13 +14,13 @@ import { DATA } from "./base.js";
  * **Both** images are clipped, not just the "after" one. Clipping only the after
  * leaves the before drawing full-width underneath it, so wherever the after has
  * no pixels the before shows through and the slider looks like it does nothing.
- * That is not a cosmetic difference here: the post-event optical composite is
- * 17% cloud-free, so five sixths of the "after" half would have been the "before"
- * image wearing the after label.
+ * That is not cosmetic here: the masked post-event frame is two thirds
+ * cloud-free, so a third of the "after" half would have been the "before" image
+ * wearing the after label.
  *
- * Two pairs are offered. Optical is the readable one and mostly cloud; radar
- * sees through cloud and covers both dates. The slider opens on whichever pair
- * actually has post-event pixels, so it opens showing something.
+ * Two pairs are offered, the same two acquisitions with the cloud mask on and
+ * off. The slider opens on whichever has the most post-event pixels, so it opens
+ * showing something.
  *
  * Nothing loads until open() is called -- SwipeMap calls it when its section
  * nears the viewport, so a visitor who never scrolls that far never pays the
@@ -30,16 +30,11 @@ import { DATA } from "./base.js";
 const MONTH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-/** ["2026-08-01","2026-08-25"] -> "1–25 Aug 2026", collapsing shared parts. */
-export function formatWindow(win) {
-  if (!win?.length) return "";
-  const [a, b] = win.map((d) => d.split("-").map(Number));
-  const [ay, am, ad] = a;
-  const [by, bm, bd] = b;
-  const end = `${bd} ${MONTH[bm - 1]} ${by}`;
-  if (ay === by && am === bm) return `${ad}–${end}`;
-  if (ay === by) return `${ad} ${MONTH[am - 1]} – ${end}`;
-  return `${ad} ${MONTH[am - 1]} ${ay} – ${end}`;
+/** "2026-08-12" -> "12 Aug 2026". Each half is one acquisition, not a window. */
+export function formatDate(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  return `${d} ${MONTH[m - 1]} ${y}`;
 }
 
 /** The pair with the most valid post-event pixels -- the one worth opening on. */

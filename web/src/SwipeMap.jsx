@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import { BASEMAPS, PLACES } from "./layers.js";
-import useSwipe, { formatWindow } from "./useSwipe.js";
+import useSwipe, { formatDate } from "./useSwipe.js";
 import tameGestures from "./gestures.js";
 
 /**
@@ -9,20 +9,21 @@ import tameGestures from "./gestures.js";
  *
  * It used to be a mode on the main map, sharing that map's panes with 1,600
  * damage polygons and a fourteen-layer panel. Two things were wrong with that.
- * The imagery covers the Sentinel ROI, which is the northern third of a corridor
- * the main map has to fit end to end, so the slider spent most of its life
- * showing a patch of overlay in one corner. And a swipe is a different question
- * from a layer toggle -- "what changed here" against "what did the survey record
- * here" -- so making them the same viewport meant answering one destroyed the
- * view you had set up for the other.
+ * The imagery is an 11 km frame at Betrawati, the foot of a corridor the main
+ * map has to fit end to end, so the slider spent most of its life showing a
+ * patch of overlay in one corner. And a swipe is a different question from a
+ * layer toggle -- "what changed here" against "what did the survey record here"
+ * -- so making them the same viewport meant answering one destroyed the view you
+ * had set up for the other.
  *
  * This map has no vector layers, one basemap, and its own view. Nothing here
  * talks to the map above it.
  */
 
-// The imagery is a 20 m grid. Past this it is mush -- honest mush, but mush --
-// and letting someone zoom to 18 only teaches them the overlay is broken.
-const MAX_ZOOM = 16;
+// The imagery is a 10 m grid -- Sentinel-2 native, which this frame is small
+// enough to afford. Past this it is mush -- honest mush, but mush -- and letting
+// someone zoom further only teaches them the overlay is broken.
+const MAX_ZOOM = 17;
 
 /**
  * The zoom at which the imagery covers the frame rather than fitting inside it.
@@ -30,8 +31,8 @@ const MAX_ZOOM = 16;
  * The scene is roughly square and this map is a wide band, so fitBounds -- which
  * contains -- strands a square of imagery in a field of basemap with nothing to
  * look at down either side. Cover instead: fill the frame and let the ends of
- * the scene run off the top and bottom. Centred, that is the Timure-Syabrubesi
- * stretch, which is the part anyone came here to see.
+ * the scene run off the top and bottom. Centred, that is the Trishuli-Phalankhu
+ * confluence at Betrawati, which is the part anyone came here to see.
  */
 const coverZoom = (m, bounds) => {
   const nw = m.project(bounds.getNorthWest(), 0);
@@ -57,7 +58,7 @@ export default function SwipeMap() {
   useEffect(() => {
     const bm = BASEMAPS[0];
     const m = L.map(host.current, {
-      center: [28.2, 85.4],
+      center: [27.97, 85.18],
       zoom: 12,
       maxZoom: MAX_ZOOM,
       zoomControl: false,
@@ -80,7 +81,7 @@ export default function SwipeMap() {
     };
   }, []);
 
-  // A pair of overlays is 1.6 MB and this sits below the fold, so it is fetched
+  // A pair of overlays is ~1.3 MB and this sits below the fold, so it is fetched
   // when the section gets near the viewport rather than on page load. Where
   // there is no IntersectionObserver -- jsdom, mainly -- just load it.
   useEffect(() => {
@@ -108,8 +109,9 @@ export default function SwipeMap() {
     if (swipe.meta) show(false);
   }, [swipe.meta]);
 
-  // Only the named views the imagery actually covers -- Betrawati is 30 km south
-  // of the scene, and a button that flies you off the overlay is a trap.
+  // Only the named views the imagery actually covers -- Rasuwagadhi and
+  // Syabrubesi are tens of km north of this frame, and a button that flies you
+  // off the overlay is a trap.
   const places = swipe.meta
     ? PLACES.filter((p) => p.view &&
         L.latLngBounds(swipe.meta.bounds).contains([p.view[0], p.view[1]]))
@@ -180,22 +182,22 @@ export default function SwipeMap() {
           ref={host}
           className="mapfill"
           aria-label={
-            "Before and after satellite imagery of the Rasuwa corridor, " +
+            "Before and after satellite imagery of the Trishuli at Betrawati, " +
             `${sensor.label ? sensor.label.toLowerCase() : "satellite"} pair. ` +
             "Arrow keys pan, plus and minus zoom."
           }
         />
         {pre && post && (
           <p className="sr-only">
-            {sensor.source}. Before: {formatWindow(pre.window)}, {pre.valid_pct}%
-            of the frame {sensor.cover}. After: {formatWindow(post.window)},{" "}
+            {sensor.source}. Before: {formatDate(pre.date)}, {pre.valid_pct}%
+            of the frame {sensor.cover}. After: {formatDate(post.date)},{" "}
             {post.valid_pct}% {sensor.cover}. Both dates share one contrast
             stretch computed on the pre-event image. The change the comparison
-            shows is the Bhote Koshi channel between Rasuwagadhi and Syabrubesi:
-            after the flood it is wider and, in radar, darker, because smooth
-            standing water and fresh wet sediment reflect the radar pulse away
-            from the sensor. Drag the divider, or focus it and use the arrow
-            keys, to move between the two dates.
+            shows is the Trishuli at Betrawati and Gerkhu: a narrow river
+            threading green valley floor on 12 August, and on 27 August a bare
+            grey bed several times wider, the fields and terraces either side of
+            it buried under flood deposits. Drag the divider, or focus it and use
+            the arrow keys, to move between the two dates.
           </p>
         )}
 
@@ -232,7 +234,7 @@ export default function SwipeMap() {
                   <b>{title}</b>
                   {d && (
                     <>
-                      <span>{formatWindow(d.window)}</span>
+                      <span>{formatDate(d.date)}</span>
                       <span className="cover">{d.valid_pct}% {sensor.cover}</span>
                     </>
                   )}
@@ -240,8 +242,8 @@ export default function SwipeMap() {
               );
             }
           )}
-          {/* The optical pair is six days of monsoon and mostly cloud; the radar
-              pair covers both dates but is false colour. Neither is the right
+          {/* The unmasked pair is the picture as published; the masked one is
+              the same frames with the weather cut out. Neither is the right
               default for everyone, so both are one click away. */}
           {swipe.meta && (
             <div className="swipe-sensor" role="group" aria-label="Imagery source">

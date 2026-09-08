@@ -137,12 +137,14 @@ await send("Runtime.enable");
 await send("Page.navigate", { url: `${origin}compare/` });
 await sleep(4000);
 
-// Fly somewhere the imagery footprint fills the map. At the whole-scene view the
-// frame has basemap around its edges, and "half the map is the before image" is
-// not the right expectation there.
+// Fit the imagery first. That view covers rather than contains -- the frame
+// fills the map and runs off two of its edges -- and "half the map is the before
+// image" is only the right expectation somewhere the overlay spans it. A named
+// place would do too, but its zoom is chosen for the main map, so whether the
+// overlay reaches both edges there is luck.
 await evaluate(String.raw`(async () => {
   [...document.querySelectorAll(".compareplaces button")]
-    .find((b) => b.textContent.trim() === "Rasuwagadhi").click();
+    .find((b) => b.textContent.trim() === "Fit imagery").click();
   await new Promise((r) => setTimeout(r, 2500));
 })()`);
 
@@ -175,7 +177,7 @@ await send("Page.navigate", { url: `${origin}compare/` });
 await sleep(3500);
 await evaluate(String.raw`(async () => {
   [...document.querySelectorAll(".compareplaces button")]
-    .find((b) => b.textContent.trim() === "Rasuwagadhi").click();
+    .find((b) => b.textContent.trim() === "Fit imagery").click();
   await new Promise((r) => setTimeout(r, 2500));
 })()`);
 

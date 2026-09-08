@@ -221,19 +221,19 @@ async function exists(p) {
   // decision, and this check should survive changing it.
   //
   // The id is everything before the last underscore, not a prefix match --
-  // "s2raw_pre".startsWith("s2") is true, and a prefix match would read the
-  // wrong pair's cover word depending on the order of the sensors array.
+  // "slideraw_pre".startsWith("slide") is true, and a prefix match would read
+  // the wrong pair's cover word depending on the order of the sensors array.
   const idOf = (k) => k.slice(0, k.lastIndexOf("_"));
   const cover = (k) =>
     `${overlays[k].valid_pct}% ${overlays.sensors.find((x) => x.id === idOf(k)).cover}`;
-  const ends = (k) => {
-    const [y, m, d] = overlays[k].window[1].split("-").map(Number);
+  const taken = (k) => {
+    const [y, m, d] = overlays[k].date.split("-").map(Number);
     return `${d} ${MONTH[m - 1]} ${y}`;
   };
   const shows = (id) => {
     const tags = [...root.querySelectorAll(".swipe-tag")].map((t) => t.textContent).join(" ");
     for (const k of [`${id}_pre`, `${id}_post`]) {
-      want(tags.includes(ends(k)), `${at} the ${k} date window is not on the slider`);
+      want(tags.includes(taken(k)), `${at} the ${k} acquisition date is not on the slider`);
       want(tags.includes(cover(k)), `${at} the ${k} cover figure is not on the slider`);
     }
   };
@@ -258,12 +258,13 @@ async function exists(p) {
     shows(spec.id);
   }
 
-  // Only the named views the imagery covers get a button.
+  // Only the named views the imagery covers get a button. The slider frames
+  // Betrawati; the northern zones are tens of km outside it.
   const places = [...root.querySelectorAll(".compareplaces button")].map((b) => b.textContent);
-  want(places.includes("Rasuwagadhi") && places.includes("Syabrubesi"),
+  want(places.includes("Trishuli / Betrawati"),
     `${at} place buttons are missing (${JSON.stringify(places)})`);
-  want(!places.includes("Trishuli / Betrawati"),
-    `${at} Betrawati is outside the imagery footprint and should not be offered`);
+  want(!places.includes("Rasuwagadhi") && !places.includes("Syabrubesi"),
+    `${at} offers a view outside the imagery footprint (${JSON.stringify(places)})`);
 }
 
 /* ── The general reader's pages ───────────────────────────────────────────── */
