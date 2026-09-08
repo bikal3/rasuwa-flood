@@ -6,21 +6,25 @@ Reprojects the Sentinel-2 composites to Web Mercator and writes them as PNGs the
 Leaflet map can lay over the terrain, plus the metadata the slider labels itself
 with.
 
-Reads   data/raster/s2_pre.tif, s2_post.tif            (stage 1, cloud-masked)
-        data/raster/s2raw_pre.tif, s2raw_post.tif      (stage 1, unmasked)
-Writes  web/public/data/{s2,s2raw}_{pre,post}.png
-        web/public/data/overlays.json            bounds, windows, valid cover
+Reads   data/raster/slide_pre.tif, slide_post.tif        (stage 1, cloud-masked)
+        data/raster/slideraw_pre.tif, slideraw_post.tif  (stage 1, unmasked)
+Writes  web/public/data/{slide,slideraw}_{pre,post}.png
+        web/public/data/overlays.json            bounds, dates, valid cover
 
-Two pairs of the same imagery, differing only in whether the cloud mask ran:
+Not the analysis frame. Stage 1 exports these four over SLIDE_ROI -- the
+Trishuli at Betrawati and Gerkhu -- on the two dates Copernicus published as its
+image of the day for this flood, one acquisition each rather than a median of a
+week. The site's before/after is then the same ground on the same dates as the
+published picture, and a reader can hold the two side by side.
 
-- **Without the filter (s2raw).** Every pixel the satellite returned. On a
-  monsoon week over a Himalayan gorge that is mostly cloud, which is the honest
-  picture of what an optical satellite gets during a disaster and the reason the
-  analysis leans on radar it cannot show you here.
-- **With the filter (s2).** The same median composite with cloud, shadow and
-  snow dropped per pixel by the SCL mask. The post-event frame comes out 17%
-  cloud-free, so most of it is a transparent hole -- and that hole is the point:
-  it is exactly what the filter removed.
+Two pairs of those same two frames, differing only in whether the cloud mask ran:
+
+- **Without the filter (slideraw).** Every pixel the satellite returned, cloud
+  included -- what the instrument actually delivered on the day.
+- **With the filter (slide).** The same frames with cloud, shadow and snow
+  dropped per pixel by the SCL mask. What the filter removes shows as a
+  transparent hole, so the difference between the two pairs is a measure of how
+  much of the picture is weather.
 
 Both pairs share one contrast stretch, computed on the *masked* pre-event image,
 so switching between them changes what is covered and nothing else. Give them
@@ -71,26 +75,27 @@ def s2_rgb(path):
     return read_bands(path, ("B4", "B3", "B2"))
 
 
-# (id, label, (pre window, post window), provenance, what the gaps are)
+# (id, label, provenance, what the gaps are)
 # The last field is the word the slider puts after the valid percentage. Both
-# pairs are read the same way and cover the same windows; the only difference is
-# which file stage 1 wrote them from.
+# pairs are the same two acquisitions; the only difference is which file stage 1
+# wrote them from, so the dates come from config rather than from this table.
 SENSORS = (
     # "of pixels kept", not "of the frame": the number sits on a tag beside an
-    # image that is solid cloud, and anything that reads as a clarity figure
-    # there will be read as one. This way it contrasts directly with the masked
-    # pair's "17% cloud-free" -- same frame, one keeps everything, one does not.
-    ("s2raw", "Without cloud filter", (cfg.S2_PRE, cfg.S2_POST),
-     "Sentinel-2 L2A true colour, every pixel the satellite returned",
+    # image that includes its own cloud, and anything that reads as a clarity
+    # figure there will be read as one. This way it contrasts directly with the
+    # masked pair's "cloud-free" -- same frame, one keeps everything, one does not.
+    ("slideraw", "Without cloud filter",
+     "Copernicus Sentinel-2 L2A true colour, every pixel the satellite returned",
      "of pixels kept"),
-    ("s2", "With cloud filter", (cfg.S2_PRE, cfg.S2_POST),
-     "Sentinel-2 L2A true colour, cloud, shadow and snow masked out per pixel",
+    ("slide", "With cloud filter",
+     "Copernicus Sentinel-2 L2A true colour, cloud, shadow and snow masked out "
+     "per pixel",
      "cloud-free"),
 )
 
 # The pair whose pre-event image sets the stretch for every pair. The masked one:
 # its percentiles are computed on ground rather than on cloud tops.
-STRETCH_FROM = "s2"
+STRETCH_FROM = "slide"
 
 
 def to_web_mercator(arr, profile):
@@ -172,7 +177,7 @@ def main():
           + ", ".join(f"{lo:.2f}..{hi:.2f}" for lo, hi in limits))
 
     meta, bounds = {}, None
-    for sid, label, windows, _, cover_word in SENSORS:
+    for sid, label, _, cover_word in SENSORS:
         print(f"{label} overlays")
         pre_arr, profile = s2_rgb(cfg.RASTER / f"{sid}_pre.tif")
         post_arr, _ = s2_rgb(cfg.RASTER / f"{sid}_post.tif")
@@ -193,12 +198,12 @@ def main():
                      f"{corners} vs {bounds}")
         bounds = corners
 
-        for half, stack, window in (("pre", pre_web, windows[0]),
-                                    ("post", post_web, windows[1])):
+        for half, stack, date in (("pre", pre_web, cfg.SLIDE_PRE),
+                                  ("post", post_web, cfg.SLIDE_POST)):
             rgba, cover = to_rgba(stack, limits)
             path = cfg.SITE_DATA / f"{sid}_{half}.png"
             save_png(path, rgba)
-            meta[f"{sid}_{half}"] = {"window": list(window),
+            meta[f"{sid}_{half}"] = {"date": date,
                                      "valid_pct": round(100 * cover, 1)}
             print(f"  {path.name}  {path.stat().st_size / 1e6:.1f} MB, "
                   f"{100 * cover:.0f}% {cover_word}")
@@ -207,7 +212,7 @@ def main():
         "bounds": bounds,
         "event": cfg.EVENT,
         "sensors": [{"id": sid, "label": label, "source": source, "cover": word}
-                    for sid, label, _, source, word in SENSORS],
+                    for sid, label, source, word in SENSORS],
         "note": "Both dates share one contrast stretch, computed on the pre-event "
                 "image, so a difference in brightness is a difference on the ground.",
         **meta,

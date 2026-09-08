@@ -1,56 +1,44 @@
 {
  "bounds": [
   [
-   28.04635184493848,
-   85.24510440802652
+   27.918513678886423,
+   85.12824606777893
   ],
   [
-   28.35353264181058,
-   85.55422581190835
+   28.021474479628818,
+   85.241664949186
   ]
  ],
  "event": "2026-08-26",
  "sensors": [
   {
-   "id": "s2raw",
+   "id": "slideraw",
    "label": "Without cloud filter",
-   "source": "Sentinel-2 L2A true colour, every pixel the satellite returned",
+   "source": "Copernicus Sentinel-2 L2A true colour, every pixel the satellite returned",
    "cover": "of pixels kept"
   },
   {
-   "id": "s2",
+   "id": "slide",
    "label": "With cloud filter",
-   "source": "Sentinel-2 L2A true colour, cloud, shadow and snow masked out per pixel",
+   "source": "Copernicus Sentinel-2 L2A true colour, cloud, shadow and snow masked out per pixel",
    "cover": "cloud-free"
   }
  ],
  "note": "Both dates share one contrast stretch, computed on the pre-event image, so a difference in brightness is a difference on the ground.",
- "s2raw_pre": {
-  "window": [
-   "2026-08-01",
-   "2026-08-25"
-  ],
-  "valid_pct": 97.4
+ "slideraw_pre": {
+  "date": "2026-08-12",
+  "valid_pct": 97.1
  },
- "s2raw_post": {
-  "window": [
-   "2026-08-26",
-   "2026-09-01"
-  ],
-  "valid_pct": 97.4
+ "slideraw_post": {
+  "date": "2026-08-27",
+  "valid_pct": 97.1
  },
- "s2_pre": {
-  "window": [
-   "2026-08-01",
-   "2026-08-25"
-  ],
-  "valid_pct": 87.0
+ "slide_pre": {
+  "date": "2026-08-12",
+  "valid_pct": 94.2
  },
- "s2_post": {
-  "window": [
-   "2026-08-26",
-   "2026-09-01"
-  ],
-  "valid_pct": 17.0
+ "slide_post": {
+  "date": "2026-08-27",
+  "valid_pct": 67.2
  }
 }
