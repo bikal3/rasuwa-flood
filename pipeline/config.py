@@ -49,11 +49,33 @@ S1_PRE = ("2026-08-08", "2026-08-25")
 S1_POST = ("2026-08-26", "2026-09-01")
 
 S2_BANDS = ["B2", "B3", "B4", "B8", "B11", "B12"]
-# True colour only, for the unfiltered pair the before/after slider shows beside
-# the masked one. Stage 1 exports these bands and stage 5 reads them back, so
-# they live here rather than being written out twice and drifting.
+# True colour only, for the before/after slider. Stage 1 exports these bands and
+# stage 5 reads them back, so they live here rather than being written out twice
+# and drifting.
 S2_RGB = ["B4", "B3", "B2"]
 S1_BANDS = ["VV", "VH"]
+
+# --- Before/after slider (stages 1 and 5) -----------------------------------
+# The slider is a picture, not the analysis, and it no longer shares the
+# analysis frame. It reproduces the Copernicus image of the day for this event
+# -- the Trishuli at Betrawati and Gerkhu, at the foot of the corridor, south of
+# ROI -- so that the site's headline before/after is the same ground on the same
+# two dates as the published one, and can be checked against it.
+# https://eu-space.europa.eu/components/earth-observation-copernicus/image-of-the-day/aftermath-nepal-flash-flood
+#
+# Separate constants rather than a wider ROI on purpose: re-framing the picture
+# must not quietly re-run the numbers. Nothing downstream of stage 1 reads these
+# except stage 5.
+SLIDE_ROI = [85.13, 27.92, 85.24, 28.02]
+# One acquisition each, not a median of a window. A composite is the right input
+# for differencing indices and the wrong thing to show someone: it is an image of
+# no particular moment, and the flood was a moment.
+SLIDE_PRE = "2026-08-12"
+SLIDE_POST = "2026-08-27"
+# The Sentinel-2 native grid. SCALE trades resolution for bytes across a 30 km
+# ROI; this frame is 11 km across, so 10 m costs a few hundred KB and the
+# channel is legible at the zoom people actually stop at.
+SLIDE_SCALE = 10
 
 # Sentinel-2 scene classification values kept as valid ground: 4=vegetation,
 # 5=bare soil, 6=water. These are the classes where differencing a reflectance
