@@ -10,6 +10,10 @@ drop straight into ArcGIS Pro (or QGIS, or stage 2).
 Outputs (all EPSG:32645, NODATA -9999):
     data/raster/s2_pre.tif     B2 B3 B4 B8 B11 B12, surface reflectance 0-1
     data/raster/s2_post.tif        "
+    data/raster/slide_pre.tif      B4 B3 B2 over SLIDE_ROI, cloud-masked
+    data/raster/slide_post.tif     "
+    data/raster/slideraw_pre.tif   the same two frames, mask off
+    data/raster/slideraw_post.tif  "
     data/raster/s1_pre.tif     VV VH, sigma0 dB, single relative orbit
     data/raster/s1_post.tif        "
     data/raster/dem.tif        SRTM 1-arcsec elevation, m
@@ -18,6 +22,7 @@ Outputs (all EPSG:32645, NODATA -9999):
     data/raster/manifest.csv
 """
 
+import datetime as dt
 import sys
 import tempfile
 from pathlib import Path
@@ -38,21 +43,28 @@ def _roi():
     return ee.Geometry.Rectangle(cfg.ROI)
 
 
-def s2_composite(start, end, masked=True):
+def s2_composite(start, end, masked=True, region=None, bands=None):
     """Sentinel-2 L2A median, reflectance rescaled to 0-1.
 
     `masked=False` skips the per-pixel SCL mask and keeps every pixel the
     satellite returned, cloud included. Nothing in the analysis uses that -- it
     exists so the site's before/after slider can show what the mask removes,
     which on a monsoon week is most of the post-event frame.
+
+    `region` and `bands` default to the analysis ROI and the full band set. The
+    slider passes SLIDE_ROI and true colour: it frames different ground on
+    different dates, and nothing reads it but stage 5.
     """
+    region = region or _roi()
+    bands = bands or cfg.S2_BANDS
+
     def mask(img):
         keep = img.select("SCL").remap(cfg.SCL_KEEP, [1] * len(cfg.SCL_KEEP), 0)
         return img.updateMask(keep)
 
     coll = (
         ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED")
-        .filterBounds(_roi())
+        .filterBounds(region)
         .filterDate(start, end)
         .filter(ee.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", cfg.S2_MAX_CLOUD))
     )
@@ -65,7 +77,21 @@ def s2_composite(start, end, masked=True):
         )
     if masked:
         coll = coll.map(mask)
-    return coll.select(cfg.S2_BANDS).median().divide(10000).clip(_roi())
+    return coll.select(bands).median().divide(10000).clip(region)
+
+
+def slide_day(date, masked):
+    """One day's Sentinel-2 true colour over SLIDE_ROI, for the site's slider.
+
+    A single acquisition, so the filter ends at the next midnight. The analysis
+    windows stay medians of a week; this one is a photograph of a date, and
+    mixing the two ideas is how a picture stops matching its caption.
+    """
+    end = dt.date.fromisoformat(date) + dt.timedelta(days=1)
+    return s2_composite(
+        date, end.isoformat(), masked=masked,
+        region=ee.Geometry.Rectangle(cfg.SLIDE_ROI), bands=cfg.S2_RGB,
+    )
 
 
 def _s1(start, end, orbit=None):
@@ -110,11 +136,11 @@ def s1_composite(start, end, orbit):
 
 # --- Download ---------------------------------------------------------------
 
-def _fetch_band(image, band, dest):
+def _fetch_band(image, band, dest, region, scale):
     """One band -> one GeoTIFF. Per-band keeps every request under GEE's ~48 MB
     response cap, so SCALE=10 works without any chunking logic."""
     url = image.select(band).toFloat().unmask(cfg.NODATA).getDownloadURL(
-        {"region": _roi(), "scale": cfg.SCALE, "crs": cfg.CRS, "format": "GEO_TIFF"}
+        {"region": region, "scale": scale, "crs": cfg.CRS, "format": "GEO_TIFF"}
     )
     for attempt in (1, 2):
         try:
@@ -128,7 +154,7 @@ def _fetch_band(image, band, dest):
             print(f"    retrying {band} after {e}")
 
 
-def download_stack(image, bands, out):
+def download_stack(image, bands, out, region, scale):
     """-> True if it fetched, False if the file was already there."""
     if out.exists():
         print(f"  {out.name} exists, skipping")
@@ -138,7 +164,7 @@ def download_stack(image, bands, out):
         for b in bands:
             p = Path(tmp) / f"{b}.tif"
             print(f"    {out.stem}:{b}", flush=True)
-            _fetch_band(image, b, p)
+            _fetch_band(image, b, p, region, scale)
             parts.append(p)
 
         with rasterio.open(parts[0]) as src:
@@ -215,10 +241,12 @@ def main():
     print("Sentinel-2")
     s2_pre = s2_composite(*cfg.S2_PRE)
     s2_post = s2_composite(*cfg.S2_POST)
-    # The same composites with the cloud mask off. True colour only: these are
-    # never analysed, they are the "before the filter" half of the slider.
-    s2raw_pre = s2_composite(*cfg.S2_PRE, masked=False)
-    s2raw_post = s2_composite(*cfg.S2_POST, masked=False)
+    print("Slider frames")
+    slide = {
+        f"slide{'raw' if raw else ''}_{half}": slide_day(date, masked=not raw)
+        for raw in (False, True)
+        for half, date in (("pre", cfg.SLIDE_PRE), ("post", cfg.SLIDE_POST))
+    }
 
     print("Sentinel-1")
     orbit = shared_orbit()
@@ -229,20 +257,28 @@ def main():
     dem = ee.Image("USGS/SRTMGL1_003").select("elevation").clip(_roi())
 
     print("Downloading")
+    # (name, image, bands, source, window, region, scale). The slider rows carry
+    # their own region and scale: they are a picture of different ground on
+    # different dates, not a crop of the analysis.
+    roi, slide_roi = _roi(), ee.Geometry.Rectangle(cfg.SLIDE_ROI)
     jobs = [
-        ("s2_pre", s2_pre, cfg.S2_BANDS, "Sentinel-2 L2A", f"{cfg.S2_PRE[0]}..{cfg.S2_PRE[1]}"),
-        ("s2_post", s2_post, cfg.S2_BANDS, "Sentinel-2 L2A", f"{cfg.S2_POST[0]}..{cfg.S2_POST[1]}"),
-        ("s2raw_pre", s2raw_pre, cfg.S2_RGB, "Sentinel-2 L2A unmasked", f"{cfg.S2_PRE[0]}..{cfg.S2_PRE[1]}"),
-        ("s2raw_post", s2raw_post, cfg.S2_RGB, "Sentinel-2 L2A unmasked", f"{cfg.S2_POST[0]}..{cfg.S2_POST[1]}"),
-        ("s1_pre", s1_pre, cfg.S1_BANDS, f"Sentinel-1 GRD orbit {orbit}", f"{cfg.S1_PRE[0]}..{cfg.S1_PRE[1]}"),
-        ("s1_post", s1_post, cfg.S1_BANDS, f"Sentinel-1 GRD orbit {orbit}", f"{cfg.S1_POST[0]}..{cfg.S1_POST[1]}"),
-        ("dem", dem, ["elevation"], "SRTM GL1 v3", "baseline"),
+        ("s2_pre", s2_pre, cfg.S2_BANDS, "Sentinel-2 L2A", f"{cfg.S2_PRE[0]}..{cfg.S2_PRE[1]}", roi, cfg.SCALE),
+        ("s2_post", s2_post, cfg.S2_BANDS, "Sentinel-2 L2A", f"{cfg.S2_POST[0]}..{cfg.S2_POST[1]}", roi, cfg.SCALE),
+        ("s1_pre", s1_pre, cfg.S1_BANDS, f"Sentinel-1 GRD orbit {orbit}", f"{cfg.S1_PRE[0]}..{cfg.S1_PRE[1]}", roi, cfg.SCALE),
+        ("s1_post", s1_post, cfg.S1_BANDS, f"Sentinel-1 GRD orbit {orbit}", f"{cfg.S1_POST[0]}..{cfg.S1_POST[1]}", roi, cfg.SCALE),
+        ("dem", dem, ["elevation"], "SRTM GL1 v3", "baseline", roi, cfg.SCALE),
+    ] + [
+        (name, img, cfg.S2_RGB,
+         "Sentinel-2 L2A" + ("" if "raw" in name else ", cloud-masked"),
+         cfg.SLIDE_PRE if name.endswith("_pre") else cfg.SLIDE_POST,
+         slide_roi, cfg.SLIDE_SCALE)
+        for name, img in slide.items()
     ]
     prior = read_manifest()
     rows = []
-    for name, img, bands, source, window in jobs:
+    for name, img, bands, source, window, region, scale in jobs:
         out = cfg.RASTER / f"{name}.tif"
-        fetched = download_stack(img, bands, out)
+        fetched = download_stack(img, bands, out, region, scale)
         if not fetched and out.name in prior:
             rows.append(prior[out.name])
             continue
@@ -251,7 +287,7 @@ def main():
                   "its provenance below is this run's, not the one that wrote it")
         rows.append({
             "file": out.name, "bands": " ".join(bands), "source": source,
-            "window": window, "crs": cfg.CRS, "pixel_m": cfg.SCALE, "nodata": cfg.NODATA,
+            "window": window, "crs": cfg.CRS, "pixel_m": scale, "nodata": cfg.NODATA,
         })
 
     print("Vectors")
