@@ -366,6 +366,34 @@ for (const id of ["map", "compare"]) {
     `[map] the view was not mirrored into the URL (got ${JSON.stringify(window.location.hash)})`);
 }
 
+/* ── The 404 ──────────────────────────────────────────────────────────────── */
+{
+  const at = "[404]";
+  const page = await readFile(path.join(site, "404.html"), "utf8");
+
+  want(!page.includes("{{"), `${at} has an unreplaced placeholder`);
+  // It is served at an unknown depth, so every path in it must be absolute --
+  // a single "./" or "../" here is a page that loads nothing at /a/b/c.
+  want(!/(href|src)="\.\.?\//.test(page), `${at} has a relative path, which breaks below the root`);
+  want(!/<script/.test(page), `${at} depends on JavaScript to render`);
+
+  // It carries its own head, so it can drift away from template.html's. The
+  // stylesheet is the one thing it cannot get wrong and still look like the site.
+  const tpl = await readFile(path.join(here, "template.html"), "utf8");
+  want(page.includes('<link rel="stylesheet" href="/app.css">'), `${at} does not load app.css`);
+  want(await exists("/app.css"), `${at} loads /app.css, which the build did not write`);
+  const fonts = (s) => s.match(/href="(https:\/\/fonts\.googleapis\.com\/css2[^"]*)"/)?.[1];
+  want(fonts(page) === fonts(tpl), `${at} asks for different fonts than every other page`);
+
+  // Every page, and only pages that exist.
+  for (const r of ROUTES) {
+    want(page.includes(`href="/${r.path}${r.path ? "/" : ""}"`), `${at} does not link to ${r.id}`);
+  }
+  want((page.match(/class="card"/g) || []).length === ROUTES.length,
+    `${at} lists a card that is not a route`);
+  want(/name="robots" content="noindex"/.test(page), `${at} is not marked noindex`);
+}
+
 /* ── What a chat client sees ──────────────────────────────────────────────── */
 {
   // The page components never render these, so jsdom above cannot catch them:
