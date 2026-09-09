@@ -1,19 +1,4 @@
 /**
- * Every page on the site, in sidebar order.
- *
- * One table, read by three things that would otherwise drift apart: build.mjs
- * writes an index.html per entry, Shell.jsx draws the sidebar from it, and
- * main.jsx picks which component to render from the id the build stamped onto
- * the page. Adding a route here adds it to all three.
- *
- * `path` is a directory, so every URL ends in a slash and every page sits
- * exactly one level below the site root -- which is why the relative base a
- * page needs is always "" or "../" and never has to be computed.
- *
- * Plain data and no imports: build.mjs runs this in Node, where there is no
- * document and no React.
- */
-/**
  * Where the site is published. Absolute URLs only exist for things that are
  * read off-site -- the canonical link, the share card, the sitemap -- so this
  * is the only place a hostname appears; every in-page link stays relative and
@@ -41,6 +26,21 @@ export const SHARE = {
      + "traced in red along the river through impact zones Z1 to Z4.",
 };
 
+/**
+ * Every page on the site, in sidebar order.
+ *
+ * One table, read by three things that would otherwise drift apart: build.mjs
+ * writes an index.html per entry, Shell.jsx draws the sidebar from it, and
+ * main.jsx picks which component to render from the id the build stamped onto
+ * the page. Adding a route here adds it to all three.
+ *
+ * `path` is a directory, so every URL ends in a slash and every page sits
+ * exactly one level below the site root -- which is why the relative base a
+ * page needs is always "" or "../" and never has to be computed.
+ *
+ * Plain data and no imports: build.mjs runs this in Node, where there is no
+ * document and no React.
+ */
 export const ROUTES = [
   {
     id: "home", path: "", icon: "🏔️", label: "Overview",
@@ -63,7 +63,7 @@ export const ROUTES = [
     id: "terrain", path: "terrain", group: "Analysis", icon: "⛰️",
     label: "Terrain corridor",
     title: "Terrain corridor",
-    desc: "A flood corridor drawn from elevation alone holds almost every recorded loss, at 22 times its own base rate.",
+    desc: "A flood corridor drawn from elevation alone holds almost every recorded loss, at 21 times its own base rate.",
   },
   {
     id: "satellites", path: "satellites", group: "Analysis", icon: "📡",

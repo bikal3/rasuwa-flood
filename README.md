@@ -61,7 +61,7 @@ data/raster/slide_*.tif    B4 B3 B2 over SLIDE_ROI, one date each -- the slider
 data/raster/slideraw_*.tif ″, cloud mask off
 data/raster/s1_pre.tif     VV VH   sigma0 dB
 data/raster/s1_post.tif    ″
-data/raster/dem.tif        SRTM elevation, m
+data/raster/dem.tif        SRTM elevation, m, over ROI + DEM_PAD_KM
 data/raster/manifest.csv   what each file is, which window, which sensor
 data/vector/aoi.shp        study rectangle
 data/vector/zones.shp      the 6 impact zones from proposal §4, buffered
@@ -150,21 +150,37 @@ maps/07–09_*.png                   corridor, kept vs rejected, the HAND profil
 
 Plain numpy and scipy, no hydrology dependency: priority-flood depression fill →
 D8 steepest descent → flow accumulation → channel at ≥ `MIN_DRAINAGE_KM2` (8 km²,
-224 km of network) → HAND → corridor at HAND ≤ `HAND_MAX_M`.
+259 km of network) → HAND → corridor at HAND ≤ `HAND_MAX_M`.
 
-**29.5 km² of change becomes 4.1 km² of flood damage** in 279 polygons, tracing a
+**29.5 km² of change becomes 4.2 km² of flood damage** in 290 polygons, tracing a
 continuous ribbon down the Bhote Koshi instead of a scatter over the hillslopes.
+
+**The DEM is exported `DEM_PAD_KM` (12 km) wider than everything else**, and
+stage 3 routes over all of it before cutting every result back to the analysis
+grid. Accumulation has no notion of what lies outside the raster: on an
+ROI-sized DEM the Bhote Koshi crosses the north edge carrying zero and has to
+re-earn the 8 km² threshold from local hillslopes first, so the top few
+kilometres — Z1 Rasuwagadhi — had no channel, no HAND and therefore no corridor.
+With the pad the network runs 259 km instead of 224 and the corridor covers
+4.51% of the ROI instead of 4.35%. The cut is an exact integer-cell slice, not a
+resample; `stage2_analysis.align()` checks that and refuses a fractional offset.
+
+Two side effects worth knowing. Max drainage now reads 1,803 km², above the
+ROI's own area, which is the pad working rather than a bug. And **`ROI area`
+rose from 980 to 1,006 km²** — the old figure was the rectangle *minus* the
+DEM's NaN reprojection collar, which now sits outside the analysis window, so
+every ROI-relative base rate below shifted slightly.
 
 `change_vs_hand.csv` is what justifies the corridor rather than assuming it — if
 the detections were noise the profile would be flat:
 
 | HAND | 0–5 | 5–10 | 10–20 | 20–30 | 30–50 | 50–100 | 100–200 | 200–500 | 500+ |
 | :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: |
-| change rate | 9.6% | 8.7% | 9.2% | 9.8% | 9.1% | 6.7% | 4.9% | 3.5% | 2.1% |
+| change rate | 9.2% | 8.3% | 9.1% | 9.6% | 9.3% | 7.1% | 4.9% | 3.5% | 2.0% |
 
 **`HAND_MAX_M` is 50, not the 30 the proposal's +7–9 m surge figure alone would
-argue for, because the plateau ends at 50.** Charging the corridor the 2.1%
-far-field floor leaves **3.2 km² attributable to the flood**. Re-read the table
+argue for, because the plateau ends at 50.** Charging the corridor the 2.0%
+far-field floor leaves **3.3 km² attributable to the flood**. Re-read the table
 after changing the ROI or the stage 2 thresholds.
 
 Two things the corridor deliberately does not do:
@@ -195,21 +211,21 @@ go to `web/public/data/` (GeoJSON + `summary.json`) and
 `data/tables/{validation,exposure}.csv`.
 
 The corridor comes from a 30 m elevation model and nothing else. Inside the study
-rectangle it covers **4.35% of the area**, and contains:
+rectangle it covers **4.51% of the area**, and contains:
 
 | Ground evidence (n in ROI) | In HAND corridor | In detected damage (0.41% of area) |
 | :-- | --: | --: |
 | Destroyed buildings (775) | **96.1%** | 55.5% — 135× base rate |
 | Bridges washed out (13) | **100%** | 38.5% — 94× |
 | Roads destroyed (172) | **94.2%** | 47.7% — 116× |
-| HOT observed flood extent | **90.6%** | 29.5% |
+| HOT observed flood extent | **90.8%** | 29.5% |
 
 Two numbers that look bad and are not:
 
 - **Only 29.5% of the observed extent is flagged.** Most of it is river channel
   that was already water on 25 August, where a *change* detector correctly finds
-  nothing. Read concentration: 41.7% of detections land inside observed water
-  against a 0.59% base rate, **71×**.
+  nothing. Read concentration: 40.9% of detections land inside observed water
+  against a 0.57% base rate, **71×**.
 - **Hydropowers score 25% / 0%.** n = 4 in the ROI, and the points are plant
   locations rather than the headworks that flooded. Reported because leaving it
   out would be cherry-picking.
@@ -347,6 +363,12 @@ including a patch visible only to SAR, under simulated cloud — runs all of sta
 floor drops 2 m per row and the sides rise 5 m per cell, so `HAND(row, col) =
 5·|col − 40|` exactly. Every assertion falls out of that one line.
 
+It also routes that valley twice — whole, then cut to its bottom half — to hold
+the DEM pad to what it claims: with the pad there is a channel on row 0 of the
+analysis grid, without it there is not, and deep inside the frame the two runs
+agree. `align()` is checked separately, including that it refuses a grid offset
+by half a cell rather than rounding it away.
+
 `smoke.mjs` loads every page's built bundle in jsdom, each from its own URL at its
 own directory depth with `fetch` served off disk, so it exercises the real data
 contract — a renamed field, a dropped layer or a `NaN` fails here rather than
@@ -366,10 +388,11 @@ each overlay that survives its clip, and every bar against its own track.
   85.378 E) is stated in the proposal. Z2a–Z5 are approximate.
 - **Z5 (Betrawati) falls outside the default ROI.** Stage 1 warns. Drop `ROI`'s
   south edge to ~27.90 in `config.py` to cover it.
-- **Flow accumulation is truncated at the ROI edge.** The Bhote Koshi's Tibetan
-  headwaters are outside the DEM, so accumulation restarts from zero at the
-  boundary and the first kilometres below it are undercounted. A padded DEM
-  export would fix it; the DEM is a single band, so re-downloading it is cheap.
+- **`drainage_km2` is still a lower bound.** The DEM pad (below) makes flow cross
+  the study boundary already accumulated, so the channel is continuous from the
+  north edge down — but the Bhote Koshi's Tibetan headwaters are another ~100 km
+  up and still outside the raster. The pad fixes *which* cells are channel, not
+  *what* they drain. Do not read `drainage_km2` as a catchment area.
 - **`scour_width_m` is a swath width, not a channel width.** Do not derive
   proposal §4.1's widening ratio from it without a pre-event waterline.
 - **No radiometric terrain flattening on the SAR.** Same-orbit differencing
