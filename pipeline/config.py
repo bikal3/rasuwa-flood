@@ -9,6 +9,7 @@ Paths below resolve against the repo root, one level above this file, so the
 stages write to data/ and maps/ whichever directory you run them from.
 """
 
+import math
 import os
 from pathlib import Path
 
@@ -40,6 +41,29 @@ CRS = "EPSG:32645"
 # Pixel size in metres. 10 is the Sentinel native grid and costs ~4x the bytes
 # (~640 MB vs ~160 MB for the full stack).
 SCALE = 20
+
+# How far past ROI to export the DEM, in kilometres each side.
+#
+# Flow accumulation counts the cells upstream of each cell, and there are none
+# outside the raster: on an ROI-sized DEM the Bhote Koshi enters the north edge
+# carrying zero, and has to re-earn MIN_DRAINAGE_KM2 from local hillslopes
+# before it is classed as a river at all. That leaves the first few kilometres
+# below the border with no channel, no HAND and therefore no corridor -- which
+# is Z1 Rasuwagadhi, the zone the whole study is about.
+#
+# The pad only has to be long enough for the trunk river to pass the threshold
+# before it reaches ROI. In this gorge 12 km does that several times over.
+#
+# It does NOT recover the true catchment: the Poiqu's headwaters are ~100 km
+# into Tibet, so drainage_km2 stays a lower bound everywhere. What it fixes is
+# the classification -- whether a cell is channel -- and HAND, which only needs
+# the channel to exist, not its exact upstream area.
+#
+# Costs area: 12 km each side turns a 29x33 km ROI into 53x57 km, ~3x the DEM
+# cells, and flow routing is linear in cells. At SCALE=20 the single band is
+# ~31 MB, inside Earth Engine's ~48 MB per-request cap. At SCALE=10 it is not:
+# drop this to 0 for that, or export the DEM on its own at 20 m.
+DEM_PAD_KM = 12.0
 
 # --- Event windows ----------------------------------------------------------
 EVENT = "2026-08-26"
@@ -136,6 +160,19 @@ DIVERGING = ("#2a78d6", "#f0efec", "#d03b3b")  # cool <- neutral -> warm
 CRITICAL = "#d03b3b"
 
 
+def dem_roi():
+    """ROI grown by DEM_PAD_KM on every side, EPSG:4326. See DEM_PAD_KM above.
+
+    All four sides, not just the north: which edges have flow coming across them
+    is a property of the terrain, not something worth hand-listing, and the
+    Trishuli arrives from the east.
+    """
+    minx, miny, maxx, maxy = ROI
+    dlat = DEM_PAD_KM / 111.32
+    dlon = DEM_PAD_KM / (111.32 * math.cos(math.radians((miny + maxy) / 2)))
+    return [minx - dlon, miny - dlat, maxx + dlon, maxy + dlat]
+
+
 def ensure_dirs():
     for d in (RASTER, VECTOR, DERIVED, TABLES, MAPS):
         d.mkdir(parents=True, exist_ok=True)
@@ -159,9 +196,9 @@ def gtiff_profile(ref, count, dtype, nodata):
 # the river corridor. Two knobs define that corridor:
 #
 # Upstream area a cell must drain before it counts as a river rather than a
-# hillslope rill. Lower = denser network = wider corridor. Note the ROI clips
-# the Bhote Koshi's Tibetan headwaters, so accumulation on the first few km
-# below the north edge is an undercount -- see README.
+# hillslope rill. Lower = denser network = wider corridor. The DEM is exported
+# past the ROI (DEM_PAD_KM) so the trunk river crosses this threshold before it
+# reaches the study area rather than a few km inside it.
 MIN_DRAINAGE_KM2 = 8.0
 # Height Above Nearest Drainage ceiling, metres. The proposal puts the surge at
 # +7 to +9 m; the rest of the budget is channel-bank relief, superelevation of a

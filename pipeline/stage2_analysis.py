@@ -46,6 +46,41 @@ def read_stack(path):
         return dict(zip(names, arr)), src.profile
 
 
+def align(src, ref):
+    """Row/column slices cutting a `src`-grid array down to `ref`'s grid.
+
+    Stage 1 exports the DEM over a wider rectangle than everything else, so that
+    flow entering the study area is counted rather than restarting at the
+    boundary (see DEM_PAD_KM). Anything derived from it has to come back to the
+    analysis grid before it can meet the change mask.
+
+    Earth Engine snaps a download to a grid fixed by the CRS and the scale, so
+    two exports at one scale differ by a whole number of cells and this is an
+    exact slice, never a resample. That is checked rather than assumed: a
+    fractional offset means they are not the same grid, and rounding it away
+    would shift every corridor cell by up to half a pixel against the damage it
+    is about to be intersected with.
+
+    An unpadded DEM -- one exported before DEM_PAD_KM existed, which stage 1
+    will not re-download over -- gives the full-frame slice and the old
+    behaviour, so callers should say which they got.
+    """
+    st, rt = src["transform"], ref["transform"]
+    if src["crs"] != ref["crs"]:
+        sys.exit(f"CRS mismatch: DEM {src['crs']}, analysis {ref['crs']}")
+    if (st.a, st.e) != (rt.a, rt.e):
+        sys.exit(f"pixel size mismatch: DEM {st.a}x{-st.e} m, analysis {rt.a}x{-rt.e} m")
+    col, row = (rt.c - st.c) / st.a, (rt.f - st.f) / st.e
+    if max(abs(col - round(col)), abs(row - round(row))) > 1e-6:
+        sys.exit(f"DEM grid is offset from the analysis grid by a fraction of a cell "
+                 f"({col:.4f}, {row:.4f}); delete data/raster/ and re-run stage 1")
+    r, c = round(row), round(col)
+    if r < 0 or c < 0 or r + ref["height"] > src["height"] or c + ref["width"] > src["width"]:
+        sys.exit("the DEM does not cover the analysis grid; "
+                 "delete data/raster/dem.tif and re-run stage 1")
+    return slice(r, r + ref["height"]), slice(c, c + ref["width"])
+
+
 def write_stack(bands, ref, path):
     profile = cfg.gtiff_profile(ref, len(bands), "float32", cfg.NODATA)
     with rasterio.open(path, "w", **profile) as dst:
@@ -318,7 +353,7 @@ def main():
     s2_post, _ = read_stack(cfg.RASTER / "s2_post.tif")
     s1_pre, _ = read_stack(cfg.RASTER / "s1_pre.tif")
     s1_post, _ = read_stack(cfg.RASTER / "s1_post.tif")
-    dem, _ = read_stack(cfg.RASTER / "dem.tif")
+    dem, dem_profile = read_stack(cfg.RASTER / "dem.tif")
 
     shape_ = (profile["height"], profile["width"])
     transform = profile["transform"]
@@ -352,8 +387,9 @@ def main():
     print(table.to_string(index=False))
 
     print("Maps")
-    hs = hillshade(dem["elevation"], abs(transform.a)) if dem["elevation"].shape == shape_ \
-        else np.full(shape_, 0.8)
+    # The DEM covers more ground than the analysis (DEM_PAD_KM), so it is cut to
+    # the plate's grid rather than checked for a shape that no longer matches.
+    hs = hillshade(dem["elevation"][align(dem_profile, profile)], abs(transform.a))
     map_rgb(s2_pre, s2_post, zones, extent, cfg.MAPS / "01_rgb_pre_post.png")
     map_diverging(ch["dNDVI"], zones, extent, "Vegetation change (dNDVI)",
                   "Sentinel-2, positive = vegetation removed or buried",

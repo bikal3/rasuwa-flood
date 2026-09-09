@@ -16,7 +16,7 @@ Outputs (all EPSG:32645, NODATA -9999):
     data/raster/slideraw_post.tif  "
     data/raster/s1_pre.tif     VV VH, sigma0 dB, single relative orbit
     data/raster/s1_post.tif        "
-    data/raster/dem.tif        SRTM 1-arcsec elevation, m
+    data/raster/dem.tif        SRTM 1-arcsec elevation, m, ROI + DEM_PAD_KM
     data/vector/aoi.shp|.geojson
     data/vector/zones.shp|.geojson
     data/raster/manifest.csv
@@ -254,7 +254,11 @@ def main():
     s1_pre = s1_composite(*cfg.S1_PRE, orbit)
     s1_post = s1_composite(*cfg.S1_POST, orbit)
 
-    dem = ee.Image("USGS/SRTMGL1_003").select("elevation").clip(_roi())
+    # Wider than every other layer: flow accumulation entering the study area
+    # has to be counted somewhere, and there is no "outside" once the raster
+    # ends. Stage 3 routes over the whole thing and crops back. See DEM_PAD_KM.
+    dem_roi = ee.Geometry.Rectangle(cfg.dem_roi())
+    dem = ee.Image("USGS/SRTMGL1_003").select("elevation").clip(dem_roi)
 
     print("Downloading")
     # (name, image, bands, source, window, region, scale). The slider rows carry
@@ -266,7 +270,8 @@ def main():
         ("s2_post", s2_post, cfg.S2_BANDS, "Sentinel-2 L2A", f"{cfg.S2_POST[0]}..{cfg.S2_POST[1]}", roi, cfg.SCALE),
         ("s1_pre", s1_pre, cfg.S1_BANDS, f"Sentinel-1 GRD orbit {orbit}", f"{cfg.S1_PRE[0]}..{cfg.S1_PRE[1]}", roi, cfg.SCALE),
         ("s1_post", s1_post, cfg.S1_BANDS, f"Sentinel-1 GRD orbit {orbit}", f"{cfg.S1_POST[0]}..{cfg.S1_POST[1]}", roi, cfg.SCALE),
-        ("dem", dem, ["elevation"], "SRTM GL1 v3", "baseline", roi, cfg.SCALE),
+        ("dem", dem, ["elevation"], "SRTM GL1 v3",
+         f"baseline, ROI +{cfg.DEM_PAD_KM:.0f} km", dem_roi, cfg.SCALE),
     ] + [
         (name, img, cfg.S2_RGB,
          "Sentinel-2 L2A" + ("" if "raw" in name else ", cloud-masked"),

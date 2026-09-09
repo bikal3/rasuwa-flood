@@ -9,6 +9,8 @@ can reach. Stage 3 derives that ground from the DEM and intersects it with stage
 2's mask.
 
 Reads   data/raster/dem.tif, data/vector/zones.shp    (stage 1)
+        -- the DEM covers ROI + DEM_PAD_KM; flow is routed over all of it
+           and every result is cut back to the analysis grid
         data/derived/damage_mask.tif                 (stage 2)
 
 Writes  data/derived/terrain.tif              filled_dem, fill_m, drainage_km2, hand_m
@@ -362,9 +364,13 @@ def main():
     if missing:
         sys.exit(f"Missing {missing}. Run stage1_export.py then stage2_analysis.py first.")
 
-    dem, profile = s2.read_stack(cfg.RASTER / "dem.tif")
+    dem, dem_profile = s2.read_stack(cfg.RASTER / "dem.tif")
+    # The analysis grid is the change mask's, not the DEM's: the DEM is wider
+    # than the study area on purpose (DEM_PAD_KM) and everything written here has
+    # to line up with what stage 2 produced.
     with rasterio.open(cfg.DERIVED / "damage_mask.tif") as src:
         change = src.read(1).astype(bool)
+        profile = src.profile
 
     shape_ = (profile["height"], profile["width"])
     transform = profile["transform"]
@@ -375,7 +381,26 @@ def main():
     crs = profile["crs"]
 
     print("Flow routing")
-    t = corridor_from_dem(dem["elevation"], pixel)
+    # Route over the whole exported DEM, then cut every result back to the
+    # analysis grid. Accumulation has no notion of what lies outside the raster,
+    # so on an ROI-sized DEM the Bhote Koshi crosses the north edge carrying
+    # zero and has to re-earn MIN_DRAINAGE_KM2 from local hillslopes before it
+    # is a channel at all -- taking the corridor with it for the first few km,
+    # which is Z1 Rasuwagadhi.
+    win = s2.align(dem_profile, profile)
+    pad_km = pixel / 1000 * min(win[0].start, win[1].start,
+                                dem_profile["height"] - win[0].stop,
+                                dem_profile["width"] - win[1].stop)
+    if pad_km > 0:
+        print(f"  DEM runs {pad_km:.0f} km past the analysis grid on its tightest side, "
+              "so flow arrives already accumulated")
+    else:
+        # stage 1 skips a raster that is already on disk, so a DEM exported
+        # before DEM_PAD_KM existed still works and still truncates. Say so.
+        print("  note: this DEM has no pad, so accumulation restarts at the ROI "
+              "edge and the first few km below it carry no channel. "
+              "Delete data/raster/dem.tif and re-run stage 1.")
+    t = {k: v[win] for k, v in corridor_from_dem(dem["elevation"], pixel).items()}
     channel, corridor = t["channel"], t["corridor"]
     print(f"  max drainage {t['drainage_km2'].max():,.0f} km²  ->  "
           f"{t['step_m'].sum() / 1000:,.0f} km of channel "
@@ -422,7 +447,7 @@ def main():
     print(table.drop(columns=["label", "zone_km2"]).to_string(index=False))
 
     print("Maps")
-    hs = s2.hillshade(dem["elevation"], pixel)
+    hs = s2.hillshade(dem["elevation"][win], pixel)
     map_corridor(t["hand_m"], channel, hs, zones, extent, cfg.MAPS / "07_corridor.png")
     map_flood(change, flood, hs, zones, extent, cfg.MAPS / "08_flood_damage.png")
     chart_hand(profile_df, far, cfg.MAPS / "09_change_vs_hand.png")

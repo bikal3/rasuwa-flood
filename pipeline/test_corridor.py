@@ -14,8 +14,10 @@ exactly. Every assertion below falls out of that one line.
 """
 
 import numpy as np
+from affine import Affine
 
 import config as cfg
+import stage2_analysis as s2
 import stage3_corridor as s3
 
 N = 200
@@ -89,9 +91,69 @@ def test_corridor_rejects_hillslope_change():
     assert not flood[100:120, 150:170].any(), "hillslope change survived the corridor"
 
 
+def _profile(height, width, x0, y0):
+    """Enough of a rasterio profile for `align`, on a PIXEL-metre grid."""
+    return {"height": height, "width": width, "crs": cfg.CRS,
+            "transform": Affine(PIXEL, 0.0, x0, 0.0, -PIXEL, y0)}
+
+
+def test_align_cuts_the_padded_dem_back_to_the_analysis_grid():
+    pad = 30                                    # cells on every side
+    full = _profile(N, N, 0.0, 0.0)
+    roi = _profile(N - 2 * pad, N - 2 * pad, pad * PIXEL, -pad * PIXEL)
+
+    rows, cols = s2.align(full, roi)
+    assert (rows.start, rows.stop) == (pad, N - pad), f"rows {rows}"
+    assert (cols.start, cols.stop) == (pad, N - pad), f"cols {cols}"
+    # An exact slice, never a resample: the cut array is the ROI's own shape and
+    # its corner cell is the one the ROI transform points at.
+    a = np.arange(N * N).reshape(N, N)
+    assert a[rows, cols].shape == (roi["height"], roi["width"])
+    assert a[rows, cols][0, 0] == a[pad, pad]
+
+    # Half a cell out is not the same grid, and rounding it would shift every
+    # corridor cell against the damage mask it is about to meet.
+    off = _profile(10, 10, pad * PIXEL + PIXEL / 2, -pad * PIXEL)
+    try:
+        s2.align(full, off)
+    except SystemExit as e:
+        assert "fraction of a cell" in str(e), str(e)
+    else:
+        raise AssertionError("a half-cell offset was accepted")
+
+
+def test_the_pad_is_what_puts_a_channel_at_the_top_of_the_roi():
+    """Why the DEM is exported wider than everything else.
+
+    The analysis grid is the bottom half of the valley. Routed on its own, the
+    river enters the top edge carrying nothing and has to re-earn
+    MIN_DRAINAGE_KM2 from the cells inside the frame alone; routed on the whole
+    valley and cut down afterwards, it arrives already accumulated.
+    """
+    pad = N // 2
+    full = _profile(N, N, 0.0, 0.0)
+    roi = _profile(N - pad, N, 0.0, -pad * PIXEL)
+    win = s2.align(full, roi)
+
+    padded = {k: v[win] for k, v in s3.corridor_from_dem(valley(), PIXEL).items()}
+    alone = s3.corridor_from_dem(valley()[win], PIXEL)
+
+    # Row 0 of the analysis grid is the top edge -- the whole point.
+    assert padded["channel"][0, CHANNEL_COL], "padded routing has no channel at the ROI edge"
+    assert not alone["channel"][0, CHANNEL_COL], \
+        "the unpadded run already has a channel at the edge, so this proves nothing"
+    assert padded["corridor"][0, FLOOR].all(), "no corridor on the floor at the ROI edge"
+    assert padded["drainage_km2"][0, CHANNEL_COL] > alone["drainage_km2"][0, CHANNEL_COL], \
+        "the pad added no upstream area"
+
+    # Far from the edge the two agree: the pad fixes the boundary, not the model.
+    deep = (N - pad) - 20
+    assert padded["channel"][deep, CHANNEL_COL] == alone["channel"][deep, CHANNEL_COL]
+
+
 if __name__ == "__main__":
     for name, fn in sorted(globals().items()):
         if name.startswith("test_"):
             fn()
             print(f"  ok  {name}")
-    print("\nOK - fill, D8, accumulation and corridor all check out")
+    print("\nOK - fill, D8, accumulation, the DEM pad and the corridor all check out")
