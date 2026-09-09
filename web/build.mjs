@@ -91,6 +91,26 @@ async function writePages() {
 await writePages();
 
 /**
+ * 404.html, which Cloudflare Pages serves for any URL that is not one of the
+ * ten. Its own template rather than the shared one: it renders without the
+ * bundle and links absolutely, both explained in the file. All it needs from
+ * here is the list of pages, so that a route added to ROUTES appears on it.
+ */
+await writeFile(
+  path.join(out, "404.html"),
+  (await readFile(path.join(here, "404.html"), "utf8")).replace(
+    "{{cards}}",
+    ROUTES.map((r) =>
+      `    <a class="card" href="/${r.path}${r.path ? "/" : ""}">\n`
+      + `      <h3><span aria-hidden="true">${r.icon}</span> ${esc(r.label)}</h3>\n`
+      + `      <p>${esc(r.desc)}</p>\n`
+      + `      <span class="go">Open →</span>\n`
+      + "    </a>"
+    ).join("\n")
+  )
+);
+
+/**
  * sitemap.xml and robots.txt.
  *
  * Ten pages is small enough to list by hand and exactly the size that goes
