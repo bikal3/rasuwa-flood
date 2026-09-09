@@ -22,7 +22,7 @@ import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
-import { ROUTES } from "./src/routes.mjs";
+import { ROUTES, SHARE, SITE } from "./src/routes.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const out = path.resolve(here, "..", "site");
@@ -58,6 +58,13 @@ const options = {
  * else -- stamped into the page rather than worked out at runtime, so the site
  * survives being mounted in a subdirectory.
  */
+/** Every value below is stamped into a double-quoted attribute. */
+const esc = (s) =>
+  String(s).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll('"', "&quot;");
+
+/** A route's absolute URL, for the tags that are read off-site. */
+const urlOf = (r) => `${SITE}/${r.path ? r.path + "/" : ""}`;
+
 async function writePages() {
   const tpl = await readFile(path.join(here, "template.html"), "utf8");
   for (const r of ROUTES) {
@@ -66,15 +73,43 @@ async function writePages() {
     // The home page is already called "Rasuwa Flood 2026"; the rest hang the
     // site name off their own.
     const html = tpl
-      .replaceAll("{{titletag}}", r.path ? `${r.title} — Rasuwa Flood 2026` : r.title)
+      .replaceAll("{{titletag}}", esc(r.path ? `${r.title} — Rasuwa Flood 2026` : r.title))
       .replaceAll("{{base}}", r.path ? "../" : "")
       .replaceAll("{{page}}", r.id)
-      .replaceAll("{{title}}", r.title)
-      .replaceAll("{{desc}}", r.desc);
+      .replaceAll("{{title}}", esc(r.title))
+      .replaceAll("{{desc}}", esc(r.desc))
+      // Absolute, not {{base}}-relative: a scraper resolves these against the
+      // page it fetched, but a chat client is handed the string as-is.
+      .replaceAll("{{url}}", urlOf(r))
+      .replaceAll("{{image}}", `${SITE}/${SHARE.image}`)
+      .replaceAll("{{imagew}}", String(SHARE.width))
+      .replaceAll("{{imageh}}", String(SHARE.height))
+      .replaceAll("{{imagealt}}", esc(SHARE.alt));
     await writeFile(path.join(dir, "index.html"), html);
   }
 }
 await writePages();
+
+/**
+ * sitemap.xml and robots.txt.
+ *
+ * Ten pages is small enough to list by hand and exactly the size that goes
+ * stale when someone adds an eleventh, so both come off ROUTES like everything
+ * else. No <lastmod>: the only date available here is the build's, which
+ * changes on every deploy whether or not the page did, and a sitemap that
+ * claims everything changed today is worth less than one that claims nothing.
+ */
+await writeFile(
+  path.join(out, "sitemap.xml"),
+  '<?xml version="1.0" encoding="UTF-8"?>\n'
+    + '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    + ROUTES.map((r) => `  <url><loc>${urlOf(r)}</loc></url>\n`).join("")
+    + "</urlset>\n"
+);
+await writeFile(
+  path.join(out, "robots.txt"),
+  `User-agent: *\nAllow: /\n\nSitemap: ${SITE}/sitemap.xml\n`
+);
 
 if (serve) {
   const ctx = await esbuild.context(options);

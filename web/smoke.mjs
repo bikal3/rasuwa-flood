@@ -24,7 +24,7 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
-import { ROUTES } from "./src/routes.mjs";
+import { ROUTES, SHARE, SITE } from "./src/routes.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const site = path.resolve(here, "..", "site");
@@ -366,6 +366,47 @@ for (const id of ["map", "compare"]) {
     `[map] the view was not mirrored into the URL (got ${JSON.stringify(window.location.hash)})`);
 }
 
+/* ── What a chat client sees ──────────────────────────────────────────────── */
+{
+  // The page components never render these, so jsdom above cannot catch them:
+  // read the built index.html as a scraper would.
+  const at = "[share]";
+  for (const r of ROUTES) {
+    const file = path.join(r.path || ".", "index.html");
+    const head = await readFile(path.join(site, file), "utf8");
+    // Decoded, not raw: four of the ten titles contain "&", so this asserts the
+    // build escaped them and that they survive the round trip. &amp; last.
+    const meta = (k, attr = "property") =>
+      head.match(new RegExp(`<meta ${attr}="${k}" content="([^"]*)"`))?.[1]
+        ?.replaceAll("&quot;", '"').replaceAll("&lt;", "<").replaceAll("&amp;", "&");
+
+    want(!/\{\{\w+\}\}/.test(head), `${at} ${file} still has an unreplaced placeholder`);
+    want(head.includes(`<link rel="canonical" href="${SITE}/${r.path ? r.path + "/" : ""}">`),
+      `${at} ${file} has no canonical URL, or the wrong one`);
+    want(meta("og:url") === `${SITE}/${r.path ? r.path + "/" : ""}`,
+      `${at} ${file} og:url is ${meta("og:url")}`);
+    want(meta("og:title")?.includes(r.title), `${at} ${file} og:title is not this page's`);
+    want(meta("og:description") === r.desc,
+      `${at} ${file} og:description is not this page's`);
+    want(meta("og:image") === `${SITE}/${SHARE.image}`, `${at} ${file} og:image is wrong`);
+    want(meta("twitter:card", "name") === "summary_large_image",
+      `${at} ${file} will render as a thumbnail card, not a large one`);
+  }
+  // The card is the one absolute asset URL on the site; nothing else would
+  // notice if the file went missing.
+  want(await exists(`/${SHARE.image}`), `${at} og:image points at a missing /${SHARE.image}`);
+
+  const sitemap = await readFile(path.join(site, "sitemap.xml"), "utf8");
+  for (const r of ROUTES) {
+    want(sitemap.includes(`<loc>${SITE}/${r.path ? r.path + "/" : ""}</loc>`),
+      `${at} sitemap.xml does not list ${r.id}`);
+  }
+  want((sitemap.match(/<loc>/g) || []).length === ROUTES.length,
+    `${at} sitemap.xml lists a URL that is not a route`);
+  want((await readFile(path.join(site, "robots.txt"), "utf8"))
+    .includes(`Sitemap: ${SITE}/sitemap.xml`), `${at} robots.txt does not point at the sitemap`);
+}
+
 if (fail.length) {
   console.error("\nFAIL");
   fail.forEach((f) => console.error("  ✗ " + f));
@@ -374,5 +415,6 @@ if (fail.length) {
 const chars = Object.values(pages).reduce((n, p) => n + p.text.length, 0);
 console.log(
   `OK - ${ROUTES.length} pages render, ${Object.keys(summary.layer_bytes).length} layers resolve, ` +
-  `${chars.toLocaleString()} chars of content, every internal link resolves, no console errors`
+  `${chars.toLocaleString()} chars of content, every internal link resolves, `
+  + "every page has its own share card, no console errors"
 );

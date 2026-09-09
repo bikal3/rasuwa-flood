@@ -13,6 +13,34 @@
  * Plain data and no imports: build.mjs runs this in Node, where there is no
  * document and no React.
  */
+/**
+ * Where the site is published. Absolute URLs only exist for things that are
+ * read off-site -- the canonical link, the share card, the sitemap -- so this
+ * is the only place a hostname appears; every in-page link stays relative and
+ * goes through `href()`.
+ *
+ * No trailing slash: every use appends one path or another.
+ */
+export const SITE = "https://rasuwaflood.bikal3.com.np";
+
+/**
+ * The card that renders when the URL is pasted into a chat or a timeline, and
+ * the words beside it. `maps/08_flood_damage.png` cropped to the corridor:
+ *
+ *   sips -c 600 1124 --cropOffset 0 0 maps/08_flood_damage.png --out /tmp/c.png
+ *   sips -Z 1200 /tmp/c.png --out web/public/share.png
+ *
+ * Committed rather than built, for the reason maps/ is: regenerating the plate
+ * needs the stage 1-3 rasters, which need Earth Engine credentials.
+ */
+export const SHARE = {
+  image: "share.png",
+  width: 1200,
+  height: 640,
+  alt: "Shaded relief of the Bhote Koshi gorge with the detected flood damage "
+     + "traced in red along the river through impact zones Z1 to Z4.",
+};
+
 export const ROUTES = [
   {
     id: "home", path: "", icon: "🏔️", label: "Overview",
