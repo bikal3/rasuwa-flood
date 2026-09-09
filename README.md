@@ -413,6 +413,12 @@ each overlay that survives its clip, and every bar against its own track.
 - **The validation is one event, one corridor.** Not a cross-validated skill
   score, and HOT's mapping is itself densest along the river, which inflates any
   containment statistic computed against it.
+- **English only.** This is a public information site about a Nepali event, and
+  part of its audience reads Nepali. Translating it is not a string swap:
+  `web/src/pages.jsx` interleaves prose with figures read from `summary.json`,
+  so a second language needs those strings extracted into a catalogue first, and
+  the translation itself would want a native reviewer rather than a machine.
+  Deferred deliberately, not overlooked.
 - **Not built:** the HEC-RAS / Telemac-2D hydrodynamic model (proposal §6.2) and
   PlanetScope ingestion (commercial, needs a Planet API key). `terrain.tif` is
   the conditioned surface HEC-RAS wants and `corridor.shp` bounds the 2D mesh.
