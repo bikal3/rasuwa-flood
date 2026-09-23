@@ -40,7 +40,7 @@ if (!existsSync(CHROME)) {
 }
 
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css",
-                ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml" };
+                ".json": "application/json", ".png": "image/png", ".webp": "image/webp", ".svg": "image/svg+xml" };
 
 // Static server on an ephemeral port. Chrome will not fetch relative URLs off
 // file://, so the site has to be served even for a local check.

@@ -24,21 +24,21 @@
    "cover": "cloud-free"
   }
  ],
- "note": "Both dates share one contrast stretch, computed on the pre-event image, so a difference in brightness is a difference on the ground.",
+ "note": "Every frame goes through one fixed tone curve, so a difference in brightness is a difference on the ground.",
  "slideraw_pre": {
   "date": "2026-08-12",
-  "valid_pct": 97.1
+  "valid_pct": 94.4
  },
  "slideraw_post": {
   "date": "2026-08-27",
-  "valid_pct": 97.1
+  "valid_pct": 94.4
  },
  "slide_pre": {
   "date": "2026-08-12",
-  "valid_pct": 94.2
+  "valid_pct": 91.5
  },
  "slide_post": {
   "date": "2026-08-27",
-  "valid_pct": 67.2
+  "valid_pct": 64.4
  }
 }
