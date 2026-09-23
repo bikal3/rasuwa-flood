@@ -17,7 +17,7 @@ history: `git show 3f629c2:Rasuwa_Nepal_China_Flood_Project_Proposal.md`.
 | 2 | `pipeline/stage2_analysis.py` | change rasters, damage polygons, zonal stats, plates |
 | 3 | `pipeline/stage3_corridor.py` | terrain + HAND, the flood corridor, corridor-confined damage |
 | 4 | `pipeline/stage4_hot.py` | HOT ground survey, validation scores, the site's data |
-| 5 | `pipeline/stage5_overlays.py` | the before/after slider's images in Web Mercator |
+| 5 | `pipeline/stage5_overlays.py` | the before/after slider's images, and the share card |
 | — | `web/` | the ten-page static site |
 
 Each stage reads the previous one's files off disk and nothing else. No stage
@@ -38,7 +38,7 @@ root, not its own directory.
 ## Setup
 
 ```bash
-pip install earthengine-api rasterio geopandas matplotlib pandas scipy requests
+pip install earthengine-api rasterio geopandas matplotlib pandas scipy requests pillow
 earthengine authenticate          # once
 export EE_PROJECT=your-gcloud-project-id
 ```
@@ -237,7 +237,7 @@ python pipeline/stage5_overlays.py
 ```
 
 Reprojects stage 1's slider frames to Web Mercator as WebP (~200 KB each), plus
-`overlays.json` with bounds, dates and valid cover.
+`overlays.json` with bounds, dates and valid cover, plus `web/public/share.jpg`.
 
 - **Not the analysis frame.** `SLIDE_ROI` is the Trishuli at Betrawati and
   Gerkhu, ~11 km across at the foot of the corridor, 30 km south of `ROI`, at the
@@ -272,6 +272,11 @@ Reprojects stage 1's slider frames to Web Mercator as WebP (~200 KB each), plus
 - **EPSG:3857, not UTM** — Leaflet stretches an `ImageOverlay` linearly between
   two corners in Web Mercator, so a UTM raster lands wrong and the error grows
   across the frame.
+- **The share card comes off the same two frames.** The way anyone reaches this
+  site is a link pasted into a chat, and the card is the picture beside it: the
+  two unmasked dates side by side, labelled, 1200 × 630. JPEG because past
+  ~300 KB WhatsApp drops the image and sends a bare link without saying so, and
+  `smoke.mjs` fails the build if the card ever crosses that line.
 
 Gaps are transparent and the valid figure is printed on the slider, so dragging
 across a hole tells you it is cloud rather than clear ground. Labels read
