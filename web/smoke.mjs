@@ -20,7 +20,7 @@
  * swipe-check.mjs, which drives real Chrome.
  */
 import { JSDOM, VirtualConsole } from "jsdom";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
@@ -423,6 +423,10 @@ for (const id of ["map", "compare"]) {
   // The card is the one absolute asset URL on the site; nothing else would
   // notice if the file went missing.
   want(await exists(`/${SHARE.image}`), `${at} og:image points at a missing /${SHARE.image}`);
+  // Past ~300 KB WhatsApp drops the image and sends a bare link, with no error
+  // anywhere. The card was 1 MB for its first release.
+  const card = await stat(path.join(site, SHARE.image)).catch(() => null);
+  want(card && card.size < 300_000, `${at} ${SHARE.image} is ${card?.size} bytes, over WhatsApp's ~300 KB`);
 
   const sitemap = await readFile(path.join(site, "sitemap.xml"), "utf8");
   for (const r of ROUTES) {

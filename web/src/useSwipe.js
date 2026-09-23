@@ -24,7 +24,7 @@ import { DATA } from "./base.js";
  *
  * Nothing loads until open() is called -- SwipeMap calls it when its section
  * nears the viewport, so a visitor who never scrolls that far never pays the
- * 1.6 MB. Each pair is built once and kept, so switching back is instant.
+ * 0.85 MB. Each pair is built once and kept, so switching back is instant.
  */
 
 const MONTH = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -89,7 +89,7 @@ export default function useSwipe(mapRef, ready) {
     }
     if (!overlays.current[sensor]) {
       const mk = (half, pane) =>
-        L.imageOverlay(`${DATA}/${sensor}_${half}.png`, meta.bounds,
+        L.imageOverlay(`${DATA}/${sensor}_${half}.webp`, meta.bounds,
                        { pane, opacity: 1 });
       overlays.current[sensor] = {
         pre: mk("pre", "imgPre"),

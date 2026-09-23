@@ -10,20 +10,19 @@ export const SITE = "https://rasuwaflood.bikal3.com.np";
 
 /**
  * The card that renders when the URL is pasted into a chat or a timeline, and
- * the words beside it. `maps/08_flood_damage.png` cropped to the corridor:
+ * the words beside it. Written by pipeline/stage5_overlays.py from the slider's
+ * own frames; see share_card() there for why it is that picture and that size.
  *
- *   sips -c 600 1124 --cropOffset 0 0 maps/08_flood_damage.png --out /tmp/c.png
- *   sips -Z 1200 /tmp/c.png --out web/public/share.png
- *
- * Committed rather than built, for the reason maps/ is: regenerating the plate
- * needs the stage 1-3 rasters, which need Earth Engine credentials.
+ * Committed rather than built, for the reason maps/ is: regenerating it needs
+ * the stage 1 rasters, which need Earth Engine credentials.
  */
 export const SHARE = {
-  image: "share.png",
+  image: "share.jpg",
   width: 1200,
-  height: 640,
-  alt: "Shaded relief of the Bhote Koshi gorge with the detected flood damage "
-     + "traced in red along the river through impact zones Z1 to Z4.",
+  height: 630,
+  alt: "Satellite images of the Trishuli at Betrawati side by side: a narrow "
+     + "river in a green valley on 12 August 2026, and on 27 August a grey flood "
+     + "bed several times wider.",
 };
 
 /**

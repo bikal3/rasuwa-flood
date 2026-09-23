@@ -17,7 +17,7 @@ history: `git show 3f629c2:Rasuwa_Nepal_China_Flood_Project_Proposal.md`.
 | 2 | `pipeline/stage2_analysis.py` | change rasters, damage polygons, zonal stats, plates |
 | 3 | `pipeline/stage3_corridor.py` | terrain + HAND, the flood corridor, corridor-confined damage |
 | 4 | `pipeline/stage4_hot.py` | HOT ground survey, validation scores, the site's data |
-| 5 | `pipeline/stage5_overlays.py` | the before/after slider's PNGs in Web Mercator |
+| 5 | `pipeline/stage5_overlays.py` | the before/after slider's images in Web Mercator |
 | — | `web/` | the ten-page static site |
 
 Each stage reads the previous one's files off disk and nothing else. No stage
@@ -236,7 +236,7 @@ Two numbers that look bad and are not:
 python pipeline/stage5_overlays.py
 ```
 
-Reprojects stage 1's slider frames to Web Mercator as 8-bit palette PNGs, plus
+Reprojects stage 1's slider frames to Web Mercator as WebP (~200 KB each), plus
 `overlays.json` with bounds, dates and valid cover.
 
 - **Not the analysis frame.** `SLIDE_ROI` is the Trishuli at Betrawati and
@@ -253,15 +253,22 @@ Reprojects stage 1's slider frames to Web Mercator as 8-bit palette PNGs, plus
 - **Two pairs of those same two frames**, differing only in whether the cloud
   mask ran. *Without the filter* is every pixel the satellite returned. *With the
   filter* drops cloud, shadow and snow per pixel by `SCL_KEEP`, leaving the
-  post-event frame **67% cloud-free** against the pre's **94%**. The holes are
+  post-event frame **64% cloud-free** against the pre's **91%**. The holes are
   the point: they are what the filter removed.
 - **The unmasked tag says "of pixels kept", not "of the frame".** It sits beside
   an image that carries its own cloud, and a percentage there is read as a
   clarity figure unless it is worded so it cannot be.
-- **One stretch across all four frames**, computed on the *masked* pre-event
-  image so the percentiles come off ground rather than cloud tops. Give each
-  pair its own and the unmasked one renders darker, which would make the filter
-  switch look like a brightness control.
+- **One fixed tone curve for all four frames** — Sentinel Hub's [L2A
+  optimized](https://custom-scripts.sentinel-hub.com/sentinel-2/l2a_optimized/)
+  true colour, a function of reflectance alone. It replaced a 2–98% stretch fitted
+  to the pre-event image, whose top (~0.13) sat below the fresh deposit
+  (0.15–0.4), so the flood clipped to flat white. The curve rolls highlights off
+  instead, and since it depends on no image, neither date nor the filter switch
+  can move the brightness.
+- **The corner wedges are nodata.** `SLIDE_ROI` is a lat/lon rectangle, slightly
+  rotated on the UTM grid, and Earth Engine fills the corners outside it with 0
+  rather than nodata. An all-zero pixel is treated as missing, which is why the
+  valid figures are ~3 points lower than they first read.
 - **EPSG:3857, not UTM** — Leaflet stretches an `ImageOverlay` linearly between
   two corners in Web Mercator, so a UTM raster lands wrong and the error grows
   across the frame.
@@ -349,6 +356,7 @@ is already there.
 ```bash
 python pipeline/test_analysis.py             # stage 2
 python pipeline/test_corridor.py             # stage 3
+python pipeline/test_overlays.py             # stage 5's tone curve
 cd web && node build.mjs && node smoke.mjs   # all 10 pages
 cd web && node swipe-check.mjs               # the slider and the bars, in real Chrome
 ```

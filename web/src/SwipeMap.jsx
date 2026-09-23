@@ -81,7 +81,7 @@ export default function SwipeMap() {
     };
   }, []);
 
-  // A pair of overlays is ~1.3 MB and this sits below the fold, so it is fetched
+  // A pair of overlays is ~0.45 MB and this sits below the fold, so it is fetched
   // when the section gets near the viewport rather than on page load. Where
   // there is no IntersectionObserver -- jsdom, mainly -- just load it.
   useEffect(() => {
@@ -191,8 +191,8 @@ export default function SwipeMap() {
           <p className="sr-only">
             {sensor.source}. Before: {formatDate(pre.date)}, {pre.valid_pct}%
             of the frame {sensor.cover}. After: {formatDate(post.date)},{" "}
-            {post.valid_pct}% {sensor.cover}. Both dates share one contrast
-            stretch computed on the pre-event image. The change the comparison
+            {post.valid_pct}% {sensor.cover}. Every frame goes through one fixed
+            tone curve, so a brighter pixel is brighter ground. The change the comparison
             shows is the Trishuli at Betrawati and Gerkhu: a narrow river
             threading green valley floor on 12 August, and on 27 August a bare
             grey bed several times wider, the fields and terraces either side of
