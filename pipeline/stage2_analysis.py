@@ -131,8 +131,14 @@ def debias(a):
 
     Unchanged ground has to sit at zero for the proposal's fixed thresholds to
     mean what they say. Residual haze and viewing-geometry differences between
-    two composites shift the whole scene instead -- on the real pair dNDVI sat
-    at +0.099, so a fifth of the catchment cleared 0.25 on nothing.
+    two composites shift the whole scene instead.
+
+    How far depends on what the cloud mask let through. With SCL classes 2, 7
+    and 11 kept in, dNDVI sat at +0.099 and a fifth of the catchment cleared
+    0.25 on nothing -- which is why SCL_KEEP is now 4/5/6. On the pair that
+    tighter mask produces the offsets are +0.007 dNDVI, +0.063 dMNDWI and
+    -0.017 dNBR: small, and still worth removing on dMNDWI, where it is a fifth
+    of that index's 0.30 threshold. They are printed every run.
 
     Safe here because the flood corridor is a small fraction of the ROI, so the
     median is set by unchanged ground. That stops being true if the ROI is ever
