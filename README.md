@@ -22,6 +22,60 @@ Comments in the code cite the project proposal by section ("proposal §3.2") for
 the thresholds, indices and impact zones. It is not in the tree; it is in git
 history: `git show 3f629c2:Rasuwa_Nepal_China_Flood_Project_Proposal.md`.
 
+## What it found
+
+Stage 2 flags **29.5 km²** of change in 1,966 polygons across the 1,006 km²
+study rectangle. Confining it to ground the river can reach leaves **4.2 km²**
+of flood damage in 290 polygons, a continuous ribbon down the Bhote Koshi rather
+than a scatter over the hillslopes; charging that the far-field false-positive
+rate leaves **3.3 km²** attributable to the flood.
+
+The corridor comes from a 30 m elevation model and nothing else — no imagery. It
+covers 4.51% of the study area, and the ground survey lands inside it — HOT's
+response export for this event
+([`hot_flood_npl`](https://data.humdata.org/dataset/hot_flood_npl), ODC-ODbL),
+mapped from drone, Landsat, PlanetScope and Sentinel imagery plus volunteer
+field reports, independently of anything here:
+
+| Ground evidence (n in ROI) | In HAND corridor | In detected damage (0.41% of area) |
+| :-- | --: | --: |
+| Destroyed buildings (775) | **96.1%** | 55.5% — 135× base rate |
+| Bridges washed out (13) | **100%** | 38.5% — 94× |
+| Roads destroyed (172) | **94.2%** | 47.7% — 116× |
+| HOT observed flood extent | **90.8%** | 29.5% |
+
+Only 29.5% of the observed extent is flagged because most of it is river channel
+that was already water on 25 August, where a *change* detector correctly finds
+nothing. Read concentration instead: 40.9% of detections land inside observed
+water against a 0.57% base rate, **71×**.
+
+Every figure here is recomputed by the pipeline into
+`web/public/data/summary.json`, which is what the site reads and what the
+downloads page serves. None of them is transcribed by hand.
+
+## Quickstart
+
+```bash
+pip install earthengine-api rasterio geopandas matplotlib pandas scipy requests pillow
+earthengine authenticate                     # once
+export EE_PROJECT=your-gcloud-project-id
+
+python pipeline/stage1_export.py             # ~160 MB out of Earth Engine
+python pipeline/stage2_analysis.py
+python pipeline/stage3_corridor.py
+python pipeline/stage4_hot.py
+python pipeline/stage5_overlays.py
+
+cd web && npm install
+node build.mjs                               # -> ../site/
+node build.mjs --serve                       # watched, http://localhost:5173
+```
+
+Study area, dates, pixel size, thresholds and impact zones all live in
+`pipeline/config.py`. Every stage reads it; nothing else needs editing. Run the
+stages from anywhere — `config.py` resolves paths against the repo root, not its
+own directory.
+
 ## Stages
 
 | Stage | Script | Produces |
@@ -34,7 +88,9 @@ history: `git show 3f629c2:Rasuwa_Nepal_China_Flood_Project_Proposal.md`.
 | — | `web/` | the ten-page static site |
 
 Each stage reads the previous one's files off disk and nothing else. No stage
-calls another, so stage 1's output is usable on its own in ArcGIS Pro or QGIS.
+calls another, so stage 1's output stands on its own in ArcGIS Pro or QGIS — it
+is plain GeoTIFF and Shapefile, already projected and metric, with bands named
+`B8` rather than `Band_4` — and any stage can be re-run alone.
 
 ```
 pipeline/       the Python stages and their checks; everything tunable is config.py
@@ -45,270 +101,33 @@ site/           built site, gitignored -- rebuild with: cd web && node build.mjs
 .node-version   pins Node 20 for the Cloudflare Pages build
 ```
 
-Run the stages from anywhere; `config.py` resolves every path against the repo
-root, not its own directory.
+**Where the reasoning lives.** Every script opens with a docstring listing its
+exact outputs and saying why it does what it does, and every threshold in
+`config.py` carries its justification beside the value. This README does not
+repeat them. The ones worth reading before citing a number:
 
-## Setup
+| Question | Where |
+| :-- | :-- |
+| Why both SAR dates come from one relative orbit | `stage1_export.py` → `shared_orbit()` |
+| Why a cached file keeps its old manifest row | `stage1_export.py` → `read_manifest()` |
+| Why the SAR is multilooked in linear power | `stage2_analysis.py` → `despeckle()` |
+| Why each difference image is re-centred on zero | `stage2_analysis.py` → `debias()` |
+| Why damage is spectral **OR** radar, never AND | `stage2_analysis.py` → `damage_mask()` |
+| Which cloud classes are dropped, and what that costs | `config.py` → `SCL_KEEP` |
+| Why the DEM is exported 12 km wider than the ROI | `config.py` → `DEM_PAD_KM` |
+| Why `HAND_MAX_M` is 50 and not the surge's 30 | `config.py` → `HAND_MAX_M` |
+| Why the depression fill is kept rather than filtered out | `stage3_corridor.py` → `corridor_from_dem()` |
+| Why `scour_width_m` is a swath, not a channel width | `stage3_corridor.py` → `zonal_flood()` |
+| Why point evidence beats area overlap for validation | `stage4_hot.py` → `hit_rate()` |
+| Why the slider frames Betrawati, not the study area | `stage5_overlays.py` |
+| Why one fixed tone curve renders all four frames | `stage5_overlays.py` → `tone()` |
 
-```bash
-pip install earthengine-api rasterio geopandas matplotlib pandas scipy requests pillow
-earthengine authenticate          # once
-export EE_PROJECT=your-gcloud-project-id
-```
-
-Study area, dates, pixel size, thresholds and impact zones all live in
-`pipeline/config.py`. All five stages read it; edit nothing else.
-
-## Stage 1 — export
-
-```bash
-python pipeline/stage1_export.py
-```
-
-Writes `data/`, all **EPSG:32645** (UTM 45N, metres), **NODATA −9999**:
-
-```
-data/raster/s2_pre.tif     B2 B3 B4 B8 B11 B12   surface reflectance 0–1
-data/raster/s2_post.tif    ″
-data/raster/slide_*.tif    B4 B3 B2 over SLIDE_ROI, one date each -- the slider
-data/raster/slideraw_*.tif ″, cloud mask off
-data/raster/s1_pre.tif     VV VH   sigma0 dB
-data/raster/s1_post.tif    ″
-data/raster/dem.tif        SRTM elevation, m, over ROI + DEM_PAD_KM
-data/raster/manifest.csv   what each file is, which window, which sensor
-data/vector/aoi.shp        study rectangle
-data/vector/zones.shp      the 6 impact zones from proposal §4, buffered
-data/vector/*.geojson      same, WGS84
-```
-
-Bands carry descriptions, so ArcGIS Pro shows `B8`, not `Band_4`. Everything is
-already projected and metric, so Zonal Statistics and Raster Calculator give real
-areas with no reprojection step.
-
-Files that already exist are skipped, and **their manifest rows are preserved
-rather than rewritten**. `shared_orbit()` is data-dependent — Earth Engine's
-holdings change — so a later run can resolve a different orbit while the cached
-SAR stays as it was, and rewriting its row from the new run would silently
-describe the file as something it is not.
-
-Both SAR dates come from the **same relative orbit** — the script picks one that
-covers both windows. Mixing orbits across a pre/post pair manufactures fake
-change in steep terrain, because local incidence angle, layover and radar shadow
-all move. Bands download one request at a time, which keeps each under Earth
-Engine's ~48 MB cap, so dropping `SCALE` from its default 20 m to 10 m needs no
-chunking logic — it just costs ~640 MB instead of ~160 MB.
-
-## Stage 2 — change detection
-
-```bash
-python pipeline/stage2_analysis.py
-```
-
-```
-data/derived/change_stack.tif        dNDVI dMNDWI dNBR dVV dVH
-data/derived/damage_mask.tif         uint8, 1 = changed
-data/derived/damage_polygons.shp|.geojson
-data/tables/zonal_damage.csv         per zone: area, %, mean dNDVI, mean ΔVV
-maps/01–06_*.png                     true colour, the three indices, damage, zones
-```
-
-Thresholds are proposal §3.2 and §5:
-
-```
-dNDVI  = NDVI_pre  − NDVI_post      > 0.25   vegetation removed or buried
-dMNDWI = MNDWI_post − MNDWI_pre     > 0.30   new standing / turbid water
-Δσ°VV  = VV_post − VV_pre (dB)      > 3 dB   surface roughness change
-damage = spectral OR SAR
-```
-
-**The OR matters.** Late-August Rasuwa is under monsoon cloud, so the optical
-pair can be largely no-data. NaN comparisons are `False`, so those pixels fall
-through to the SAR rather than reading as "no change". Console output and every
-diverging plate report the usable-optical percentage.
-
-Three things keep the thresholds meaning what they say:
-
-- **`despeckle()`** — 5×5 boxcar multilook in **linear power** (averaging
-  decibels biases low). One Sentinel-1 scene per window on orbit 85 means
-  `median()` does no temporal averaging, and the raw difference is ~2 dB of
-  speckle with 13% past the threshold; after the multilook, 0.98 dB and 0.9%.
-- **A tight `SCL_KEEP`** — vegetation, bare ground and water only. Including
-  dark/shadow, unclassified and snow puts a **+0.099** scene-wide dNDVI bias in
-  the result; without them it is **+0.007**.
-- **`debias()`** — subtracts the median from each difference image so unchanged
-  ground sits at zero. Offsets are printed every run. Safe only because the
-  corridor is a small fraction of the ROI; tighten the ROI to the affected valley
-  and it would subtract signal.
-
-Result: **29.5 km²** of change in 1,966 polygons.
-
-## Stage 3 — confine it to the corridor
-
-```bash
-python pipeline/stage3_corridor.py
-```
-
-A debris flood is confined to ground the river can reach. Stage 3 derives that
-ground from the DEM alone and intersects it with stage 2's mask.
-
-```
-data/derived/terrain.tif           filled_dem, fill_m, drainage_km2, hand_m
-data/derived/channel|corridor.shp|.geojson
-data/derived/flood_damage.tif      uint8, stage 2 mask AND corridor
-data/derived/flood_damage_polygons.shp|.geojson
-data/tables/zonal_flood.csv        per zone: corridor, flood area, scour width
-data/tables/change_vs_hand.csv     change rate against height above the river
-maps/07–09_*.png                   corridor, kept vs rejected, the HAND profile
-```
-
-Plain numpy and scipy, no hydrology dependency: priority-flood depression fill →
-D8 steepest descent → flow accumulation → channel at ≥ `MIN_DRAINAGE_KM2` (8 km²,
-259 km of network) → HAND → corridor at HAND ≤ `HAND_MAX_M`.
-
-**29.5 km² of change becomes 4.2 km² of flood damage** in 290 polygons, tracing a
-continuous ribbon down the Bhote Koshi instead of a scatter over the hillslopes.
-
-**The DEM is exported `DEM_PAD_KM` (12 km) wider than everything else**, and
-stage 3 routes over all of it before cutting every result back to the analysis
-grid. Accumulation has no notion of what lies outside the raster: on an
-ROI-sized DEM the Bhote Koshi crosses the north edge carrying zero and has to
-re-earn the 8 km² threshold from local hillslopes first, so the top few
-kilometres — Z1 Rasuwagadhi — had no channel, no HAND and therefore no corridor.
-With the pad the network runs 259 km instead of 224 and the corridor covers
-4.51% of the ROI instead of 4.35%. The cut is an exact integer-cell slice, not a
-resample; `stage2_analysis.align()` checks that and refuses a fractional offset.
-
-Two side effects worth knowing. Max drainage now reads 1,803 km², above the
-ROI's own area, which is the pad working rather than a bug. And **`ROI area`
-rose from 980 to 1,006 km²** — the old figure was the rectangle *minus* the
-DEM's NaN reprojection collar, which now sits outside the analysis window, so
-every ROI-relative base rate below shifted slightly.
-
-`change_vs_hand.csv` is what justifies the corridor rather than assuming it — if
-the detections were noise the profile would be flat:
-
-| HAND | 0–5 | 5–10 | 10–20 | 20–30 | 30–50 | 50–100 | 100–200 | 200–500 | 500+ |
-| :-- | --: | --: | --: | --: | --: | --: | --: | --: | --: |
-| change rate | 9.2% | 8.3% | 9.1% | 9.6% | 9.3% | 7.1% | 4.9% | 3.5% | 2.0% |
-
-**`HAND_MAX_M` is 50, not the 30 the proposal's +7–9 m surge figure alone would
-argue for, because the plateau ends at 50.** Charging the corridor the 2.0%
-far-field floor leaves **3.3 km² attributable to the flood**. Re-read the table
-after changing the ROI or the stage 2 thresholds.
-
-Two things the corridor deliberately does not do:
-
-- **It does not drop the depression fill.** Filtering out cells the fill raised
-  cuts 39% of the trunk river, and those cells run at 7.4× the far-field change
-  rate against 4.2× for unfilled ground — they are the deep reaches where SRTM's
-  C-band bridged the gorge instead of reaching the bottom. `fill_m` is carried as
-  a band so the reconstruction stays visible, which matters if `terrain.tif` is
-  used as a HEC-RAS surface. 19% of the corridor is reconstructed ground.
-- **It does not measure river width.** On trunk-channel cells VV never goes
-  specular (1st percentile −14.9 dB, median −7.5 dB, against a −16 dB water
-  threshold): a 20–60 m whitewater gorge river is rough, mixed-pixel and
-  foreshortened against bright banks. `scour_width_m` is flood-damage area per
-  metre of channel instead — the disturbed swath, 50–84 m at Z1/Z2a/Z3/Z4.
-
-## Stage 4 — ground truth
-
-```bash
-python pipeline/stage4_hot.py
-```
-
-Pulls HOT's response export for this event —
-[`hot_flood_npl`](https://data.humdata.org/dataset/hot_flood_npl), ODC-ODbL —
-mapped from drone, Landsat, PlanetScope and Sentinel imagery plus volunteer field
-reports, independently of anything here. Downloads cache in `data/hot/`; outputs
-go to `web/public/data/` (GeoJSON + `summary.json`) and
-`data/tables/{validation,exposure}.csv`.
-
-The corridor comes from a 30 m elevation model and nothing else. Inside the study
-rectangle it covers **4.51% of the area**, and contains:
-
-| Ground evidence (n in ROI) | In HAND corridor | In detected damage (0.41% of area) |
-| :-- | --: | --: |
-| Destroyed buildings (775) | **96.1%** | 55.5% — 135× base rate |
-| Bridges washed out (13) | **100%** | 38.5% — 94× |
-| Roads destroyed (172) | **94.2%** | 47.7% — 116× |
-| HOT observed flood extent | **90.8%** | 29.5% |
-
-Two numbers that look bad and are not:
-
-- **Only 29.5% of the observed extent is flagged.** Most of it is river channel
-  that was already water on 25 August, where a *change* detector correctly finds
-  nothing. Read concentration: 40.9% of detections land inside observed water
-  against a 0.57% base rate, **71×**.
-- **Hydropowers score 25% / 0%.** n = 4 in the ROI, and the points are plant
-  locations rather than the headworks that flooded. Reported because leaving it
-  out would be cherry-picking.
-
-## Stage 5 — before/after imagery
-
-```bash
-python pipeline/stage5_overlays.py
-```
-
-Reprojects stage 1's slider frames to Web Mercator as WebP (~200 KB each), plus
-`overlays.json` with bounds, dates and valid cover, plus `web/public/share.jpg`.
-
-- **Not the analysis frame.** `SLIDE_ROI` is the Trishuli at Betrawati and
-  Gerkhu, ~11 km across at the foot of the corridor, 30 km south of `ROI`, at the
-  Sentinel-2 native 10 m. It reproduces the [Copernicus image of the
-  day](https://eu-space.europa.eu/components/earth-observation-copernicus/image-of-the-day/aftermath-nepal-flash-flood)
-  for this flood, so the site's headline before/after can be held against the
-  published one. Nothing downstream of stage 1 reads it, and the site says so on
-  the page.
-- **One acquisition each, 12 and 27 August 2026**, not a median of a week. A
-  composite is the right input for differencing indices and the wrong thing to
-  show someone: it is an image of no particular moment, and the flood was a
-  moment.
-- **Two pairs of those same two frames**, differing only in whether the cloud
-  mask ran. *Without the filter* is every pixel the satellite returned. *With the
-  filter* drops cloud, shadow and snow per pixel by `SCL_KEEP`, leaving the
-  post-event frame **64% cloud-free** against the pre's **91%**. The holes are
-  the point: they are what the filter removed.
-- **The unmasked tag says "of pixels kept", not "of the frame".** It sits beside
-  an image that carries its own cloud, and a percentage there is read as a
-  clarity figure unless it is worded so it cannot be.
-- **One fixed tone curve for all four frames** — Sentinel Hub's [L2A
-  optimized](https://custom-scripts.sentinel-hub.com/sentinel-2/l2a_optimized/)
-  true colour, a function of reflectance alone. It replaced a 2–98% stretch fitted
-  to the pre-event image, whose top (~0.13) sat below the fresh deposit
-  (0.15–0.4), so the flood clipped to flat white. The curve rolls highlights off
-  instead, and since it depends on no image, neither date nor the filter switch
-  can move the brightness.
-- **The corner wedges are nodata.** `SLIDE_ROI` is a lat/lon rectangle, slightly
-  rotated on the UTM grid, and Earth Engine fills the corners outside it with 0
-  rather than nodata. An all-zero pixel is treated as missing, which is why the
-  valid figures are ~3 points lower than they first read.
-- **EPSG:3857, not UTM** — Leaflet stretches an `ImageOverlay` linearly between
-  two corners in Web Mercator, so a UTM raster lands wrong and the error grows
-  across the frame.
-- **The share card comes off the same two frames.** The way anyone reaches this
-  site is a link pasted into a chat, and the card is the picture beside it: the
-  two unmasked dates side by side, labelled, 1200 × 630. JPEG because past
-  ~300 KB WhatsApp drops the image and sends a bare link without saying so, and
-  `smoke.mjs` fails the build if the card ever crosses that line.
-
-Gaps are transparent and the valid figure is printed on the slider, so dragging
-across a hole tells you it is cloud rather than clear ground. Labels read
-`12 Aug 2026` and `27 Aug 2026`: one date, one pass.
-
-Betrawati got a usable post-event look. The study rectangle 30 km north did not,
-which is why the detection accepts a change flagged by radar alone and why only
-29.5% of the observed extent could be confirmed. The slider is a picture of the
-event, not evidence for those figures, and the page says as much.
+`data/tables/change_vs_hand.csv` is the one output to read before trusting the
+corridor: the stage 2 change rate holds at ~9% from the river up to 50 m above
+it and falls away to 2.0% beyond 500 m. If the detections were noise that
+profile would be flat.
 
 ## The site
-
-```bash
-cd web
-npm install
-node build.mjs              # -> ../site/
-node build.mjs --serve      # watched, http://localhost:5173
-node smoke.mjs              # check every page renders
-```
 
 Ten static pages in four groups, so a general reader and a specialist take
 different routes through the same material:
@@ -321,36 +140,16 @@ different routes through the same material:
 | Analysis | Terrain corridor · Satellite detection · Damage & exposure |
 | Reference | Method & limits · Data & sources |
 
-**Multi-page, and no router.** `web/src/routes.mjs` is the one table of pages;
-`build.mjs` writes a real directory and `index.html` per entry, each loading the
-same bundle and told which page it is by a `data-page` attribute — so the
-browser's own navigation handles back, forward, middle-click and deep links, and
-no host needs a 404-rewrite rule. `data-base` carries the path back to the root,
-so the site also works mounted in a subdirectory. `href()` in `base.js` resolves
-links by **route id**, not path, because the two differ (`how` lives at
-`how-it-works/`).
+**Multi-page, and no router** — `web/src/routes.mjs` is the one table of pages
+and `build.mjs` writes a real directory per entry, so the browser's own
+navigation does the work and no host needs a rewrite rule. `build.mjs`'s own
+docstring says how, and `web/src/MapView.jsx` and `gestures.js` say why the two
+interactive maps behave as they do.
 
-Every figure on every page is read from `summary.json` at load time. No number is
-written into the page source, so the prose cannot drift from what the pipeline
-computed — and that file is on the downloads page, so no statistic on the site is
-missing from the download.
-
-Two interactive maps, on pages of their own:
-
-| | |
-| :-- | :-- |
-| Zoom | Quarter-level steps — the corridor is 120 km but a washed-out bridge is metres. `+` / `−` / `f` to fit |
-| Fly to | Leads the layer panel: four named places is how anyone moves along 120 km |
-| Click | A bridge, building or zone id selects it and flies there |
-| Opacity | A slider per group fades observed against derived, which is the whole argument |
-| Zoom-gated | 1,626 building footprints draw from z12.5; the panel says so rather than looking broken |
-| Scroll | The page's, not the map's — plain wheel scrolls, ctrl/⌘ zooms, one finger scrolls and two pan (`web/src/gestures.js`) |
-| Share | The view lives in the URL hash, so any view can be linked |
-
-`stage4_hot.py` writes `web/public/data/`, so the app fetches static files at
-runtime rather than inlining 2.6 MB into the bundle. That directory is committed
-for the same reason `maps/` is: regenerating it needs the stage 1–3 rasters,
-which need Earth Engine credentials.
+Every figure on every page is read from `summary.json` at load time, so the prose
+cannot drift from what the pipeline computed. `stage4_hot.py` writes
+`web/public/data/`, which is committed for the reason `maps/` is: regenerating it
+needs the stage 1–3 rasters, which need Earth Engine credentials.
 
 ## Deploy
 
@@ -372,41 +171,17 @@ is already there.
 ## Check it
 
 ```bash
-python pipeline/test_analysis.py             # stage 2
-python pipeline/test_corridor.py             # stage 3
+python pipeline/test_analysis.py             # stage 2, on synthetic rasters
+python pipeline/test_corridor.py             # stage 3, on a valley solved on paper
 python pipeline/test_overlays.py             # stage 5's tone curve
-cd web && node build.mjs && node smoke.mjs   # all 10 pages
+cd web && node build.mjs && node smoke.mjs   # all 10 pages, in jsdom
 cd web && node swipe-check.mjs               # the slider and the bars, in real Chrome
 ```
 
-No pytest, no fixtures, no test framework.
-
-`test_analysis.py` builds synthetic rasters with a known damage footprint —
-including a patch visible only to SAR, under simulated cloud — runs all of stage
-2 over them, and asserts the reported area comes back exactly (0.80 km²).
-
-`test_corridor.py` builds a V-shaped valley whose answer is known on paper: the
-floor drops 2 m per row and the sides rise 5 m per cell, so `HAND(row, col) =
-5·|col − 40|` exactly. Every assertion falls out of that one line.
-
-It also routes that valley twice — whole, then cut to its bottom half — to hold
-the DEM pad to what it claims: with the pad there is a channel on row 0 of the
-analysis grid, without it there is not, and deep inside the frame the two runs
-agree. `align()` is checked separately, including that it refuses a grid offset
-by half a cell rather than rounding it away.
-
-`smoke.mjs` loads every page's built bundle in jsdom, each from its own URL at its
-own directory depth with `fetch` served off disk, so it exercises the real data
-contract — a renamed field, a dropped layer or a `NaN` fails here rather than
-rendering blank in a browser, and a wrong `data-base` fails rather than 404-ing in
-production. Every internal link on every page is resolved against the files on
-disk. Figures it checks are read from `summary.json` and `overlays.json` rather
-than transcribed, so re-running stage 4 or 5 cannot break it for no reason.
-
-`swipe-check.mjs` drives real Chrome over CDP, no dependencies, because jsdom has
-no layout: it stubs every box to the same rectangle, so a `clip-path` or a bar
-width that resolves to nothing on screen passes there. It measures the strip of
-each overlay that survives its clip, and every bar against its own track.
+No pytest, no fixtures, no test framework. Each file's docstring says what it
+proves and why it is written the way it is — `swipe-check.mjs` in particular
+exists because jsdom has no layout, so a `clip-path` that resolves to nothing on
+screen passes there.
 
 ## Known limits
 
@@ -414,11 +189,8 @@ each overlay that survives its clip, and every bar against its own track.
   85.378 E) is stated in the proposal. Z2a–Z5 are approximate.
 - **Z5 (Betrawati) falls outside the default ROI.** Stage 1 warns. Drop `ROI`'s
   south edge to ~27.90 in `config.py` to cover it.
-- **`drainage_km2` is still a lower bound.** The DEM pad (below) makes flow cross
-  the study boundary already accumulated, so the channel is continuous from the
-  north edge down — but the Bhote Koshi's Tibetan headwaters are another ~100 km
-  up and still outside the raster. The pad fixes *which* cells are channel, not
-  *what* they drain. Do not read `drainage_km2` as a catchment area.
+- **`drainage_km2` is a lower bound**, not a catchment area: the Bhote Koshi's
+  Tibetan headwaters are ~100 km above the raster.
 - **`scour_width_m` is a swath width, not a channel width.** Do not derive
   proposal §4.1's widening ratio from it without a pre-event waterline.
 - **No radiometric terrain flattening on the SAR.** Same-orbit differencing
@@ -430,7 +202,7 @@ each overlay that survives its clip, and every bar against its own track.
   almost entirely on SAR. Check `optical_valid_pct` in `zonal_damage.csv` before
   citing any zone.
 - **HAND says nothing about how the corridor was reached** — no flow volume,
-  velocity or timing, so it cannot distinguish the 26 August surge from ordinary
+  velocity or timing, so it cannot separate the 26 August surge from ordinary
   high-monsoon inundation. That needs a hydrodynamic model, for which
   `terrain.tif` is the input.
 - **The collapse source is out of scope of the mask.** Excluding snow/ice from
@@ -439,12 +211,13 @@ each overlay that survives its clip, and every bar against its own track.
 - **The validation is one event, one corridor.** Not a cross-validated skill
   score, and HOT's mapping is itself densest along the river, which inflates any
   containment statistic computed against it.
+- **Hydropowers score 25% / 0%** on n = 4, because the points are plant
+  locations rather than the headworks that flooded. Reported rather than dropped.
 - **English only.** This is a public information site about a Nepali event, and
-  part of its audience reads Nepali. Translating it is not a string swap:
-  `web/src/pages.jsx` interleaves prose with figures read from `summary.json`,
-  so a second language needs those strings extracted into a catalogue first, and
-  the translation itself would want a native reviewer rather than a machine.
-  Deferred deliberately, not overlooked.
+  part of its audience reads Nepali. `web/src/pages.jsx` interleaves prose with
+  figures from `summary.json`, so a second language needs those strings extracted
+  into a catalogue first, and a native reviewer rather than a machine. Deferred
+  deliberately, not overlooked.
 - **Not built:** the HEC-RAS / Telemac-2D hydrodynamic model (proposal §6.2) and
   PlanetScope ingestion (commercial, needs a Planet API key). `terrain.tif` is
   the conditioned surface HEC-RAS wants and `corridor.shp` bounds the 2D mesh.

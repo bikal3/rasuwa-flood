@@ -59,6 +59,11 @@ SCALE = 20
 # the classification -- whether a cell is channel -- and HAND, which only needs
 # the channel to exist, not its exact upstream area.
 #
+# Worth it on the real DEM: with the pad the channel network runs 259 km and the
+# corridor covers 4.51% of the ROI; without it, 224 km and 4.35%, and the
+# missing stretch is the top few kilometres. test_corridor.py holds the same
+# claim on a synthetic valley.
+#
 # Costs area: 12 km each side turns a 29x33 km ROI into 53x57 km, ~3x the DEM
 # cells, and flow routing is linear in cells. At SCALE=20 the single band is
 # ~31 MB, inside Earth Engine's ~48 MB per-request cap. At SCALE=10 it is not:
@@ -112,6 +117,10 @@ SLIDE_SCALE = 10
 #   7  unclassified -- in practice mostly thin cloud edges here
 #   11 snow / ice -- fresh snowfall between the two composites is a huge index
 #      change that has nothing to do with the flood
+#
+# Worth it on the real pair: with 2, 7 and 11 kept in, the scene-wide dNDVI
+# offset debias() has to remove is +0.099 -- a fifth of the catchment clearing a
+# 0.25 threshold on nothing. With them out it is +0.007.
 #
 # Excluding 11 means the high-altitude collapse source (proposal section 2) is
 # outside what this mask can speak to; that zone needs a snow/ice-aware analysis,
@@ -206,8 +215,8 @@ MIN_DRAINAGE_KM2 = 8.0
 # to 20 m in terrain that is anything but flat.
 #
 # 50, not the 30 the surge figure alone would argue for, because the run says so:
-# data/tables/change_vs_hand.csv puts the stage 2 change rate at a flat 9.1-9.8%
-# from 0 m to 50 m and then falling away (6.7% by 100 m, 2.1% beyond 500 m). The
+# data/tables/change_vs_hand.csv puts the stage 2 change rate at a flat 9.2-9.6%
+# from 0 m to 50 m and then falling away (7.1% by 100 m, 2.0% beyond 500 m). The
 # affected plateau ends at ~50 m, so a 30 m cut was slicing through the middle of
 # the signal. Re-read that table after changing the ROI or the thresholds.
 HAND_MAX_M = 50.0

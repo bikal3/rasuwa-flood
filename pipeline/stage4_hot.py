@@ -206,6 +206,10 @@ def validate(hot):
              masks, transform, shape_, crs, "Bridges washed out", hits)
     hit_rate(hot["roads"][hot["roads"]["status"].eq("Destroyed")],
              masks, transform, shape_, crs, "Roads destroyed", hits)
+    # Scores badly (25% / 0%) and is reported anyway: n = 4 inside the ROI, and
+    # the points are plant locations rather than the headworks that flooded, so
+    # the mask is being asked about the wrong coordinates. Dropping the row
+    # because it reads badly would be cherry-picking.
     hit_rate(hot["hydropowers"], masks, transform, shape_, crs,
              "Hydropowers exposed", hits)
     scores["hits"] = hits
