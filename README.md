@@ -5,6 +5,19 @@ Multi-sensor change detection and a terrain-derived flood corridor for the
 OpenStreetMap Team's ground survey and published as a public information site at
 **[rasuwaflood.bikal3.com.np](https://rasuwaflood.bikal3.com.np)**.
 
+[![The Trishuli at Betrawati on 12 and 27 August 2026 side by side: a narrow
+river threading a green valley floor, and the same ground with a bare grey bed
+several times wider, the fields either side of it buried under flood
+deposits.](web/public/share.jpg)](https://rasuwaflood.bikal3.com.np/compare/)
+
+The Trishuli at Betrawati, at the foot of the corridor and 30 km south of the
+study rectangle, on the two Sentinel-2 passes either side of the flood — one
+acquisition each, not a composite. `stage5_overlays.py` draws this from the same
+two scenes it writes the site's slider from, so the picture and [the draggable
+version](https://rasuwaflood.bikal3.com.np/compare/) cannot disagree. It is a
+picture of the event, not evidence for the figures below: those come from the
+study rectangle, which had no clear optical view after 26 August.
+
 Comments in the code cite the project proposal by section ("proposal §3.2") for
 the thresholds, indices and impact zones. It is not in the tree; it is in git
 history: `git show 3f629c2:Rasuwa_Nepal_China_Flood_Project_Proposal.md`.
