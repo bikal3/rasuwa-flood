@@ -24,6 +24,10 @@ Writes  data/derived/terrain.tif              filled_dem, fill_m, drainage_km2, 
         maps/08_flood_damage.png
         maps/09_change_vs_hand.png
 
+Plain numpy and scipy, no hydrology dependency: priority-flood depression fill
+-> D8 steepest descent -> flow accumulation -> channel at >= MIN_DRAINAGE_KM2
+-> HAND -> corridor at HAND <= HAND_MAX_M.
+
 HAND (Height Above Nearest Drainage) is the elevation of a cell above whichever
 drainage cell its own flow path first reaches. It is the standard way to say
 "reachable by the river" without running a hydraulic model, and terrain.tif is
@@ -259,7 +263,17 @@ def zonal_flood(zones, ids, change, flood, t, pixel_area):
         # Mean width of the scoured swath: flood area spread along this zone's
         # channel. Section 4.1's "200-300% channel widening" is a claim about
         # this swath against the pre-event waterline, and only the swath is
-        # measurable here -- see the README on why the waterline is not.
+        # measurable here.
+        #
+        # The waterline is not, because the usual trick for finding it fails on
+        # this river: water is dark to radar only when it is smooth enough to
+        # reflect the pulse away, and on trunk-channel cells VV never goes
+        # specular -- 1st percentile -14.9 dB, median -7.5 dB, against the -16 dB
+        # a water threshold would want. A 20-60 m whitewater river in a gorge is
+        # rough, mixed-pixel, and foreshortened against bright banks. So this
+        # column is flood-damage area per metre of channel, the disturbed swath
+        # (50-84 m at Z1/Z2a/Z3/Z4), and a widening ratio derived from it would
+        # be measuring the swath against nothing.
         length = float(step[sel].sum())
         rows.append({
             "zone_id": z.zone_id,
@@ -402,6 +416,12 @@ def main():
               "Delete data/raster/dem.tif and re-run stage 1.")
     t = {k: v[win] for k, v in corridor_from_dem(dem["elevation"], pixel).items()}
     channel, corridor = t["channel"], t["corridor"]
+    # Max drainage can read above the ROI's own area -- 1,803 km² against
+    # 1,006 -- which is DEM_PAD_KM working rather than a bug: the trunk river
+    # arrives already accumulated. It is still a lower bound, because the Bhote
+    # Koshi's Tibetan headwaters are ~100 km further up and off the raster.
+    # "% of ROI" below is against cells with finite HAND, not against the
+    # rectangle: the DEM's NaN reprojection collar is not ground.
     print(f"  max drainage {t['drainage_km2'].max():,.0f} km²  ->  "
           f"{t['step_m'].sum() / 1000:,.0f} km of channel "
           f"at ≥ {cfg.MIN_DRAINAGE_KM2:.0f} km²")
