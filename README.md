@@ -35,13 +35,13 @@ covers 4.51% of the study area, and the ground survey lands inside it — HOT's
 response export for this event
 ([`hot_flood_npl`](https://data.humdata.org/dataset/hot_flood_npl), ODC-ODbL),
 mapped from drone, Landsat, PlanetScope and Sentinel imagery plus volunteer
-field reports, independently of anything here:
+field reports, independently of anything here — the 2 October 2026 export:
 
 | Ground evidence (n in ROI) | In HAND corridor | In detected damage (0.41% of area) |
 | :-- | --: | --: |
-| Destroyed buildings (775) | **96.1%** | 55.5% — 135× base rate |
+| Destroyed buildings (800) | **96.2%** | 54.9% — 134× base rate |
 | Bridges washed out (13) | **100%** | 38.5% — 94× |
-| Roads destroyed (172) | **94.2%** | 47.7% — 116× |
+| Roads destroyed (191) | **93.2%** | 44.5% — 109× |
 | HOT observed flood extent | **90.8%** | 29.5% |
 
 Only 29.5% of the observed extent is flagged because most of it is river channel
@@ -63,7 +63,7 @@ export EE_PROJECT=your-gcloud-project-id
 python pipeline/stage1_export.py             # ~160 MB out of Earth Engine
 python pipeline/stage2_analysis.py
 python pipeline/stage3_corridor.py
-python pipeline/stage4_hot.py
+python pipeline/stage4_hot.py --refresh      # drop --refresh to reuse data/hot/
 python pipeline/stage5_overlays.py
 
 cd web && npm install
@@ -119,6 +119,7 @@ repeat them. The ones worth reading before citing a number:
 | Why the depression fill is kept rather than filtered out | `stage3_corridor.py` → `corridor_from_dem()` |
 | Why `scour_width_m` is a swath, not a channel width | `stage3_corridor.py` → `zonal_flood()` |
 | Why point evidence beats area overlap for validation | `stage4_hot.py` → `hit_rate()` |
+| Why the HOT cache has to be refreshed rather than kept | `stage4_hot.py` → `fetch()` |
 | Why the slider frames Betrawati, not the study area | `stage5_overlays.py` |
 | Why one fixed tone curve renders all four frames | `stage5_overlays.py` → `tone()` |
 
@@ -174,6 +175,7 @@ is already there.
 python pipeline/test_analysis.py             # stage 2, on synthetic rasters
 python pipeline/test_corridor.py             # stage 3, on a valley solved on paper
 python pipeline/test_overlays.py             # stage 5's tone curve
+python pipeline/test_hot.py                  # stage 4's published data vintage
 cd web && node build.mjs && node smoke.mjs   # all 10 pages, in jsdom
 cd web && node swipe-check.mjs               # the slider and the bars, in real Chrome
 ```
@@ -211,6 +213,13 @@ screen passes there.
 - **The validation is one event, one corridor.** Not a cross-validated skill
   score, and HOT's mapping is itself densest along the river, which inflates any
   containment statistic computed against it.
+- **The ground truth is a moving target, and the figures above are a floor.**
+  HOT keeps mapping for months. The first run of this pipeline cached the
+  31 August export, five days after the event; the 2 October one carries 2,886
+  destroyed buildings where that had 1,611, and 800 inside the ROI where it had
+  775. `stage4_hot.py --refresh` re-downloads and recomputes, and the site and
+  `summary.json` both carry the export's own date so a stale number is visible
+  rather than silent. Re-run before citing anything here.
 - **Hydropowers score 25% / 0%** on n = 4, because the points are plant
   locations rather than the headworks that flooded. Reported rather than dropped.
 - **English only.** This is a public information site about a Nepali event, and

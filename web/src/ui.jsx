@@ -19,6 +19,13 @@ export const fmt = (v, d = 1) =>
 export const int = (v) =>
   v === null || v === undefined ? "—" : Number(v).toLocaleString("en");
 
+/** "26 August 2026" from an ISO date. Fixed to UTC: these are acquisition and
+ *  export dates, and a reader west of Greenwich should not see them slip a day. */
+export const longDate = (iso) =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", {
+    day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
+  });
+
 /** The heading block every page opens on. */
 export function PageHead({ kicker, title, lede, children }) {
   return (

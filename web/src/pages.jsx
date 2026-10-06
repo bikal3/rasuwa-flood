@@ -2,6 +2,7 @@ import MapView from "./MapView.jsx";
 import SwipeMap from "./SwipeMap.jsx";
 import {
   Bars, Callout, DefList, Explain, Figcap, Metric, PageHead, Table, fmt, int,
+  longDate,
 } from "./ui.jsx";
 import { C } from "./layers.js";
 import { DATA, href } from "./base.js";
@@ -21,10 +22,7 @@ import { DATA, href } from "./base.js";
 const KB = (b) => (b < 1024 ? "<1 kB" : `${Math.round(b / 1024)} kB`);
 
 /** "26 August 2026", from the event's own ISO date rather than written twice. */
-const eventDate = (s) =>
-  new Date(`${s.event.date}T00:00:00Z`).toLocaleDateString("en-GB", {
-    day: "numeric", month: "long", year: "numeric", timeZone: "UTC",
-  });
+const eventDate = (s) => longDate(s.event.date);
 
 const totals = (s) => ({
   bridges: Object.values(s.bridges_by_status).reduce((a, b) => a + b, 0),
