@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ROUTES } from "./routes.mjs";
 import { DATA, href } from "./base.js";
+import { longDate } from "./ui.jsx";
 import PAGES from "./pages.jsx";
 
 /**
@@ -154,6 +155,17 @@ function SiteFoot({ s }) {
         contributed by Niti Foundation. Basemap tiles © Esri and ©
         OpenStreetMap contributors. Full citations on the{" "}
         <a href={href("downloads")}>Data &amp; sources</a> page.
+        {/* Guarded: this footer renders on every page, so a summary.json held
+            in a browser cache from before the field existed would throw here
+            and blank the whole site rather than merely lose a date. */}
+        {s.vintage && (
+          <>
+            {" "}
+            Ground-survey export of {longDate(s.vintage.hot_survey)}; figures
+            computed {longDate(s.vintage.generated)}. Mapping continues for
+            months after a response opens, so every count here is a floor.
+          </>
+        )}
       </p>
     </footer>
   );

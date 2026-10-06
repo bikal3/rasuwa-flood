@@ -16,6 +16,10 @@
    "dSAR_dB": 3.0
   }
  },
+ "vintage": {
+  "generated": "2026-10-06",
+  "hot_survey": "2026-10-02"
+ },
  "validation": {
   "observed_in_corridor_pct": 90.8,
   "observed_flagged_by_stage2_pct": 32.7,
@@ -27,12 +31,12 @@
   "hits": [
    {
     "target": "Destroyed buildings",
-    "n_in_roi": 775,
-    "in_corridor_pct": 96.1,
+    "n_in_roi": 800,
+    "in_corridor_pct": 96.2,
     "corridor_base_pct": 4.51,
-    "in_detected_pct": 55.5,
+    "in_detected_pct": 54.9,
     "detected_base_pct": 0.41,
-    "in_change_pct": 57.7,
+    "in_change_pct": 57.2,
     "change_base_pct": 2.93
    },
    {
@@ -47,12 +51,12 @@
    },
    {
     "target": "Roads destroyed",
-    "n_in_roi": 172,
-    "in_corridor_pct": 94.2,
+    "n_in_roi": 191,
+    "in_corridor_pct": 93.2,
     "corridor_base_pct": 4.51,
-    "in_detected_pct": 47.7,
+    "in_detected_pct": 44.5,
     "detected_base_pct": 0.41,
-    "in_change_pct": 49.4,
+    "in_change_pct": 46.6,
     "change_base_pct": 2.93
    },
    {
@@ -93,23 +97,23 @@
   },
   {
    "layer": "Buildings mapped",
-   "total": 17510,
-   "in_flood_extent": 5516
+   "total": 20143,
+   "in_flood_extent": 6141
   },
   {
    "layer": "Buildings destroyed",
-   "total": 1611,
-   "in_flood_extent": 1575
+   "total": 2886,
+   "in_flood_extent": 2723
   },
   {
    "layer": "Road segments mapped",
-   "total": 2098,
-   "in_flood_extent": 934
+   "total": 2299,
+   "in_flood_extent": 989
   },
   {
    "layer": "Road segments destroyed",
-   "total": 264,
-   "in_flood_extent": 256
+   "total": 334,
+   "in_flood_extent": 321
   },
   {
    "layer": "Health facilities",
@@ -118,13 +122,13 @@
   },
   {
    "layer": "Education facilities",
-   "total": 57,
+   "total": 60,
    "in_flood_extent": 17
   },
   {
    "layer": "Populated places",
-   "total": 257,
-   "in_flood_extent": 63
+   "total": 54,
+   "in_flood_extent": 14
   }
  ],
  "exposure_by_zone": [
@@ -134,8 +138,8 @@
    "bridges": 2,
    "bridges_washed_out": 2,
    "hydropowers": 0,
-   "buildings_destroyed": 177,
-   "roads_destroyed": 80
+   "buildings_destroyed": 179,
+   "roads_destroyed": 79
   },
   {
    "zone_id": "Z2a",
@@ -143,8 +147,8 @@
    "bridges": 0,
    "bridges_washed_out": 0,
    "hydropowers": 1,
-   "buildings_destroyed": 281,
-   "roads_destroyed": 27
+   "buildings_destroyed": 282,
+   "roads_destroyed": 29
   },
   {
    "zone_id": "Z2b",
@@ -161,8 +165,8 @@
    "bridges": 2,
    "bridges_washed_out": 2,
    "hydropowers": 0,
-   "buildings_destroyed": 179,
-   "roads_destroyed": 85
+   "buildings_destroyed": 181,
+   "roads_destroyed": 84
   },
   {
    "zone_id": "Z4",
@@ -170,7 +174,7 @@
    "bridges": 2,
    "bridges_washed_out": 2,
    "hydropowers": 1,
-   "buildings_destroyed": 215,
+   "buildings_destroyed": 220,
    "roads_destroyed": 24
   },
   {
@@ -179,8 +183,8 @@
    "bridges": 3,
    "bridges_washed_out": 3,
    "hydropowers": 0,
-   "buildings_destroyed": 398,
-   "roads_destroyed": 37
+   "buildings_destroyed": 711,
+   "roads_destroyed": 64
   }
  ],
  "bridges_by_status": {
@@ -189,27 +193,28 @@
   "Damaged": 4
  },
  "buildings_by_status": {
-  "Standing": 15884,
-  "Destroyed": 1611,
-  "Damaged": 15
+  "Standing": 16841,
+  "Destroyed": 2886,
+  "Damaged": 416
  },
  "roads_by_status": {
-  "Standing": 1834,
-  "Destroyed": 264
+  "Standing": 1964,
+  "Destroyed": 334,
+  "Damaged": 1
  },
  "damaged_features_by_type": {
-  "building": 1626,
-  "road": 226,
-  "natural": 49,
-  "bridge": 42,
+  "building": 3433,
+  "road": 272,
+  "bridge": 68,
+  "natural": 50,
+  "land use": 28,
   "amenity": 22,
   "tourism": 21,
-  "land use": 18,
-  "barrier": 13,
-  "power": 9,
+  "barrier": 15,
+  "power": 14,
+  "waterway": 13,
   "building part": 9,
-  "man made": 8,
-  "waterway": 6
+  "man made": 8
  },
  "zonal_flood": [
   {
@@ -350,19 +355,17 @@
    "vs_far_field": 1.0
   }
  ],
- "dropped_bridges": [
-  "Thulo bharkhu"
- ],
+ "dropped_bridges": [],
  "layer_bytes": {
   "flood_extent": 52036,
   "aoi": 38893,
   "bridges": 15784,
   "hydropowers": 2867,
-  "buildings_damaged": 515024,
-  "roads_damaged": 129876,
-  "facilities": 19141,
-  "places": 175176,
-  "waterways": 350122,
+  "buildings_damaged": 1035049,
+  "roads_damaged": 160864,
+  "facilities": 20249,
+  "places": 20774,
+  "waterways": 359800,
   "detected_damage": 182615,
   "corridor": 356646,
   "channel": 249047,

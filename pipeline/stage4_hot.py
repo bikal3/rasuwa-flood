@@ -1,6 +1,6 @@
 """Stage 4 -- HOT response data, validated against the pipeline's own detection.
 
-    python pipeline/stage4_hot.py
+    python pipeline/stage4_hot.py [--refresh]
 
 Pulls the Humanitarian OpenStreetMap Team's response export for this exact event
 (https://data.humdata.org/dataset/hot_flood_npl, ODC-ODbL) and does the thing the
@@ -11,7 +11,7 @@ Sentinel imagery plus volunteer field reports. It is independent of anything in
 stages 1-3, so it is a fair test of both the stage 2 thresholds and the stage 3
 HAND corridor.
 
-Reads   data/hot/*                             downloaded here, cached
+Reads   data/hot/*                             downloaded here; --refresh re-fetches
         data/derived/flood_damage.tif          (stage 3)
         data/derived/damage_mask.tif           (stage 2)
         data/derived/terrain.tif               (stage 3)
@@ -28,14 +28,21 @@ Two things worth knowing about the source data:
   flood extent widened by 200 m, so it sweeps in buildings and roads beside the
   water. Only the `status` field says what was lost. Every count below either
   filters on status or clips to the flood extent itself.
-- One of the 59 assessed bridges, "Thulo bharkhu", is published at
-  [28.1390111, 28.1390111] -- its latitude in both slots. The longitude is not
-  recoverable, so it is dropped from the map and reported separately.
+- Coordinates are not taken on trust. The 31 August export put one of its 59
+  assessed bridges, "Thulo bharkhu", at [28.1390111, 28.1390111] -- its latitude
+  in both slots. The 2 October export has dropped that record and has 58 bridges
+  with no bad coordinate, so both exports produce the same 58 on the map. The
+  check stays anyway: anything whose longitude is not a Nepali one is dropped and
+  listed in summary.json, which is cheaper than one bridge in the Arabian Sea
+  stretching the map bounds across two continents.
 """
 
 import json
+import os
 import sys
 import zipfile
+from datetime import date, datetime, timezone
+from email.utils import parsedate_to_datetime
 from io import BytesIO
 
 import geopandas as gpd
@@ -54,11 +61,41 @@ NEPAL_LON = (80.0, 89.0)        # anything outside this is not a Nepali longitud
 
 # --- Fetch ------------------------------------------------------------------
 
-def fetch(name, path):
-    """Download one HOT layer into data/hot/, unzipping if needed. Cached."""
+def _stamp(p, last_modified):
+    """Give the downloaded file the source's Last-Modified as its mtime.
+
+    The filesystem already has a slot for "when did this data last change", so
+    using it means the vintage needs no sidecar file that could go stale
+    alongside the data it describes. hot_vintage() reads them back.
+    """
+    if last_modified:
+        t = parsedate_to_datetime(last_modified).timestamp()
+        os.utime(p, (t, t))
+
+
+def hot_vintage():
+    """Newest Last-Modified across the cached layers, as a date.
+
+    Published in summary.json. A destroyed-building count with no date on it is
+    one no reader can check and no re-run will correct -- see fetch().
+    """
+    return datetime.fromtimestamp(
+        max(f.stat().st_mtime for f in cfg.HOT.glob("*") if f.is_file()),
+        timezone.utc).date().isoformat()
+
+
+def fetch(name, path, refresh=False):
+    """Download one HOT layer into data/hot/, unzipping if needed.
+
+    Cached, but the cache is not the truth. HOT keeps mapping for weeks after a
+    response opens: between 31 August and 2 October 2026 this export's
+    destroyed-building count went from 1,611 to 2,886. A cache that is only ever
+    read therefore freezes the ground truth at whatever day it was first filled,
+    and no later run corrects it. Pass --refresh to re-download.
+    """
     out = cfg.HOT / f"{name}.geojson"
     gpkg = cfg.HOT / f"{name}.gpkg"
-    if out.exists() or gpkg.exists():
+    if not refresh and (out.exists() or gpkg.exists()):
         return out if out.exists() else gpkg
 
     url = f"{cfg.HOT_BASE}/{path}"
@@ -67,6 +104,7 @@ def fetch(name, path):
     r.raise_for_status()
     if not path.endswith(".zip"):
         out.write_bytes(r.content)
+        _stamp(out, r.headers.get("Last-Modified"))
         return out
 
     with zipfile.ZipFile(BytesIO(r.content)) as z:
@@ -75,26 +113,29 @@ def fetch(name, path):
             raise SystemExit(f"{name}: no geojson/gpkg inside {url}")
         dest = cfg.HOT / f"{name}{'.gpkg' if inner[0].endswith('.gpkg') else '.geojson'}"
         dest.write_bytes(z.read(inner[0]))
+        _stamp(dest, r.headers.get("Last-Modified"))
         return dest
 
 
-def load_all():
+def load_all(refresh=False):
     cfg.HOT.mkdir(parents=True, exist_ok=True)
-    print("HOT response data")
+    print("HOT response data" + (" (re-downloading)" if refresh else ""))
     layers = {}
     for name, path in cfg.HOT_LAYERS.items():
-        p = fetch(name, path)
+        p = fetch(name, path, refresh)
         layers[name] = gpd.read_file(p).to_crs(WGS84)
     print(f"  {len(layers)} layers, "
           + ", ".join(f"{k} {len(v)}" for k, v in layers.items()))
+    print(f"  export vintage {hot_vintage()}")
     return layers
 
 
 # --- Clean ------------------------------------------------------------------
 
 def drop_bad_coords(gdf):
-    """-> (clean, dropped). Guards the one transposed bridge, and anything else
-    that lands outside Nepal, rather than letting it stretch the map bounds."""
+    """-> (clean, dropped). Guards against a transposed coordinate, or anything
+    else landing outside Nepal, rather than letting it stretch the map bounds.
+    Nothing is caught in the 2 October export; see the module docstring."""
     x = gdf.geometry.representative_point().x
     ok = x.between(*NEPAL_LON)
     return gdf[ok].copy(), gdf[~ok].copy()
@@ -350,7 +391,7 @@ def main():
         sys.exit(f"Missing {missing}. Run stages 1-3 first.")
     cfg.SITE_DATA.mkdir(parents=True, exist_ok=True)
 
-    hot = load_all()
+    hot = load_all("--refresh" in sys.argv)
     bridges, bad_bridges = drop_bad_coords(hot["bridge_damage"])
     hot["bridge_damage"] = bridges
     if len(bad_bridges):
@@ -400,6 +441,8 @@ def main():
             "thresholds": {"dNDVI": cfg.T_DNDVI, "dMNDWI": cfg.T_DMNDWI,
                            "dSAR_dB": cfg.T_DSAR_DB},
         },
+        "vintage": {"generated": date.today().isoformat(),
+                    "hot_survey": hot_vintage()},
         "validation": scores,
         "areas": {r["metric"]: r["km2"] for _, r in table.iterrows()
                   if pd.notna(r["km2"])},

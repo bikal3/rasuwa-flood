@@ -310,8 +310,23 @@ async function exists(p) {
     "[method] the notation does not quote the dNDVI threshold the pipeline used");
   want(eqs[1]?.textContent.includes(String(summary.event.hand_max_m)),
     "[method] the corridor definition does not quote the HAND ceiling the pipeline used");
-  want(pages.method.text.includes(summary.dropped_bridges[0]),
-    "[method] the dropped-bridge caveat is gone");
+  // The caveat tracks the data in both directions: every bridge the pipeline
+  // had to drop is named, and the caveat disappears entirely once the source
+  // fixes its coordinates -- which HOT did, between the August and October
+  // exports. Asserting the text unconditionally outlived the bug it described.
+  want(summary.dropped_bridges.every((b) => pages.method.text.includes(b)),
+    "[method] a dropped bridge is not named in the caveats");
+  want(pages.method.text.includes("coordinate slots")
+       === (summary.dropped_bridges.length > 0),
+    "[method] the dropped-bridge caveat does not match summary.json");
+
+  // The footer, on every page, is the only thing on the site that says how old
+  // these counts are, and they grow for months after the event. A silent drop
+  // leaves a dated claim reading as a current one.
+  want(pages.method.text.includes("Ground-survey export of"),
+    "[footer] the data vintage is missing");
+  want(pages.method.text.includes(summary.vintage.hot_survey.slice(0, 4)),
+    "[footer] the data vintage does not render as a date");
 
   const files = (pages.downloads.html.match(/\.geojson"/g) || []).length;
   want(files >= Object.keys(summary.layer_bytes).length,
