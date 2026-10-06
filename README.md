@@ -16,7 +16,8 @@ acquisition each, not a composite. `stage5_overlays.py` draws this from the same
 two scenes it writes the site's slider from, so the picture and [the draggable
 version](https://rasuwaflood.bikal3.com.np/compare/) cannot disagree. It is a
 picture of the event, not evidence for the figures below: those come from the
-study rectangle, which had no clear optical view after 26 August.
+study rectangle, which had no clear optical view from 26 August until the
+monsoon withdrew five weeks later. Stage 6 is what that later view found.
 
 Comments in the code cite the project proposal by section ("proposal §3.2") for
 the thresholds, indices and impact zones. It is not in the tree; it is in git
@@ -49,9 +50,37 @@ that was already water on 25 August, where a *change* detector correctly finds
 nothing. Read concentration instead: 40.9% of detections land inside observed
 water against a 0.57% base rate, **71×**.
 
+### The post-monsoon check
+
+Stage 2 ran on a pre/post pair with **14.7%** usable optical coverage, so most of
+its mask is radar evidence with no optical opinion either way. The monsoon
+withdrew at the end of September and took that excuse away: the 28 September –
+6 October pair covers **66.9%** of the study rectangle. Stage 6 puts the same
+two spectral thresholds on it and asks whether the flagged ground still looks
+changed, against the rate the same thresholds fire on ground nobody flagged:
+
+| Ground flagged by | Still changed five weeks later | vs the 4.6% far field |
+| :-- | --: | --: |
+| Stage 3 flood damage | **59.1%** | 12.8× |
+| — the part radar alone had flagged | **44.5%** | 9.7× |
+| Stage 2 change, whole rectangle | 19.6% | 4.3× |
+| Nothing (HAND ≤ 50 m) | 6.7% | 1.5× |
+
+The radar was not inventing the corridor: where it spoke alone, the first clear
+optical view agrees nearly ten times more often than chance. And the terrain
+prior is doing the work claimed for it — confining the mask to the corridor
+triples the share that survives an independent look, from 19.6% to 59.1%.
+
+This is persistence, not attribution. The gap holds five more weeks of monsoon,
+the start of recovery and ordinary phenology, so these rates are a floor on the
+true positives and say nothing about what happened on 26 August. Z2b
+Ghattekhola, the zone whose figure rested on radar, goes from 7.1% optical
+coverage to 98.4% and confirms at only 12.8% against its own 2.3% background:
+real, and weaker than every other zone. `stage6_late.py` says why in full.
+
 Every figure here is recomputed by the pipeline into
-`web/public/data/summary.json`, which is what the site reads and what the
-downloads page serves. None of them is transcribed by hand.
+`web/public/data/summary.json` or `data/tables/`, which is what the site reads
+and what the downloads page serves. None of them is transcribed by hand.
 
 ## Quickstart
 
@@ -65,6 +94,7 @@ python pipeline/stage2_analysis.py
 python pipeline/stage3_corridor.py
 python pipeline/stage4_hot.py --refresh      # drop --refresh to reuse data/hot/
 python pipeline/stage5_overlays.py
+python pipeline/stage6_late.py               # the post-monsoon check, optional
 
 cd web && npm install
 node build.mjs                               # -> ../site/
@@ -85,6 +115,7 @@ own directory.
 | 3 | `pipeline/stage3_corridor.py` | terrain + HAND, the flood corridor, corridor-confined damage |
 | 4 | `pipeline/stage4_hot.py` | HOT ground survey, validation scores, the site's data |
 | 5 | `pipeline/stage5_overlays.py` | the before/after slider's images, and the share card |
+| 6 | `pipeline/stage6_late.py` | the post-monsoon optical check on stage 2's mask |
 | — | `web/` | the ten-page static site |
 
 Each stage reads the previous one's files off disk and nothing else. No stage
@@ -96,7 +127,7 @@ is plain GeoTIFF and Shapefile, already projected and metric, with bands named
 pipeline/       the Python stages and their checks; everything tunable is config.py
 web/            React source; routes.mjs is the page table, build.mjs writes one HTML per page
 data/           stage outputs (gitignored except tables/*.csv)
-maps/           matplotlib plates, committed
+maps/           matplotlib plates, committed (stage 6 adds 10 and 11)
 site/           built site, gitignored -- rebuild with: cd web && node build.mjs
 .node-version   pins Node 20 for the Cloudflare Pages build
 ```
@@ -121,6 +152,9 @@ repeat them. The ones worth reading before citing a number:
 | Why point evidence beats area overlap for validation | `stage4_hot.py` → `hit_rate()` |
 | Why the HOT cache has to be refreshed rather than kept | `stage4_hot.py` → `fetch()` |
 | Why the slider frames Betrawati, not the study area | `stage5_overlays.py` |
+| Why the late window is 28 Sep – 6 Oct and not wider | `config.py` → `S2_LATE` |
+| Why a confirmation rate is a floor, not a true-positive rate | `stage6_late.py` |
+| Why a cloudy pixel abstains instead of counting against | `stage6_late.py` → `rate()` |
 | Why one fixed tone curve renders all four frames | `stage5_overlays.py` → `tone()` |
 
 `data/tables/change_vs_hand.csv` is the one output to read before trusting the
@@ -176,6 +210,7 @@ python pipeline/test_analysis.py             # stage 2, on synthetic rasters
 python pipeline/test_corridor.py             # stage 3, on a valley solved on paper
 python pipeline/test_overlays.py             # stage 5's tone curve
 python pipeline/test_hot.py                  # stage 4's published data vintage
+python pipeline/test_late.py                 # stage 6, on a scene solved on paper
 cd web && node build.mjs && node smoke.mjs   # all 10 pages, in jsdom
 cd web && node swipe-check.mjs               # the slider and the bars, in real Chrome
 ```
@@ -200,13 +235,22 @@ screen passes there.
   slopes. Use SNAP/`gamma0` for calibrated backscatter.
 - **Thresholds are the proposal's, not calibrated.** A starting point, not a
   validated classifier.
-- **Z2b Ghattekhola has only 7.1% usable optical pixels.** Its 1.6% figure rests
-  almost entirely on SAR. Check `optical_valid_pct` in `zonal_damage.csv` before
-  citing any zone.
+- **Z2b Ghattekhola has only 7.1% usable optical pixels** in the event window.
+  Its 1.6% figure rests almost entirely on SAR. Stage 6 now gives it a 98.4%
+  optical view five weeks on, and it confirms at 12.8% against a 2.3% local
+  background: supported, and the weakest of the five zones. Check
+  `optical_valid_pct` in `zonal_damage.csv` and `late_optical.csv` before citing
+  any zone.
 - **HAND says nothing about how the corridor was reached** — no flow volume,
   velocity or timing, so it cannot separate the 26 August surge from ordinary
   high-monsoon inundation. That needs a hydrodynamic model, for which
   `terrain.tif` is the input.
+- **The post-monsoon check cannot attribute, only corroborate.** Stage 6's
+  window opens five weeks after the flood, so revegetation, debris clearance and
+  rebuilding all read as "no longer changed", and any further monsoon damage
+  reads as confirmation. It is a test of whether the change is there, not of when
+  it happened or what caused it. Its dMNDWI half is nearly inert, too: October
+  rivers are lower than August ones, so 67 of the 5,607 confirmations are water.
 - **The collapse source is out of scope of the mask.** Excluding snow/ice from
   `SCL_KEEP` stops fresh snowfall reading as damage, but also means this pipeline
   cannot speak to the genesis zone.
