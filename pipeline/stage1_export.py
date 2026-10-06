@@ -10,6 +10,7 @@ drop straight into ArcGIS Pro (or QGIS, or stage 2).
 Outputs (all EPSG:32645, NODATA -9999):
     data/raster/s2_pre.tif     B2 B3 B4 B8 B11 B12, surface reflectance 0-1
     data/raster/s2_post.tif        "
+    data/raster/s2_late.tif        ", post-monsoon; stage 6 only, see S2_LATE
     data/raster/slide_pre.tif      B4 B3 B2 over SLIDE_ROI, cloud-masked
     data/raster/slide_post.tif     "
     data/raster/slideraw_pre.tif   the same two frames, mask off
@@ -241,6 +242,7 @@ def main():
     print("Sentinel-2")
     s2_pre = s2_composite(*cfg.S2_PRE)
     s2_post = s2_composite(*cfg.S2_POST)
+    s2_late = s2_composite(*cfg.S2_LATE)
     print("Slider frames")
     slide = {
         f"slide{'raw' if raw else ''}_{half}": slide_day(date, masked=not raw)
@@ -268,6 +270,7 @@ def main():
     jobs = [
         ("s2_pre", s2_pre, cfg.S2_BANDS, "Sentinel-2 L2A", f"{cfg.S2_PRE[0]}..{cfg.S2_PRE[1]}", roi, cfg.SCALE),
         ("s2_post", s2_post, cfg.S2_BANDS, "Sentinel-2 L2A", f"{cfg.S2_POST[0]}..{cfg.S2_POST[1]}", roi, cfg.SCALE),
+        ("s2_late", s2_late, cfg.S2_BANDS, "Sentinel-2 L2A", f"{cfg.S2_LATE[0]}..{cfg.S2_LATE[1]}", roi, cfg.SCALE),
         ("s1_pre", s1_pre, cfg.S1_BANDS, f"Sentinel-1 GRD orbit {orbit}", f"{cfg.S1_PRE[0]}..{cfg.S1_PRE[1]}", roi, cfg.SCALE),
         ("s1_post", s1_post, cfg.S1_BANDS, f"Sentinel-1 GRD orbit {orbit}", f"{cfg.S1_POST[0]}..{cfg.S1_POST[1]}", roi, cfg.SCALE),
         ("dem", dem, ["elevation"], "SRTM GL1 v3",

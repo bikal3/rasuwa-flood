@@ -77,6 +77,31 @@ S2_POST = ("2026-08-26", "2026-09-01")
 S1_PRE = ("2026-08-08", "2026-08-25")
 S1_POST = ("2026-08-26", "2026-09-01")
 
+# --- Late post-monsoon window (stages 1 and 6) ------------------------------
+# A second post-event look, weeks later, for the one question the event-window
+# pair cannot answer. The monsoon left only 15.2% of the ROI with a valid
+# optical pre/post pair, so wherever stage 2 fired on SAR alone there is no
+# optical opinion at all -- Z2b Ghattekhola has 7.1% usable optical pixels and
+# its figure rests almost entirely on the radar.
+#
+# The monsoon withdraws from central Nepal at the end of September, and it
+# shows. Fraction of the ROI with a valid pre/late pair, measured at 60 m:
+#
+#   pre/post  2026-08-26..09-01   15.2%   <- what stage 2 ran on
+#   pre/late  2026-09-28..10-07   68.7%
+#   pre/late  2026-09-20..10-07   71.1%   -- 8 more days of mixing, 2.4 points
+#
+# The tighter window wins: four scenes, two of them near-cloudless (28 September
+# at 1.6% scene cloud, 1 October at 6.9%), against a 4.5x gain in coverage.
+#
+# What it can and cannot say. It confirms *persistent* change -- scour, deposit,
+# channel widening, buildings gone -- which is exactly what is in doubt where
+# only the radar spoke. It cannot attribute that change to 26 August: five more
+# weeks of monsoon, the start of post-flood recovery and ordinary vegetation
+# phenology are all inside the gap. So stage 6 tests stage 2's detections and
+# never replaces them, and nothing upstream of stage 6 reads this window.
+S2_LATE = ("2026-09-28", "2026-10-07")
+
 S2_BANDS = ["B2", "B3", "B4", "B8", "B11", "B12"]
 # True colour only, for the before/after slider. Stage 1 exports these bands and
 # stage 5 reads them back, so they live here rather than being written out twice
