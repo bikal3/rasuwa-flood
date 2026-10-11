@@ -82,7 +82,7 @@ export default function Shell({ page }) {
           <div className="foot">
             <p className="warn">
               ⚠️ Unreviewed analysis. Thresholds are the study design's, not
-              calibrated — nothing here is a validated classifier.
+              calibrated; nothing here is a validated classifier.
             </p>
             <p className="caption">
               26 Aug 2026 · Rasuwagadhi to the Narayani
@@ -144,7 +144,7 @@ function SiteFoot({ s }) {
   return (
     <footer>
       <p>
-        <strong>Unreviewed analysis — not an operational damage assessment.</strong>{" "}
+        <strong>Unreviewed analysis, not an operational damage assessment.</strong>{" "}
         Presence in a source export is not evidence of damage; only the{" "}
         <code>status</code> field is. Detection thresholds are the study design's
         rather than values calibrated against reference polygons.

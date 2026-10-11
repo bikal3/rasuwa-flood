@@ -28,7 +28,7 @@ export const LAYERS = [
   {
     id: "flood_extent",
     label: "Observed flood extent",
-    group: "Observed — HOT survey",
+    group: "Observed: HOT survey",
     kind: "polygon",
     on: true,
     colour: C.blue,
@@ -38,7 +38,7 @@ export const LAYERS = [
   {
     id: "aoi",
     label: "Area of interest (+200 m)",
-    group: "Observed — HOT survey",
+    group: "Observed: HOT survey",
     kind: "polygon",
     on: false,
     colour: C.muted,
@@ -48,7 +48,7 @@ export const LAYERS = [
   {
     id: "bridges",
     label: "Bridges assessed",
-    group: "Observed — HOT survey",
+    group: "Observed: HOT survey",
     kind: "point",
     on: true,
     colour: C.red,
@@ -59,7 +59,7 @@ export const LAYERS = [
   {
     id: "hydropowers",
     label: "Hydropower exposed",
-    group: "Observed — HOT survey",
+    group: "Observed: HOT survey",
     kind: "point",
     on: true,
     colour: C.violet,
@@ -69,7 +69,7 @@ export const LAYERS = [
   {
     id: "buildings_damaged",
     label: "Buildings destroyed/damaged",
-    group: "Observed — HOT survey",
+    group: "Observed: HOT survey",
     kind: "polygon",
     on: true,
     colour: C.red,
@@ -77,22 +77,22 @@ export const LAYERS = [
     // 1,626 footprints are a red smear at corridor zoom and tell you nothing;
     // they only become readable once a settlement fills the screen.
     minZoom: 12.5,
-    title: (p) => p.name || `${p.building || "Building"} — ${p.status}`,
+    title: (p) => p.name || `${p.building || "Building"}: ${p.status}`,
   },
   {
     id: "roads_damaged",
     label: "Roads destroyed",
-    group: "Observed — HOT survey",
+    group: "Observed: HOT survey",
     kind: "line",
     on: true,
     colour: C.amber,
     style: { color: C.amber, weight: 2.4, opacity: 0.9 },
-    title: (p) => p.name || `${p.highway || "Road"} — destroyed`,
+    title: (p) => p.name || `${p.highway || "Road"}: destroyed`,
   },
   {
     id: "facilities",
     label: "Health & education",
-    group: "Observed — HOT survey",
+    group: "Observed: HOT survey",
     kind: "point",
     on: false,
     colour: C.teal,
@@ -102,7 +102,7 @@ export const LAYERS = [
   {
     id: "places",
     label: "Populated places",
-    group: "Observed — HOT survey",
+    group: "Observed: HOT survey",
     kind: "point",
     on: false,
     colour: C.ink,
@@ -113,7 +113,7 @@ export const LAYERS = [
   {
     id: "waterways",
     label: "Waterways (OSM)",
-    group: "Observed — HOT survey",
+    group: "Observed: HOT survey",
     kind: "line",
     on: false,
     colour: "#5aa0e0",
@@ -125,7 +125,7 @@ export const LAYERS = [
   {
     id: "detected_damage",
     label: "Detected flood damage",
-    group: "Derived — this pipeline",
+    group: "Derived: this pipeline",
     kind: "polygon",
     on: true,
     colour: C.red,
@@ -135,7 +135,7 @@ export const LAYERS = [
   {
     id: "corridor",
     label: "HAND flood corridor",
-    group: "Derived — this pipeline",
+    group: "Derived: this pipeline",
     kind: "polygon",
     on: false,
     colour: C.teal,
@@ -145,7 +145,7 @@ export const LAYERS = [
   {
     id: "channel",
     label: "Drainage network",
-    group: "Derived — this pipeline",
+    group: "Derived: this pipeline",
     kind: "polygon",
     on: false,
     colour: C.ink,
@@ -155,17 +155,17 @@ export const LAYERS = [
   {
     id: "zones",
     label: "Impact zones",
-    group: "Derived — this pipeline",
+    group: "Derived: this pipeline",
     kind: "polygon",
     on: true,
     colour: C.ink,
     style: { color: C.ink, weight: 1.1, fill: false, dashArray: "2 3" },
-    title: (p) => `${p.zone_id} — ${p.label}`,
+    title: (p) => `${p.zone_id}: ${p.label}`,
   },
   {
     id: "roi",
     label: "Study ROI",
-    group: "Derived — this pipeline",
+    group: "Derived: this pipeline",
     kind: "polygon",
     on: false,
     colour: C.muted,

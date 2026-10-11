@@ -328,8 +328,8 @@ def map_flood(change, flood, hs, zones, extent, out):
     ax.set_xlim(extent[0], extent[1]); ax.set_ylim(extent[2], extent[3])
     s2._frame(ax, "Change confined to the flood corridor",
               "stage 2 detections split by whether the river can reach them")
-    for colour, label in ((cfg.CRITICAL, "In corridor — flood damage"),
-                          (cfg.SERIES_1, "Off corridor — rejected")):
+    for colour, label in ((cfg.CRITICAL, "In corridor: flood damage"),
+                          (cfg.SERIES_1, "Off corridor: rejected")):
         ax.scatter([], [], marker="s", s=60, color=colour, label=label)
     leg = ax.legend(loc="lower left", frameon=True, fontsize=8.5)
     leg.get_frame().set_edgecolor(cfg.GRID); leg.get_frame().set_facecolor(cfg.SURFACE)

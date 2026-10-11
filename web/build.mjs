@@ -73,7 +73,7 @@ async function writePages() {
     // The home page is already called "Rasuwa Flood 2026"; the rest hang the
     // site name off their own.
     const html = tpl
-      .replaceAll("{{titletag}}", esc(r.path ? `${r.title} — Rasuwa Flood 2026` : r.title))
+      .replaceAll("{{titletag}}", esc(r.path ? `${r.title} | Rasuwa Flood 2026` : r.title))
       .replaceAll("{{base}}", r.path ? "../" : "")
       .replaceAll("{{page}}", r.id)
       .replaceAll("{{title}}", esc(r.title))

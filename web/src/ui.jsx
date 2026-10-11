@@ -10,14 +10,14 @@ const flyTo = (zoneId) =>
 
 export const fmt = (v, d = 1) =>
   v === null || v === undefined || Number.isNaN(v)
-    ? "—"
+    ? "-"
     : Number(v).toLocaleString("en", {
         minimumFractionDigits: d,
         maximumFractionDigits: d,
       });
 
 export const int = (v) =>
-  v === null || v === undefined ? "—" : Number(v).toLocaleString("en");
+  v === null || v === undefined ? "-" : Number(v).toLocaleString("en");
 
 /** "26 August 2026" from an ISO date. Fixed to UTC: these are acquisition and
  *  export dates, and a reader west of Greenwich should not see them slip a day. */
@@ -95,7 +95,7 @@ export function Table({ caption, cols, rows }) {
                             title={`Show ${r.zone_id} on the map`}>
                       {r.zone_id}
                     </button>
-                  ) : c.render ? c.render(r) : (r[c.key] ?? "—")}
+                  ) : c.render ? c.render(r) : (r[c.key] ?? "-")}
                 </td>
               ))}
             </tr>

@@ -55,7 +55,7 @@ function Home({ s }) {
           assessment.</strong> The ground survey counts are the Humanitarian
           OpenStreetMap Team's and are real. The satellite detection is this
           project's own, and its thresholds are the study design's rather than
-          values calibrated against reference polygons — so treat the derived
+          values calibrated against reference polygons, so treat the derived
           layers as an illustration of the method, not a verified map of damage.
         </p>
         <p>Do not use anything here for planning, response or risk communication.</p>
@@ -86,14 +86,14 @@ function Home({ s }) {
           On {eventDate(s)} a mass of ice and rock came off Langtang Lirung, high
           above the Nepal–China border, and released the meltwater ponded behind
           it. What came down the Lende Khola was not a swollen river. It was a{" "}
-          <strong>debris flood</strong> — water carrying so much rock and
+          <strong>debris flood</strong>: water carrying so much rock and
           sediment that it behaves more like wet concrete than like water, and
           destroys accordingly.
         </p>
         <p>
           It reached the Bhote Koshi, turned south, and ran{" "}
-          <strong>{fmt(extent, 1)} km²</strong> of valley floor — roughly{" "}
-          {int(pitches)} football pitches — down to the Narayani. The Rasuwagadhi
+          <strong>{fmt(extent, 1)} km²</strong> of valley floor (roughly{" "}
+          {int(pitches)} football pitches) down to the Narayani. The Rasuwagadhi
           border post, the customs yard and the road to Tibet are gone.
         </p>
 
@@ -105,7 +105,7 @@ function Home({ s }) {
           <strong>{fmt(hits[0]?.corridor_base_pct, 2)}%</strong> of this valley
           and contains{" "}
           <strong>{fmt(hits[0]?.in_corridor_pct, 1)}%</strong> of the buildings
-          recorded destroyed — about{" "}
+          recorded destroyed, about{" "}
           {fmt(hits[0]?.in_corridor_pct / hits[0]?.corridor_base_pct, 0)} times
           the concentration you would get by chance.
         </p>
@@ -125,7 +125,7 @@ function Home({ s }) {
       <MapView short />
       <Figcap>
         <b>Rasuwagadhi to the Narayani.</b> Fade one group against the other with
-        the opacity sliders — the overlap between them is the whole finding.{" "}
+        the opacity sliders; the overlap between them is the whole finding.{" "}
         <a href={href("map")}>Open the full map →</a> Basemap: Esri world imagery.
       </Figcap>
 
@@ -167,7 +167,7 @@ function How({ s }) {
       <PageHead
         kicker="Understand"
         title="How it works"
-        lede="Five things worth knowing to make sense of the numbers on this site. No prior knowledge assumed — start here if any of the analysis pages lost you."
+        lede="Five things worth knowing to make sense of the numbers on this site. No prior knowledge assumed: start here if any of the analysis pages lost you."
       />
 
       <div className="cols explainers">
@@ -176,7 +176,7 @@ function How({ s }) {
           Glaciers leave behind loose ridges of rubble, and meltwater ponds
           behind them. That dam is gravel and ice, not concrete. A rockfall into
           the lake, an ice avalanche, or simply the ridge soaking through can
-          open it — and when it opens the lake does not drain over days. It
+          open it, and when it opens the lake does not drain over days. It
           leaves in minutes.
         </p>
         <p>
@@ -196,7 +196,7 @@ function How({ s }) {
           height. For each cell, work out which way water would run off it,
           follow that path downhill until it meets a river, and record how much
           higher the cell sits than the river it drains into. That number is{" "}
-          <strong>HAND</strong> — Height Above Nearest Drainage.
+          <strong>HAND</strong>: Height Above Nearest Drainage.
         </p>
         <p>
           It is not height above sea level. A house 5 m above the channel and a
@@ -207,7 +207,7 @@ function How({ s }) {
         </p>
         <p>
           Everything within <strong>{s.event.hand_max_m} m</strong> of a channel
-          here is {fmt(hits[0]?.corridor_base_pct, 2)}% of the map — and{" "}
+          here is {fmt(hits[0]?.corridor_base_pct, 2)}% of the map, and{" "}
           {fmt(hits[0]?.in_corridor_pct, 1)}% of the destroyed buildings are
           inside it. The corridor never looks at the satellite imagery, which is
           what makes that a test rather than a restatement.
@@ -217,7 +217,7 @@ function How({ s }) {
       <Explain q="Why this needs two different satellites">
         <p>
           <strong>Sentinel-2 is a camera.</strong> It sees colour the way you
-          would from an aeroplane — and, like you, it sees nothing at all through
+          would from an aeroplane. Like you, it sees nothing at all through
           cloud. This flood happened at the height of the monsoon, and the
           clear-sky image taken afterwards covers only a sixth of the scene.
         </p>
@@ -227,14 +227,14 @@ function How({ s }) {
           cloud. What it measures is roughness rather than colour: smooth
           standing water and fresh wet sediment bounce the pulse away from the
           satellite, so they come back dark. The cost is that a radar image is
-          not a photograph — it is grainy, false-coloured and genuinely hard to
+          not a photograph: it is grainy, false-coloured and genuinely hard to
           read.
         </p>
         <p>
           Neither one alone gets through a monsoon disaster, so the detector
           accepts a change flagged by <em>either</em>. The{" "}
           <a href={href("compare")}>before &amp; after</a> slider shows what the
-          cloud filter takes out of an optical frame — though on a clearer day and
+          cloud filter takes out of an optical frame, though on a clearer day and
           30 km south of this study rectangle, which is the only reason it has a
           post-event optical view worth looking at.
         </p>
@@ -250,7 +250,7 @@ function How({ s }) {
         <p>
           It is blind to anything that already looked that way. The river was a
           river on both dates, so along the channel itself there is nothing to
-          flag — and the channel is most of the mapped flood extent. When you
+          flag, and the channel is most of the mapped flood extent. When you
           read on this site that only{" "}
           {fmt(s.validation.observed_flagged_by_stage3_pct, 1)}% of the flood
           extent was flagged, that is mostly what it means.
@@ -260,7 +260,7 @@ function How({ s }) {
       <Explain q="What a damage survey actually records">
         <p>
           Not “a village was destroyed”. Mappers work through imagery and ground
-          reports feature by feature, tagging each one with a condition —
+          reports feature by feature, tagging each one with a condition:
           standing, damaged, destroyed. Every count on this site is a sum over
           those tags, which is why a bridge and a field boundary are counted
           separately, and why presence in the dataset is not itself evidence of
@@ -306,15 +306,15 @@ function Glossary({ s }) {
       <DefList items={[
         ["GLOF", "Glacial lake outburst flood. A lake dammed by glacial rubble or ice fails, and empties in minutes rather than days."],
         ["Debris flood", "Water carrying so much rock and sediment that it moves and destroys more like wet concrete than like a river."],
-        ["DEM", "Digital elevation model — a grid where every cell holds the height of the ground. Here, SRTM at 30 m."],
+        ["DEM", "Digital elevation model: a grid where every cell holds the height of the ground. Here, SRTM at 30 m."],
         ["HAND", `Height Above Nearest Drainage. How far a cell sits above the river it drains into, rather than above sea level. The corridor on this site is everything within ${s.event.hand_max_m} m of a channel draining at least ${s.event.min_drainage_km2} km².`],
         ["Sentinel-2", "An optical satellite: a camera that sees colour, and nothing through cloud."],
         ["Sentinel-1", "A radar satellite. It sends its own microwave pulse and measures the echo, so it works at night and through cloud. Smooth standing water returns a dark signal."],
         ["Backscatter (σ⁰)", "How much of a radar pulse comes back to the satellite. A swing between two dates means the surface changed its roughness or its wetness."],
         ["NDVI and MNDWI", "Index images built from Sentinel-2 bands, one tracking living vegetation and one tracking surface water. Differencing them between two dates is how vegetation loss and new water are detected."],
-        ["Change detection", "Comparing the same ground on two dates and flagging what differs. It cannot see damage to something that already looked that way — a river channel, for instance."],
+        ["Change detection", "Comparing the same ground on two dates and flagging what differs. It cannot see damage to something that already looked that way, a river channel, for instance."],
         ["Base rate and concentration", "The share of the map a mask covers, and how many times more damage falls inside it than that share alone would predict. A mask over 4% of the map holding 96% of the losses is a 22× concentration."],
-        ["Ground truth", "Independent observation used to test a result. Here, the HOT survey — which this pipeline never reads before making its own estimate."],
+        ["Ground truth", "Independent observation used to test a result. Here, the HOT survey, which this pipeline never reads before making its own estimate."],
         ["Impact zone", "One of six named stretches of the corridor, from the Rasuwagadhi border south to Betrawati, used to break every count down by place."],
         ["Scour swath", "Detected damage per metre of channel: the width of the disturbed valley floor. It is not the width of the water."],
         ["GeoJSON", "A plain-text file format for map features. Every layer on the downloads page is one, and opens directly in QGIS or ArcGIS Pro."],
@@ -338,14 +338,14 @@ function FloodMap({ s }) {
       <MapView />
       <Figcap>
         <b>Rasuwagadhi to the Narayani.</b> Clicking a feature reports its
-        attributes in the panel. Building footprints draw from zoom 12.5 — all{" "}
+        attributes in the panel. Building footprints draw from zoom 12.5; all{" "}
         {int(s.damaged_features_by_type.building)} of them are an unreadable
         smear at corridor zoom. Basemap: Esri world imagery.
       </Figcap>
 
       <div className="cards">
         <div className="card">
-          <h3>Observed — HOT survey</h3>
+          <h3>Observed: HOT survey</h3>
           <p>
             {int(surveyed)} buildings, {int(s.roads_by_status.Standing + s.roads_by_status.Destroyed)}{" "}
             road segments and {int(bridges)} bridges walked through feature by
@@ -354,7 +354,7 @@ function FloodMap({ s }) {
           </p>
         </div>
         <div className="card">
-          <h3>Derived — this pipeline</h3>
+          <h3>Derived: this pipeline</h3>
           <p>
             The terrain corridor, the drainage network it hangs off, and the
             change the satellites detected inside it. None of these layers read
@@ -365,11 +365,11 @@ function FloodMap({ s }) {
 
       <h2>Using the map</h2>
       <ul className="steps">
-        <li><b>Opacity</b> — fade one group against the other. The overlap is the finding.</li>
-        <li><b>Click</b> — any feature reports its attributes; zone outlines give the zone id used in the tables.</li>
-        <li><b>Zoom</b> — quarter-level steps, because the corridor is 120 km but a washed-out bridge is metres. <b>+</b>, <b>−</b> and <b>f</b> to fit.</li>
-        <li><b>Scroll</b> — a plain wheel scrolls the page; hold ctrl or ⌘ to zoom the map, or use two fingers on a touchscreen.</li>
-        <li><b>Share</b> — the view lives in the address bar, so any view you set up can be linked to.</li>
+        <li><b>Opacity</b>: fade one group against the other. The overlap is the finding.</li>
+        <li><b>Click</b>: any feature reports its attributes; zone outlines give the zone id used in the tables.</li>
+        <li><b>Zoom</b>: quarter-level steps, because the corridor is 120 km but a washed-out bridge is metres. <b>+</b>, <b>−</b> and <b>f</b> to fit.</li>
+        <li><b>Scroll</b>: a plain wheel scrolls the page; hold ctrl or ⌘ to zoom the map, or use two fingers on a touchscreen.</li>
+        <li><b>Share</b>: the view lives in the address bar, so any view you set up can be linked to.</li>
       </ul>
     </>
   );
@@ -383,7 +383,7 @@ function Compare({ s }) {
       <PageHead
         kicker="Explore data"
         title="Before &amp; after"
-        lede="The Trishuli at Betrawati and Gerkhu on 12 and 27 August 2026 — the two Copernicus Sentinel-2 passes either side of the flood, one acquisition each rather than a composite of a week. Shown twice: as the satellite returned them, and with cloud, shadow and snow masked out."
+        lede="The Trishuli at Betrawati and Gerkhu on 12 and 27 August 2026: the two Copernicus Sentinel-2 passes either side of the flood, one acquisition each rather than a composite of a week. Shown twice: as the satellite returned them, and with cloud, shadow and snow masked out."
       />
       <SwipeMap />
       <Figcap>
@@ -417,7 +417,7 @@ function Compare({ s }) {
       <Callout kind="warn">
         <p>
           <strong>This is the clear frame, and it is not where the numbers come
-          from.</strong> Betrawati got a mostly cloud-free look on 27 August — the
+          from.</strong> Betrawati got a mostly cloud-free look on 27 August; the
           tag on the slider gives the exact share. The study rectangle 30 km north
           got no such view after {eventDate(s)} at all, and that gap is why the{" "}
           <a href={href("satellites")}>detection</a> accepts a change flagged by
@@ -433,7 +433,7 @@ function Compare({ s }) {
           <a href="https://eu-space.europa.eu/components/earth-observation-copernicus/image-of-the-day/aftermath-nepal-flash-flood">
             the Copernicus image of the day
           </a>{" "}
-          for this flood — same ground, same two dates — so the two can be held
+          for this flood (same ground, same two dates), so the two can be held
           side by side. It sits at the foot of the corridor the{" "}
           <a href={href("map")}>flood map</a> spans; places outside it get no
           button above, because a button that flies you off the overlay is a trap.
@@ -457,7 +457,7 @@ function Terrain({ s }) {
       <PageHead
         kicker="Analysis"
         title="Terrain alone finds the damage"
-        lede="Height Above Nearest Drainage is computed from a 30 m elevation model and nothing else — no imagery, no flood report. It asks one question of every pixel: how far above the river is this ground?"
+        lede="Height Above Nearest Drainage is computed from a 30 m elevation model and nothing else: no imagery, no flood report. It asks one question of every pixel: how far above the river is this ground?"
       />
 
       <div className="metrics">
@@ -484,7 +484,7 @@ function Terrain({ s }) {
           about the whole of the high Himalaya, not only about{" "}
           {eventDate(s).replace(/ \d{4}$/, "")}: the ground a debris flood can
           occupy is largely decidable in advance, anywhere there is an elevation
-          model — which is everywhere.
+          model, which is everywhere.
         </p>
       </Explain>
 
@@ -546,7 +546,7 @@ function Terrain({ s }) {
       <Figcap>
         The corridor is the terrain-only mask; detected damage is what the
         satellites flagged inside it. Concentration is the last column over its
-        own base rate — how much better than chance each mask does.
+        own base rate: how much better than chance each mask does.
       </Figcap>
     </>
   );
@@ -564,7 +564,7 @@ function Satellites({ s }) {
       <PageHead
         kicker="Analysis"
         title="What the satellites caught, and what they missed"
-        lede="A pixel counts as changed if Sentinel-2 saw its vegetation or water index move, or Sentinel-1 saw its radar backscatter swing — and if it sits inside the terrain corridor. Measured against the ground survey, honestly."
+        lede="A pixel counts as changed if Sentinel-2 saw its vegetation or water index move, or Sentinel-1 saw its radar backscatter swing, and if it sits inside the terrain corridor. Measured against the ground survey, honestly."
       />
 
       <div className="metrics">
@@ -582,15 +582,15 @@ function Satellites({ s }) {
         <p>
           A change detector compares the same ground on two dates and flags what
           is different. The river was already a river on both dates, so along the
-          channel itself there is nothing to flag — and the channel is most of
+          channel itself there is nothing to flag, and the channel is most of
           the mapped flood extent. Finding nothing there is the detector being
           right, not being blind.
         </p>
         <p>
           What it does light up is ground that changed <em>state</em>: forest
           stripped to gravel, terraces buried in sediment, a village replaced by
-          riverbed. Add the monsoon — 65–80% cloud over the upper catchment,
-          leaving the radar working alone — and the honest way to read the score
+          riverbed. Add the monsoon (65–80% cloud over the upper catchment,
+          leaving the radar working alone) and the honest way to read the score
           is concentration rather than coverage.
         </p>
       </Explain>
@@ -609,14 +609,14 @@ function Satellites({ s }) {
           />
           <Figcap>
             Share covered by the detected-damage mask, which occupies{" "}
-            {fmt(hits[0]?.detected_base_pct, 2)}% of the study area — an
+            {fmt(hits[0]?.detected_base_pct, 2)}% of the study area, an
             eightieth of the terrain corridor above it.
           </Figcap>
         </div>
         <Callout kind="warn">
           <p>
             <strong>The upper catchment sat under 65–80% cloud.</strong> Those
-            pixels rest on radar alone, and one zone — Ghattekhola — has only
+            pixels rest on radar alone, and one zone, Ghattekhola, has only
             7.1% usable optical coverage. Its figure should not be quoted
             without that caveat.
           </p>
@@ -709,14 +709,14 @@ function Exposure({ s }) {
       />
       <Figcap>
         <b>Scour swath is not river width.</b> It is detected damage per metre of
-        channel — the width of the disturbed valley floor, which is the widened
+        channel: the width of the disturbed valley floor, which is the widened
         channel plus its deposition aprons. Sentinel-1 cannot resolve this river:
         its backscatter never goes specular in a gorge this steep.
       </Figcap>
 
       <Callout kind="warn">
         <p>
-          Impact-zone coordinates beyond Rasuwagadhi are approximate — only the
+          Impact-zone coordinates beyond Rasuwagadhi are approximate; only the
           border zone has a position stated in the study design. Treat the
           per-zone splits as indicative of where along the valley the damage
           concentrated, not as precise boundaries.
@@ -742,7 +742,7 @@ function Method({ s }) {
       />
 
       <DefList items={[
-        ["Event", `${eventDate(s)} — glacial lake outburst and debris flood`],
+        ["Event", `${eventDate(s)}, glacial lake outburst and debris flood`],
         ["Study area", `${roi[0]}–${roi[2]}° E, ${roi[1]}–${roi[3]}° N · ${fmt(a["ROI area"], 0)} km²`],
         ["Instruments", "Sentinel-2 L2A · Sentinel-1 GRD · SRTM GL1 (30 m)"],
         ["Ground truth", `${int(surveyed)} buildings, ${int(s.roads_by_status.Standing + s.roads_by_status.Destroyed)} road segments, ${int(bridges)} bridges`],
@@ -809,7 +809,7 @@ function Method({ s }) {
                   {s.dropped_bridges.length} bridge
                   {s.dropped_bridges.length > 1 ? "s" : ""} dropped from the map.
                 </b>{" "}
-                {s.dropped_bridges.join(", ")} — published with latitude in both
+                {s.dropped_bridges.join(", ")}, published with latitude in both
                 coordinate slots.
               </li>
             )}
@@ -836,7 +836,7 @@ function Method({ s }) {
       <Figcap>
         Δ is post minus pre. σ⁰ is Sentinel-1 VV backscatter, differenced in dB
         after averaging in linear power. HAND is height above the nearest
-        drainage and A the upslope area draining to it, both from SRTM alone —
+        drainage and A the upslope area draining to it, both from SRTM alone;
         neither reads the imagery, which is what makes the{" "}
         <a href={href("terrain")}>terrain result</a> a test rather than a
         restatement. Both thresholds are read from the pipeline's own output, so
@@ -855,7 +855,7 @@ function Downloads({ s }) {
       <PageHead
         kicker="Reference"
         title="Data &amp; sources"
-        lede="Every layer this site draws, as GeoJSON in WGS84. Open them in QGIS or ArcGIS Pro directly — no account, no API key, no licence to agree to beyond the ones below."
+        lede="Every layer this site draws, as GeoJSON in WGS84. Open them in QGIS or ArcGIS Pro directly: no account, no API key, no licence to agree to beyond the ones below."
       />
 
       <h2>Layers</h2>
@@ -876,7 +876,7 @@ function Downloads({ s }) {
         <p>
           <strong>Every figure on this site is in <code>summary.json</code>.</strong>{" "}
           The pages read their numbers out of that one file at load time, so
-          there is no statistic quoted anywhere here that is not in the download —
+          there is no statistic quoted anywhere here that is not in the download,
           and no way for the prose to drift from what the pipeline computed.
         </p>
       </Callout>
@@ -898,7 +898,7 @@ function Downloads({ s }) {
 
       <h2>How it was built</h2>
       <p>
-        A five-stage Python pipeline — Earth Engine, rasterio, geopandas — each
+        A five-stage Python pipeline (Earth Engine, rasterio, geopandas), each
         stage reading the previous one's files off disk and nothing else. The
         ground survey is the Humanitarian OpenStreetMap Team's and the field
         reports behind it; the hydropower inventory was contributed by Niti

@@ -150,7 +150,7 @@ def main():
         n, pct = rate(changed, pair, sel)
         if name.endswith("far field"):
             base = pct
-        print(f"  {name:34s} {n:18,d} {('—' if pct is None else f'{pct:.1f}%'):>10s}")
+        print(f"  {name:34s} {n:18,d} {('-' if pct is None else f'{pct:.1f}%'):>10s}")
     print(f"\n  far-field base rate {base:.1f}%: the share of untouched ground the"
           f" same\n  thresholds call changed over five weeks. Read every rate above"
           " against it.")

@@ -11,7 +11,7 @@ several times wider, the fields either side of it buried under flood
 deposits.](web/public/share.jpg)](https://rasuwaflood.bikal3.com.np/compare/)
 
 The Trishuli at Betrawati, at the foot of the corridor and 30 km south of the
-study rectangle, on the two Sentinel-2 passes either side of the flood — one
+study rectangle, on the two Sentinel-2 passes either side of the flood, one
 acquisition each, not a composite. `stage5_overlays.py` draws this from the same
 two scenes it writes the site's slider from, so the picture and [the draggable
 version](https://rasuwaflood.bikal3.com.np/compare/) cannot disagree. It is a
@@ -31,18 +31,18 @@ of flood damage in 290 polygons, a continuous ribbon down the Bhote Koshi rather
 than a scatter over the hillslopes; charging that the far-field false-positive
 rate leaves **3.3 km²** attributable to the flood.
 
-The corridor comes from a 30 m elevation model and nothing else — no imagery. It
-covers 4.51% of the study area, and the ground survey lands inside it — HOT's
+The corridor comes from a 30 m elevation model and nothing else: no imagery. It
+covers 4.51% of the study area, and the ground survey lands inside it. The survey is HOT's
 response export for this event
 ([`hot_flood_npl`](https://data.humdata.org/dataset/hot_flood_npl), ODC-ODbL),
 mapped from drone, Landsat, PlanetScope and Sentinel imagery plus volunteer
-field reports, independently of anything here — the 2 October 2026 export:
+field reports, independently of anything here. Figures are from the 2 October 2026 export:
 
 | Ground evidence (n in ROI) | In HAND corridor | In detected damage (0.41% of area) |
 | :-- | --: | --: |
-| Destroyed buildings (800) | **96.2%** | 54.9% — 134× base rate |
-| Bridges washed out (13) | **100%** | 38.5% — 94× |
-| Roads destroyed (191) | **93.2%** | 44.5% — 109× |
+| Destroyed buildings (800) | **96.2%** | 54.9% (134× base rate) |
+| Bridges washed out (13) | **100%** | 38.5% (94×) |
+| Roads destroyed (191) | **93.2%** | 44.5% (109×) |
 | HOT observed flood extent | **90.8%** | 29.5% |
 
 Only 29.5% of the observed extent is flagged because most of it is river channel
@@ -62,13 +62,13 @@ changed, against the rate the same thresholds fire on ground nobody flagged:
 | Ground flagged by | Still changed five weeks later | vs the 4.6% far field |
 | :-- | --: | --: |
 | Stage 3 flood damage | **59.1%** | 12.8× |
-| — the part radar alone had flagged | **44.5%** | 9.7× |
+| of that, the part radar alone had flagged | **44.5%** | 9.7× |
 | Stage 2 change, whole rectangle | 19.6% | 4.3× |
 | Nothing (HAND ≤ 50 m) | 6.7% | 1.5× |
 
 The radar was not inventing the corridor: where it spoke alone, the first clear
 optical view agrees nearly ten times more often than chance. And the terrain
-prior is doing the work claimed for it — confining the mask to the corridor
+prior is doing the work claimed for it: confining the mask to the corridor
 triples the share that survives an independent look, from 19.6% to 59.1%.
 
 This is persistence, not attribution. The gap holds five more weeks of monsoon,
@@ -103,7 +103,7 @@ node build.mjs --serve                       # watched, http://localhost:5173
 
 Study area, dates, pixel size, thresholds and impact zones all live in
 `pipeline/config.py`. Every stage reads it; nothing else needs editing. Run the
-stages from anywhere — `config.py` resolves paths against the repo root, not its
+stages from anywhere; `config.py` resolves paths against the repo root, not its
 own directory.
 
 ## Stages
@@ -116,12 +116,12 @@ own directory.
 | 4 | `pipeline/stage4_hot.py` | HOT ground survey, validation scores, the site's data |
 | 5 | `pipeline/stage5_overlays.py` | the before/after slider's images, and the share card |
 | 6 | `pipeline/stage6_late.py` | the post-monsoon optical check on stage 2's mask |
-| — | `web/` | the ten-page static site |
+| | `web/` | the ten-page static site |
 
 Each stage reads the previous one's files off disk and nothing else. No stage
-calls another, so stage 1's output stands on its own in ArcGIS Pro or QGIS — it
+calls another, so stage 1's output stands on its own in ArcGIS Pro or QGIS (it
 is plain GeoTIFF and Shapefile, already projected and metric, with bands named
-`B8` rather than `Band_4` — and any stage can be re-run alone.
+`B8` rather than `Band_4`), and any stage can be re-run alone.
 
 ```
 pipeline/       the Python stages and their checks; everything tunable is config.py
@@ -169,13 +169,13 @@ different routes through the same material:
 
 | Group | Pages |
 | :-- | :-- |
-| — | Overview |
+| | Overview |
 | Understand | How it works · Glossary |
 | Explore data | Flood map · Before & after |
 | Analysis | Terrain corridor · Satellite detection · Damage & exposure |
 | Reference | Method & limits · Data & sources |
 
-**Multi-page, and no router** — `web/src/routes.mjs` is the one table of pages
+**Multi-page, and no router.** `web/src/routes.mjs` is the one table of pages
 and `build.mjs` writes a real directory per entry, so the browser's own
 navigation does the work and no host needs a rewrite rule. `build.mjs`'s own
 docstring says how, and `web/src/MapView.jsx` and `gestures.js` say why the two
@@ -216,7 +216,7 @@ cd web && node swipe-check.mjs               # the slider and the bars, in real 
 ```
 
 No pytest, no fixtures, no test framework. Each file's docstring says what it
-proves and why it is written the way it is — `swipe-check.mjs` in particular
+proves and why it is written the way it is; `swipe-check.mjs` in particular
 exists because jsdom has no layout, so a `clip-path` that resolves to nothing on
 screen passes there.
 
@@ -241,7 +241,7 @@ screen passes there.
   background: supported, and the weakest of the five zones. Check
   `optical_valid_pct` in `zonal_damage.csv` and `late_optical.csv` before citing
   any zone.
-- **HAND says nothing about how the corridor was reached** — no flow volume,
+- **HAND says nothing about how the corridor was reached**: no flow volume,
   velocity or timing, so it cannot separate the 26 August surge from ordinary
   high-monsoon inundation. That needs a hydrodynamic model, for which
   `terrain.tif` is the input.

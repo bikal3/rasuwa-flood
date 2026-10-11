@@ -5,7 +5,7 @@ import { LAYERS, BASEMAPS, PLACES, BRIDGE_COLOUR } from "./layers.js";
 import tameGestures from "./gestures.js";
 import { DATA } from "./base.js";
 
-/** "Observed — HOT survey" -> "observed-hot-survey", for label/input pairing. */
+/** "Observed: HOT survey" -> "observed-hot-survey", for label/input pairing. */
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 /**
@@ -459,7 +459,7 @@ export default function MapView({ short }) {
                 onClick={() => toggle(l.id)}
                 title={
                   l.minZoom
-                    ? `Draws from zoom ${l.minZoom} — click the value to jump there`
+                    ? `Draws from zoom ${l.minZoom}; click the value to jump there`
                     : undefined
                 }
               >
@@ -477,7 +477,7 @@ export default function MapView({ short }) {
                 <span className="count">
                   {visible.has(l.id) && zoom < (l.minZoom ?? 0)
                     ? `z${l.minZoom}+`
-                    : (counts[l.id] ?? "—")}
+                    : (counts[l.id] ?? "-")}
                 </span>
               </button>
             ))}
