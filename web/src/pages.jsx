@@ -675,7 +675,10 @@ function LateCheck({ s }) {
   // The zone the event pair saw least of: the one whose figure was radar's alone.
   const blind = zones.reduce((a, b) => (b.optical_valid_event_pct < a.optical_valid_event_pct ? b : a));
   const x = (pct) => `${fmt(pct / late.far_field_pct, 1)}×`;
-  const range = ([a, b]) => `${longDate(a)} to ${longDate(b)}`;
+  // config windows go to filterDate, whose end is exclusive: the last day in
+  // the window is the day before the one written down.
+  const dayBefore = (iso) => new Date(Date.parse(`${iso}T00:00:00Z`) - 864e5).toISOString().slice(0, 10);
+  const range = ([a, b]) => `${longDate(a)} to ${longDate(dayBefore(b))}`;
 
   return (
     <>
