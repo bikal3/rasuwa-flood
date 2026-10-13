@@ -134,13 +134,11 @@ await writeFile(
 if (serve) {
   const ctx = await esbuild.context(options);
   await ctx.watch();
-  // esbuild >=0.17 returns `hosts` (array); older builds returned `host`.
   const served = await ctx.serve({ servedir: out, port }).catch((e) => {
     console.error(`\n  ${e.message}\n  Try: PORT=5174 node build.mjs --serve\n`);
     process.exit(1);
   });
-  const { hosts, host } = served;
-  const h = (hosts?.[0] ?? host ?? "localhost").replace(/^(0\.0\.0\.0|::)$/, "localhost");
+  const h = (served.hosts[0] ?? "localhost").replace(/^(0\.0\.0\.0|::)$/, "localhost");
   // Note: routes.mjs is read by writePages above, not by esbuild, so adding a
   // route needs a restart rather than a rebuild.
   console.log(`\n  serving http://${h}:${served.port}  (watching web/src)`);
