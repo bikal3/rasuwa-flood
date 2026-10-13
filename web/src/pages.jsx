@@ -15,7 +15,8 @@ import { DATA, href } from "./base.js";
  * block. Nothing here holds state; the two things that do -- the layer map and
  * the imagery slider -- are their own components.
  *
- * Every figure on every page is read from that object. There is no number
+ * Every figure on every page is read from that object (stage 6's arrive on it
+ * as `s.late`). There is no number
  * written into this file, so the prose cannot drift from the pipeline.
  */
 
@@ -638,6 +639,8 @@ function Satellites({ s }) {
         ].map(([k, val]) => ({ k, v: fmt(val, 2) }))}
       />
 
+      {s.late && <LateCheck s={s} />}
+
       <h2>Change rate against height above the river</h2>
       <Bars
         rows={s.change_vs_hand.map((r) => ({
@@ -653,6 +656,77 @@ function Satellites({ s }) {
         is the band the corridor keeps. A threshold cutting below{" "}
         {s.event.hand_max_m} m would slice through the middle of the signal.
       </Figcap>
+    </>
+  );
+}
+
+/**
+ * Stage 6: the first clear optical view after the flood, five weeks on, put
+ * through the event pair's own thresholds. Every rate is read against the far
+ * field, because a confirmation that matches untouched ground confirms nothing.
+ */
+function LateCheck({ s }) {
+  const { late } = s;
+  const g = (name) => late.groups.find((r) => r.group === name) ?? {};
+  const flood = g("stage 3 flood damage");
+  const whole = g("stage 2 change, whole ROI");
+  const zones = late.zones.filter((z) => z.zone_id !== "ROI" && z.optical_valid_event_pct != null);
+  const roi = late.zones.find((z) => z.zone_id === "ROI") ?? {};
+  // The zone the event pair saw least of: the one whose figure was radar's alone.
+  const blind = zones.reduce((a, b) => (b.optical_valid_event_pct < a.optical_valid_event_pct ? b : a));
+  const x = (pct) => `${fmt(pct / late.far_field_pct, 1)}×`;
+  const range = ([a, b]) => `${longDate(a)} to ${longDate(b)}`;
+
+  return (
+    <>
+      <h2>Five weeks later: the first clear view</h2>
+      <p>
+        The monsoon withdrew at the end of September. The {range(late.window)}{" "}
+        pair sees {fmt(roi.optical_valid_late_pct, 1)}% of the study rectangle
+        clearly, against {fmt(roi.optical_valid_event_pct, 1)}% in the week after
+        the flood. The same two spectral thresholds, applied to it, ask whether
+        the ground flagged then still looks changed now, and every rate is read
+        against the {fmt(late.far_field_pct, 1)}% they fire on far-field ground
+        more than {int(late.far_field_hand_m)} m above any river.
+      </p>
+
+      <div className="metrics">
+        <Metric tone="red" value={`${fmt(flood.confirmed_pct, 1)}%`}
+                label="of the flood damage still reads as changed" />
+        <Metric value={x(flood.confirmed_pct)} label="the far-field rate" />
+        <Metric value={`${fmt(whole.confirmed_pct, 1)}%`}
+                label="of the unconfined stage 2 change does" />
+      </div>
+
+      <Table
+        caption={<><b>Still changed in the post-monsoon view,</b> counting only pixels it can see.</>}
+        cols={[
+          { key: "k", label: "Ground flagged by" },
+          { key: "n", label: "Pixels with a clear view", n: true },
+          { key: "p", label: "Still changed", n: true },
+          { key: "x", label: "vs far field", n: true },
+        ]}
+        rows={late.groups.map((r) => ({
+          k: r.sub ? `↳ ${r.group}` : r.group,
+          n: int(r.n),
+          p: `${fmt(r.confirmed_pct, 1)}%`,
+          x: x(r.confirmed_pct),
+        }))}
+      />
+
+      <Callout kind="warn">
+        <p>
+          <strong>Persistence, not attribution.</strong> Five weeks hold more
+          monsoon, the start of recovery and ordinary seasonal change, so these
+          rates are a floor on what the detector got right and say nothing about
+          what happened on {eventDate(s)}. {blind.label}, the zone the event
+          pair saw only {fmt(blind.optical_valid_event_pct, 1)}% of, is{" "}
+          {fmt(blind.optical_valid_late_pct, 1)}% visible now and confirms at{" "}
+          {fmt(blind.detected_confirmed_pct, 1)}% against its own{" "}
+          {fmt(blind.unflagged_confirmed_pct, 1)}% background: real, and the
+          weakest of the {zones.length} zones.
+        </p>
+      </Callout>
     </>
   );
 }
@@ -738,7 +812,7 @@ function Method({ s }) {
       <PageHead
         kicker="Reference"
         title="Method &amp; limits"
-        lede="Five stages, each reading the previous one's files off disk. Nothing here is a validated classifier, and this page is the list of everything it cannot tell you."
+        lede="Six stages, each reading the previous one's files off disk. Nothing here is a validated classifier, and this page is the list of everything it cannot tell you."
       />
 
       <DefList items={[
@@ -768,6 +842,11 @@ function Method({ s }) {
         </li>
         <li>The ground survey is joined in, and everything above is measured against it.</li>
         <li>Pre/post imagery is reprojected to Web Mercator for the before/after slider.</li>
+        <li>
+          The first clear post-monsoon view is put through the same spectral
+          thresholds, as a check on whether the flagged ground still looks
+          changed. It feeds nothing back into the mask.
+        </li>
       </ol>
         </div>
         <div>
@@ -870,12 +949,19 @@ function Downloads({ s }) {
           summary.json
           <span>statistics</span>
         </a>
+        {s.late && (
+          <a className="file" href={`${DATA}/late.json`} download>
+            late.json
+            <span>post-monsoon check</span>
+          </a>
+        )}
       </div>
 
       <Callout>
         <p>
-          <strong>Every figure on this site is in <code>summary.json</code>.</strong>{" "}
-          The pages read their numbers out of that one file at load time, so
+          <strong>Every figure on this site is in <code>summary.json</code>,</strong>{" "}
+          or for the post-monsoon check, <code>late.json</code>. The pages read
+          their numbers out of those files at load time, so
           there is no statistic quoted anywhere here that is not in the download,
           and no way for the prose to drift from what the pipeline computed.
         </p>
@@ -898,7 +984,7 @@ function Downloads({ s }) {
 
       <h2>How it was built</h2>
       <p>
-        A five-stage Python pipeline (Earth Engine, rasterio, geopandas), each
+        A six-stage Python pipeline (Earth Engine, rasterio, geopandas), each
         stage reading the previous one's files off disk and nothing else. The
         ground survey is the Humanitarian OpenStreetMap Team's and the field
         reports behind it; the hydropower inventory was contributed by Niti

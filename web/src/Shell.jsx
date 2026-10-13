@@ -7,9 +7,11 @@ import PAGES from "./pages.jsx";
 /**
  * The app shell: sidebar, page, foot.
  *
- * Every page needs summary.json and none of them need anything else, so the
- * fetch, the loading state and the error state live here once rather than nine
- * times. The page components are pure functions of that object.
+ * Every page needs summary.json, so the fetch, the loading state and the error
+ * state live here once rather than nine times. late.json rides along as
+ * `s.late`: it is stage 6's, which is optional, so a build without it loses one
+ * section rather than every page. The page components are pure functions of
+ * that object.
  *
  * Navigation is ordinary links to real files. There is no router: build.mjs
  * writes an index.html per route, so the browser's own navigation handles back,
@@ -21,12 +23,13 @@ export default function Shell({ page }) {
   const [navOpen, setNavOpen] = useState(false);
 
   useEffect(() => {
-    fetch(`${DATA}/summary.json`)
-      .then((r) => {
-        if (!r.ok) throw new Error(`summary.json ${r.status}`);
+    const get = (f) =>
+      fetch(`${DATA}/${f}`).then((r) => {
+        if (!r.ok) throw new Error(`${f} ${r.status}`);
         return r.json();
-      })
-      .then(setS)
+      });
+    Promise.all([get("summary.json"), get("late.json").catch(() => null)])
+      .then(([summary, late]) => setS({ ...summary, late }))
       .catch((e) => setErr(String(e)));
   }, []);
 

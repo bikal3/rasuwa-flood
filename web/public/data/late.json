@@ -1,0 +1,128 @@
+{
+ "window": [
+  "2026-09-28",
+  "2026-10-07"
+ ],
+ "event_window": [
+  "2026-08-26",
+  "2026-09-01"
+ ],
+ "far_field_hand_m": 500.0,
+ "far_field_pct": 4.6,
+ "groups": [
+  {
+   "group": "stage 3 flood damage",
+   "sub": false,
+   "n": 9482,
+   "confirmed_pct": 59.1
+  },
+  {
+   "group": "of it, optical at the time",
+   "sub": true,
+   "n": 7091,
+   "confirmed_pct": 64.1
+  },
+  {
+   "group": "of it, radar alone",
+   "sub": true,
+   "n": 2391,
+   "confirmed_pct": 44.5
+  },
+  {
+   "group": "stage 2 change, whole ROI",
+   "sub": false,
+   "n": 63124,
+   "confirmed_pct": 19.6
+  },
+  {
+   "group": "of it, radar alone",
+   "sub": true,
+   "n": 13144,
+   "confirmed_pct": 32.4
+  },
+  {
+   "group": "unflagged ground, HAND <= 50 m",
+   "sub": false,
+   "n": 87997,
+   "confirmed_pct": 6.7
+  },
+  {
+   "group": "unflagged ground, far field",
+   "sub": false,
+   "n": 978900,
+   "confirmed_pct": 4.6
+  }
+ ],
+ "zones": [
+  {
+   "zone_id": "Z1",
+   "label": "Rasuwagadhi / Gyirong border",
+   "optical_valid_event_pct": 64.5,
+   "optical_valid_late_pct": 88.3,
+   "detected_px_with_late_pair": 1289.0,
+   "detected_confirmed_pct": 35.1,
+   "unflagged_confirmed_pct": 1.4,
+   "note": ""
+  },
+  {
+   "zone_id": "Z2a",
+   "label": "Timure dry port",
+   "optical_valid_event_pct": 73.5,
+   "optical_valid_late_pct": 97.9,
+   "detected_px_with_late_pair": 2319.0,
+   "detected_confirmed_pct": 21.0,
+   "unflagged_confirmed_pct": 0.8,
+   "note": ""
+  },
+  {
+   "zone_id": "Z2b",
+   "label": "Ghattekhola",
+   "optical_valid_event_pct": 7.1,
+   "optical_valid_late_pct": 98.4,
+   "detected_px_with_late_pair": 250.0,
+   "detected_confirmed_pct": 12.8,
+   "unflagged_confirmed_pct": 2.3,
+   "note": ""
+  },
+  {
+   "zone_id": "Z3",
+   "label": "Rasuwagadhi HPP 111 MW",
+   "optical_valid_event_pct": 88.5,
+   "optical_valid_late_pct": 91.2,
+   "detected_px_with_late_pair": 1562.0,
+   "detected_confirmed_pct": 59.0,
+   "unflagged_confirmed_pct": 1.6,
+   "note": ""
+  },
+  {
+   "zone_id": "Z4",
+   "label": "Syabrubesi",
+   "optical_valid_event_pct": 70.8,
+   "optical_valid_late_pct": 93.8,
+   "detected_px_with_late_pair": 1941.0,
+   "detected_confirmed_pct": 50.2,
+   "unflagged_confirmed_pct": 1.6,
+   "note": ""
+  },
+  {
+   "zone_id": "Z5",
+   "label": "Betrawati",
+   "optical_valid_event_pct": null,
+   "optical_valid_late_pct": null,
+   "detected_px_with_late_pair": null,
+   "detected_confirmed_pct": null,
+   "unflagged_confirmed_pct": null,
+   "note": "outside raster"
+  },
+  {
+   "zone_id": "ROI",
+   "label": "whole study rectangle",
+   "optical_valid_event_pct": 14.7,
+   "optical_valid_late_pct": 66.9,
+   "detected_px_with_late_pair": 63124.0,
+   "detected_confirmed_pct": 19.6,
+   "unflagged_confirmed_pct": 4.3,
+   "note": ""
+  }
+ ]
+}

@@ -79,7 +79,7 @@ coverage to 98.4% and confirms at only 12.8% against its own 2.3% background:
 real, and weaker than every other zone. `stage6_late.py` says why in full.
 
 Every figure here is recomputed by the pipeline into
-`web/public/data/summary.json` or `data/tables/`, which is what the site reads
+`web/public/data/summary.json`, `late.json` or `data/tables/`, which is what the site reads
 and what the downloads page serves. None of them is transcribed by hand.
 
 ## Quickstart
@@ -115,7 +115,7 @@ own directory.
 | 3 | `pipeline/stage3_corridor.py` | terrain + HAND, the flood corridor, corridor-confined damage |
 | 4 | `pipeline/stage4_hot.py` | HOT ground survey, validation scores, the site's data |
 | 5 | `pipeline/stage5_overlays.py` | the before/after slider's images, and the share card |
-| 6 | `pipeline/stage6_late.py` | the post-monsoon optical check on stage 2's mask |
+| 6 | `pipeline/stage6_late.py` | the post-monsoon optical check on stage 2's mask, and the site's `late.json` |
 | | `web/` | the ten-page static site |
 
 Each stage reads the previous one's files off disk and nothing else. No stage

@@ -92,7 +92,7 @@ export const ROUTES = [
     id: "method", path: "method", group: "Reference", icon: "📋",
     label: "Method & limits",
     title: "Method & limits",
-    desc: "The five-stage pipeline, the two rules the analysis rests on, and everything this method cannot tell you.",
+    desc: "The six-stage pipeline, the two rules the analysis rests on, and everything this method cannot tell you.",
   },
   {
     id: "downloads", path: "downloads", group: "Reference", icon: "⬇️",

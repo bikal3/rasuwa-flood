@@ -295,6 +295,14 @@ async function exists(p) {
   want(pages.terrain.root.querySelector("table"), "[terrain] evidence table is missing");
   want(pages.satellites.root.querySelectorAll(".bar-row").length >= 8,
     "[satellites] is missing a bar chart");
+  // Stage 6 is optional, so only a late.json that shipped has to show up.
+  const late = await read("late.json").catch(() => null);
+  if (late) {
+    const flood = late.groups.find((g) => g.group === "stage 3 flood damage");
+    want(pages.satellites.text.includes(`${flood.confirmed_pct.toFixed(1)}%`)
+      && pages.satellites.text.includes("Five weeks later"),
+      "[satellites] late.json shipped but the post-monsoon check is not on the page");
+  }
   want(pages.exposure.root.querySelectorAll("table").length === 3,
     `[exposure] expected three tables, found ${pages.exposure.root.querySelectorAll("table").length}`);
   const zonelinks = (pages.exposure.html.match(/class="zonelink"/g) || []).length;

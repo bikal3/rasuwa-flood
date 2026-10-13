@@ -1,9 +1,11 @@
-"""Single source of truth for both stages. Edit here, not in the scripts.
+"""Single source of truth for every stage. Edit here, not in the scripts.
 
 Stage 1 (stage1_export.py) writes data/  -> open in ArcGIS Pro.
 Stage 2 (stage2_analysis.py) reads data/ -> writes data/derived, data/tables, maps/.
 Stage 3 (stage3_corridor.py) adds the terrain stack and the flood corridor.
 Stage 4 (stage4_hot.py)      adds the HOT survey and writes web/public/data/.
+Stage 5 (stage5_overlays.py) writes the before/after slider's imagery.
+Stage 6 (stage6_late.py)     checks stage 2's mask against the post-monsoon view.
 
 Paths below resolve against the repo root, one level above this file, so the
 stages write to data/ and maps/ whichever directory you run them from.

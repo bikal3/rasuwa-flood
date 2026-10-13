@@ -37,10 +37,12 @@ Reads   data/raster/s2_pre.tif, s2_late.tif        (stage 1)
         data/vector/zones.shp                      (stage 1)
 
 Writes  data/tables/late_optical.csv   per zone, and the ROI totals
+        web/public/data/late.json      the same, plus the group rates, for the site
         maps/10_late_optical.png      late dNDVI
         maps/11_late_confirmation.png where the check passes, fails, or abstains
 """
 
+import json
 import sys
 
 import geopandas as gpd
@@ -146,10 +148,13 @@ def main():
     print("\nDoes the late optical pair still see change there?")
     print(f"  {'group':34s} {'px with late pair':>18s} {'confirmed':>10s}")
     base = None
+    scored = []
     for name, sel in groups:
         n, pct = rate(changed, pair, sel)
         if name.endswith("far field"):
             base = pct
+        scored.append({"group": name.strip(), "sub": name.startswith(" "),
+                       "n": n, "confirmed_pct": pct})
         print(f"  {name:34s} {n:18,d} {('-' if pct is None else f'{pct:.1f}%'):>10s}")
     print(f"\n  far-field base rate {base:.1f}%: the share of untouched ground the"
           f" same\n  thresholds call changed over five weeks. Read every rate above"
@@ -190,6 +195,18 @@ def main():
     table.to_csv(cfg.TABLES / "late_optical.csv", index=False)
     print("\n" + table.to_string(index=False))
 
+    # Its own file, as stage 5 writes overlays.json: stage 4 rewrites
+    # summary.json from scratch and never reads anything this stage writes.
+    # to_json turns the outside-raster zone's NaNs into nulls JSON.parse accepts.
+    (cfg.SITE_DATA / "late.json").write_text(json.dumps({
+        "window": cfg.S2_LATE,
+        "event_window": cfg.S2_POST,
+        "far_field_hand_m": FAR_FIELD_M,
+        "far_field_pct": base,
+        "groups": scored,
+        "zones": json.loads(table.to_json(orient="records")),
+    }, indent=1, allow_nan=False))
+
     # Plates.
     extent = rasterio.plot.plotting_extent(
         rasterio.open(cfg.DERIVED / "damage_mask.tif"))
@@ -200,7 +217,8 @@ def main():
         "either window. Five weeks after the flood: persistence, not cause.",
         "dNDVI (pre − late)", cfg.MAPS / "10_late_optical.png", vmax=0.6)
     map_confirmation(flood, changed, pair, hs, zones, extent)
-    print(f"\nDone. late_optical.csv in {cfg.TABLES}, two plates in {cfg.MAPS}")
+    print(f"\nDone. late_optical.csv in {cfg.TABLES}, late.json in {cfg.SITE_DATA}, "
+          f"two plates in {cfg.MAPS}")
 
 
 def map_confirmation(flood, changed, pair, hs, zones, extent):
